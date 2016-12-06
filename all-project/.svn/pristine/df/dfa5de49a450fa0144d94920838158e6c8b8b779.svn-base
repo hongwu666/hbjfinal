@@ -1,0 +1,394 @@
+package saas.winbons.provider.run;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.winbons.data.model.contact.CustomerContact;
+import saas.winbons.data.model.customer.Customer;
+import saas.winbons.dubbo.api.ApiService;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.PageDto;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.api.SortDTO;
+import saas.winbons.framework.service.ServiceLocator;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+import saas.winbons.jfinal.JfinalCoreInit;
+
+public class StartUp {
+
+	private static volatile boolean running = true;
+
+	private static ContextDTO contextDTO = new ContextDTO();
+
+	public static void main(String[] args) throws IOException, InterruptedException {
+
+		ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring/*.xml");
+		ServiceLocator.setApplicationContext(applicationContext);
+		applicationContext.start();
+		new JfinalCoreInit();
+		contextDTO.setDbId(12053435L);
+		contextDTO.setUserId(100000095027L);
+		contextDTO.setAdmin(false);
+		contextDTO.setCurrentOwnerId(100000095027L);
+		contextDTO.setMobileRequest(false);
+		contextDTO.setServiceType(7);
+		
+		//contextDTO.setUserId(100000085407L);
+//		System.out.println(d.toString());
+//		System.out.println(String.valueOf(d.doubleValue()));
+//		System.out.println(new BigDecimal(d.toString()).toString());
+		//initialReportByModule();
+		//initialModule();
+		//modifyReport();
+		//newListView();
+		//save();
+		//searchCustomer();
+		//modifyReport1();
+		//searchCustomer1();
+		//searchData();
+		//queryReportDetail();
+		//listDefinedModule();
+		//queryFilter();
+		// contextDTO.setDbId(14058840L);
+		// contextDTO.setUserId(100000104993L);
+		// initialModule();
+		// modifyReport();
+		// contextDTO.setUserId(100000085407L);
+		// newListView();
+		// save();
+		// searchCustomer();
+		// modifyReport1();
+		// searchCustomer1();
+		// searchData();
+		// listDefinedModule();
+		// queryFilter();
+		//searchDataByFormId();
+		//export();
+		//setFieldWidth();
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				synchronized (StartUp.class) {
+					running = false;
+					StartUp.class.notify();
+				}
+			}
+		});
+		synchronized (StartUp.class) {
+			while (running) {
+				try {
+					StartUp.class.wait();
+				} catch (Throwable e) {
+				}
+			}
+		}
+
+	}
+
+	private static void setFieldWidth() {
+		ApiService service = (ApiService) ServiceLocator.getService("reportService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "setFieldWidth");
+		Map<Object, Object> data = new HashMap<Object, Object>();
+		data.put("id", 120535680672L);
+		data.put("width", 200);
+		requestDto.put(data);
+		System.out.println(ToolGson.GsonString(requestDto));
+
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+	
+	private static void searchDataByFormId() {
+		ApiService service = (ApiService) ServiceLocator.getService("reportService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "searchDataByFormId");
+		Map<Object, Object> data = new HashMap<Object, Object>();
+		data.put("id", 120535667657L);
+//		data.put("currentPage", "1");
+//		data.put("limit", String.valueOf(Integer.MAX_VALUE));
+		Map<String, Object> page = new HashMap<String, Object>();
+		page.put("limit", Integer.MAX_VALUE);
+		page.put("rowStart", 1);
+		data.put("page", page);
+		requestDto.put(data);
+		System.out.println(ToolGson.GsonString(requestDto));
+
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+
+	}
+
+	private static void queryFilter() {
+		ApiService service = (ApiService) ServiceLocator.getService("reportService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "queryFilter");
+		System.out.println(ToolGson.GsonString(requestDto));
+		Map<Object, Object> data = new HashMap<Object, Object>();
+		data.put("id", 120535638642L);
+		requestDto.put(data);
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+
+	private static void listDefinedModule() {
+		ApiService service = (ApiService) ServiceLocator.getService("reportService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "listDefinedModule");
+		System.out.println(ToolGson.GsonString(requestDto));
+		Map<Object, Object> data = new HashMap<Object, Object>();
+		requestDto.put(data);
+		requestDto.putSort(new SortDTO("desc", "updated_date"));
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+
+	}
+
+	private static void queryReportDetail() {
+		ApiService service = (ApiService) ServiceLocator.getService("reportService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "queryReportDetail");
+		Map<Object, Object> data = new HashMap<Object, Object>();
+		data.put("id", 120535762792L);
+		requestDto.put(data);
+		System.out.println(ToolGson.GsonString(requestDto));
+
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+
+	private static void searchData() {
+		ApiService service = (ApiService) ServiceLocator.getService("reportService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "searchData");
+		Map<Object, Object> data = new HashMap<Object, Object>();
+		data.put("module", "101");
+		data.put("selectType", "");
+		requestDto.put(data);
+		System.out.println(ToolGson.GsonString(requestDto));
+
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+
+	}
+
+
+	private static void initialReportByModule() {
+		ApiService service = (ApiService) ServiceLocator.getService("reportService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "initialReportByModule");
+		Map<Object, Object> data = new HashMap<Object, Object>();
+		data.put("module", "301");
+		requestDto.put(data);
+		System.out.println(ToolGson.GsonString(requestDto));
+
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+
+	private static void initialModule() {
+		ApiService service = (ApiService) ServiceLocator.getService("reportService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "initialModule");
+		System.out.println(ToolGson.GsonString(requestDto));
+		Map<Object, Object> data = new HashMap<Object, Object>();
+		Map<String, Object> report = new HashMap<String, Object>();
+		report.put("name", "改了2次名字");
+		report.put("id", 120535623642L);
+		data.put("report", report);
+		requestDto.put(data);
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+
+	private static void modifyReport() {
+		ApiService service = (ApiService) ServiceLocator.getService("reportService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "modifyReport");
+		System.out.println(ToolGson.GsonString(requestDto));
+		Map<Object, Object> data = new HashMap<Object, Object>();
+		Map<String, Object> report = new HashMap<String, Object>();
+		report.put("name", "我想改此名字");
+		report.put("id", 120535667657L);
+		report.put("module", "301");
+		data.put("report", report);
+		
+//		List<Map<String, Object>> reportFilters =  new ArrayList<Map<String, Object>>();
+//		Map<String, Object> map1 = new HashMap<String, Object>();
+//		map1.put("filter_value", "20");
+//		map1.put("dbid", 12053435);
+//		map1.put("filter_option", "\u003e\u003d");
+//		map1.put("defined_id", 120535344597L);
+//		reportFilters.add(map1);
+		//data.put("reportFilters", reportFilters);
+		
+		
+		List<Map<String, Object>> reportFields =  new ArrayList<Map<String, Object>>();
+		Map<String, Object> m1 = new HashMap<String, Object>();
+		m1.put("display_order", 1);
+		m1.put("defined_id", 2069);
+		m1.put("is_display", 1);
+		reportFields.add(m1);
+		
+		Map<String, Object> m2 = new HashMap<String, Object>();
+		m2.put("display_order", 2);
+		m2.put("defined_id", 2070);
+		m2.put("is_display", 1);
+		reportFields.add(m2);
+		
+		Map<String, Object> m3 = new HashMap<String, Object>();
+		m3.put("display_order", 3);
+		m3.put("defined_id", 2071);
+		m3.put("is_display", 1);
+		reportFields.add(m3);
+		data.put("reportFields", reportFields);
+
+		List<Map<String, Object>> reportFilters = new ArrayList<Map<String, Object>>();
+		Map<String, Object> map1 = new HashMap<String, Object>();
+		map1.put("filter_value", "20");
+		map1.put("dbid", 12053435);
+		map1.put("filter_option", "\u003e\u003d");
+		map1.put("defined_id", 120535344597L);
+		reportFilters.add(map1);
+		data.put("reportFilters", reportFilters);
+		requestDto.put(data);
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+
+	private static void newListView() {
+		ApiService service = (ApiService) ServiceLocator.getService("reportService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "newListView");
+		System.out.println(ToolGson.GsonString(requestDto));
+
+		// requestDto.putFitler(new FilterDTO("a.name", "客户", "like"));
+		requestDto.putSort(new SortDTO("desc", "updated_date"));
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+
+	private static void save() {
+		ApiService service = (ApiService) ServiceLocator.getService("reportService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "save");
+
+		Map<Object, Object> report = new HashMap<Object, Object>();
+
+		report.put("name", "合同报表二号");
+		report.put("type", "1");
+		report.put("description", "2016年8月27日新生成的");
+		report.put("module", "301");
+
+		Map<String, Object> detail = new HashMap<String, Object>();
+		detail.put("defined_id", "1003");
+		detail.put("display_order", "1");
+		detail.put("is_display", "1");
+
+		Map<String, Object> filter = new HashMap<String, Object>();
+		filter.put("defined_id", "1003");
+		filter.put("filter_option", "=");
+		filter.put("filter_value", "某人");
+
+		// Map<String,Object> details2 = new HashMap<String,Object>();
+		// details2.put("defined_id", "1004");
+		// details2.put("display_order", "2");
+		//
+		//
+		// Map<String,Object> details3 = new HashMap<String,Object>();
+		// details3.put("defined_id", "1005");
+		// details3.put("display_order", "3");
+
+		List<Map<String, Object>> listFormFields = new ArrayList<Map<String, Object>>();
+		listFormFields.add(detail);
+
+		List<Map<String, Object>> formFilters = new ArrayList<Map<String, Object>>();
+		formFilters.add(filter);
+		Map<String, Object> data = new HashMap<String, Object>();
+		data.put("report", report);
+		data.put("formFields", listFormFields);
+		data.put("formFilters", formFilters);
+
+		requestDto.put(data);
+		System.out.println(ToolGson.GsonString(requestDto));
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+
+	private static void searchCustomer() {
+
+		String selectHeadSql = "select " + ToolJfinalSql.buildSelectSql(Customer.class, "t1", "t101");
+		selectHeadSql += ",";
+		selectHeadSql += ToolJfinalSql.buildSelectSql(CustomerContact.class, "t2", "t102");
+		// String selectHeadSql = TenantConstant.NON_PARSER + "select * ";
+		System.err.println(selectHeadSql);
+		PageDto page = new PageDto();
+		Map<String, Object> data = new HashMap<String, Object>();
+		data.put("contextDTO", contextDTO);
+		List<FilterDTO> fitler = new ArrayList<FilterDTO>();
+		List<SortDTO> sort = new ArrayList<SortDTO>();
+		data.put("filters", fitler);
+		data.put("sorts", sort);
+		Map<String, Object> data2 = new HashMap<String, Object>();
+		data2.put("selectType", "");
+		data.put("data", data2);
+
+		// String sql = ToolSqlXml.getSql("winbons.report.searchCustomer", data);
+		String sql = ToolSqlXml.getSql("winbons.report.searchCustomerLinker", data);
+		System.err.println(sql);
+
+		Page<Record> paginate = Db.paginate(contextDTO, page.getRowStart(), page.getLimit(), selectHeadSql, sql);
+
+		Map<String, Object> result = new HashMap<String, Object>();
+		List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(paginate.getList());
+		result.put("items", recordListConvert);
+		result.put("currentPage", paginate.getPageNumber());
+		result.put("limit", paginate.getPageSize());
+		int totalPages = paginate.getTotalPage();
+		if (totalPages == 0)
+			totalPages = 1;
+		result.put("totalPages", totalPages);
+		result.put("totalCount", paginate.getTotalRow());
+		System.out.println(ToolGson.GsonString(result));
+
+	}
+
+	private static void modifyReport1() {
+		ApiService service = (ApiService) ServiceLocator.getService("reportService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "modifyReport");
+		System.out.println(ToolGson.GsonString(requestDto));
+		Map<Object, Object> data = new HashMap<Object, Object>();
+		Map<String, Object> report = new HashMap<String, Object>();
+		report.put("name", "改了一次名字");
+		report.put("id", 120535623642L);
+		report.put("updated_date", 120535623642L);
+		report.put("updated_by", 120535623642L);
+		data.put("report", report);
+		requestDto.put(data);
+
+		String sql = ToolSqlXml.getSql("winbons.report.modifyReport", report);
+
+		System.out.println(sql);
+		// ResultDTO executeDto = service.executeDto(requestDto);
+		// System.out.println(ToolGson.GsonString(executeDto));
+	}
+
+	private static void export() {
+
+		ApiService service = (ApiService) ServiceLocator.getService("reportService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "exportExcel");
+
+		Map<Object, Object> data = new HashMap<Object, Object>();
+		data.put("id", 120535762792L);
+		data.put("currentPage", "1");
+		data.put("limit", String.valueOf(Integer.MAX_VALUE));
+		requestDto.put(data);
+
+		ResultDTO executeDto = service.executeDto(requestDto);
+
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+
+}

@@ -1,0 +1,7 @@
+package saas.winbons.dubbo.api.workingcycle;
+
+import saas.winbons.dubbo.api.ApiService;
+
+public interface IWorkingcycleService extends ApiService {
+
+}

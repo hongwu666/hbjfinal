@@ -1,0 +1,46 @@
+package saas.framework.mutitenant;
+
+public class TenantConstant {
+	
+	public final static String MYCAT_HINT = "/*!mycat:";
+
+	public static final String NON_PARSER = "/*noformat*/";
+	
+	public static final String TENANT_HINT_PREFIX = "/*#tenant:";
+	
+	public static final int TENANT_HINT_PREFIX_LEN = TENANT_HINT_PREFIX.length();
+	
+	public static final String TENANT_HINT = "/*#tenant:dbid={0}*/";
+	
+	public static final String KEY_NEED_SCHEMA = "tenant_db_proxy";
+	
+	public static final String TENANT_SCHEMA_PREFIX = "TENANT_SCHEMA_";
+
+	public static final String INSERT_SQL = "insert";
+
+	public static final int NO_PARSER_LEN = NON_PARSER.length();
+
+	private static ThreadLocal<Boolean> needParse = new ThreadLocal<Boolean>();
+
+	public static void closeParse() {
+		needParse.set(false);
+	}
+
+	public static void openParse() {
+		needParse.set(true);
+	}
+
+	/**
+	 * Attation is can be null
+	 * 
+	 * @return
+	 */
+	public static Boolean isNeedParse() {
+		return needParse.get();
+	}
+
+	public static void clear() {
+		needParse.remove();
+	}
+
+}

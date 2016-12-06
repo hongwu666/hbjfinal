@@ -1,0 +1,70 @@
+package saas.winbons.data.model.contract;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.winbons.data.model.BaseModel;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+
+public class Contract extends BaseModel<Contract> {
+
+	/**
+	 * 序列
+	 */
+	private static final long serialVersionUID = -3933967553791562803L;
+
+	/**
+	 * 单例
+	 */
+	public static final Contract dao = new Contract();
+
+	/**
+	 * 根据商机ID查询合同信息
+	 * 
+	 * @param requestDTO
+	 * @return 
+	 */
+	public List<Map<String, Object>> findByOpportunityId(RequestDTO requestDTO) {
+
+		// 上下文
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+
+		// 商机ID
+		Object opportunityId = requestDTO.get("id");
+		// 判断是否为空，如果不是则从data中获取
+		if (null == opportunityId) {
+			opportunityId = requestDTO.getData().get("id");
+		}
+
+		List<FilterDTO> filters = new ArrayList<FilterDTO>();
+		filters.add(new FilterDTO("map_opportunity_id", opportunityId, "="));
+		if (null != requestDTO.getFitler()) {
+			filters.addAll(requestDTO.getFitler());
+		}
+
+		// 查询合同数据数据SQL参数
+		Map<String, Object> map = new HashMap<>();
+		map.put("tableName", "t_crm_contract");
+		map.put("filters", filters);
+		map.put("contextDTO", contextDTO);
+
+		String sql = "select " + ToolJfinalSql.buildSelectSql(Contract.class, "", "") + ToolSqlXml.getSql("winbons.common.search", map);
+
+		List<Record> find = Db.find(contextDTO, sql);
+
+		List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find == null ? new ArrayList<Record>() : find);
+
+		return recordListConvert;
+	}
+
+}

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache>
+	<!-- <diskStore path="c:\\cache/hibernate/crm"/> -->
+
+	<defaultCache maxElementsInMemory="1000"
+		memoryStoreEvictionPolicy="LRU" eternal="false"
+		diskExpiryThreadIntervalSeconds="300" timeToIdleSeconds="300"
+		timeToLiveSeconds="300" overflowToDisk="false" diskPersistent="false" />
+
+	<!-- Mandatory Default Cache configuration, Refresh every hour. -->
+	<!-- <cache name="crm.data.model.systemsetting.Company" maxElementsInMemory="100" 
+		memoryStoreEvictionPolicy="LFU" eternal="true" overflowToDisk="false" timeToIdleSeconds="0" 
+		timeToLiveSeconds="0"/> <cache name="crm.data.model.systemsetting.Code" maxElementsInMemory="1000" 
+		memoryStoreEvictionPolicy="LFU" eternal="true" overflowToDisk="false" timeToIdleSeconds="0" 
+		timeToLiveSeconds="0"/> <cache name="crm.data.model.organization.Department" 
+		maxElementsInMemory="1000" memoryStoreEvictionPolicy="LFU" eternal="false" 
+		overflowToDisk="false" timeToIdleSeconds="3600" timeToLiveSeconds="3600"/> 
+		<cache name="crm.data.model.organization.DeptPosition" maxElementsInMemory="10000" 
+		memoryStoreEvictionPolicy="LFU" eternal="false" overflowToDisk="false" timeToIdleSeconds="3600" 
+		timeToLiveSeconds="3600"/> <cache name="crm.data.model.email.EmailAccountCommonSupport" 
+		maxElementsInMemory="1000" memoryStoreEvictionPolicy="LFU" eternal="true" 
+		overflowToDisk="false" timeToIdleSeconds="3600" timeToLiveSeconds="3600"/> 
+		<cache name="crm.data.model.security.EmailRuleAdminSetting" maxElementsInMemory="10000" 
+		memoryStoreEvictionPolicy="LFU" eternal="false" overflowToDisk="false" timeToIdleSeconds="3600" 
+		timeToLiveSeconds="3600"/> <cache name="crm.data.model.security.UserDocumentAcl" 
+		maxElementsInMemory="10000" memoryStoreEvictionPolicy="LFU" eternal="false" 
+		overflowToDisk="false" timeToIdleSeconds="3600" timeToLiveSeconds="3600"/> -->
+
+	<cache name="ticketCache" maxElementsInMemory="1000"
+		memoryStoreEvictionPolicy="LFU" eternal="false" overflowToDisk="false"
+		timeToIdleSeconds="3600" timeToLiveSeconds="3600"></cache>
+
+	<cache name="permissionCache" maxElementsInMemory="1000"
+		memoryStoreEvictionPolicy="LFU" eternal="false" overflowToDisk="false"
+		timeToIdleSeconds="36000" timeToLiveSeconds="36000"></cache>
+		
+	<cache name="defineFieldCache" maxElementsInMemory="1000"
+		memoryStoreEvictionPolicy="LFU" eternal="false" overflowToDisk="false"
+		timeToIdleSeconds="36000" timeToLiveSeconds="36000"></cache>
+		
+	<cache name="defineFieldCache2" maxElementsInMemory="1000"
+		memoryStoreEvictionPolicy="LFU" eternal="false" overflowToDisk="false"
+		timeToIdleSeconds="36000" timeToLiveSeconds="36000"></cache>
+		
+	<cache name="orderPageCache" maxElementsInMemory="1000"
+		memoryStoreEvictionPolicy="LFU" eternal="false" overflowToDisk="false"
+		timeToIdleSeconds="36000" timeToLiveSeconds="36000"></cache>
+		
+	<cache name="tenantDataCache" maxElementsInMemory="10000"
+		memoryStoreEvictionPolicy="LFU" eternal="false" overflowToDisk="false"
+		timeToIdleSeconds="3600" timeToLiveSeconds="3600"></cache>	
+		
+	<!-- <cache name="ALL_CACHE" maxElementsInMemory="3000"
+		memoryStoreEvictionPolicy="LFU" eternal="false" overflowToDisk="false"
+		timeToIdleSeconds="36000" timeToLiveSeconds="36000"></cache> -->	
+</ehcache>

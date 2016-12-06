@@ -1,0 +1,65 @@
+package saas.framework.cache.redis;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.stereotype.Component;
+
+import redis.clients.jedis.JedisPool;
+import saas.framework.cache.ICache;
+import saas.framework.cache.RedisCmdHelper;
+import saas.framework.cache.impl.RedisAtomicCache;
+
+/**
+ * 
+ * @author star 键值对只支持字符窜
+ */
+@SuppressWarnings("rawtypes")
+@Component("redisAtomicCache")
+public class RedisAtomicCacheFactory implements FactoryBean, InitializingBean,
+		DisposableBean {
+
+	private ICache redisCache;
+
+	private JedisPool jedisPool;
+
+	public void setJedisPool(JedisPool jedisPool) {
+		this.jedisPool = jedisPool;
+	}
+
+	private static final Logger logger = LoggerFactory
+			.getLogger(RedisAtomicCacheFactory.class);
+
+	@Override
+	public Object getObject() throws Exception {
+		return redisCache;
+	}
+
+	@Override
+	public Class getObjectType() {
+		return ICache.class;
+	}
+
+	public boolean isSingleton() {
+		return true;
+	}
+
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		this.redisCache = new RedisAtomicCache();
+		RedisCmdHelper redisCmdHelper = new RedisCmdHelper();
+		redisCmdHelper.setDb(1);
+		redisCmdHelper.setJedisPool(jedisPool);
+		((RedisAtomicCache) redisCache).setRedisCmdHelper(redisCmdHelper);
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		logger.info("shutdown redis connection..");
+		if (jedisPool != null) {
+			jedisPool.destroy();
+		}
+	}
+}

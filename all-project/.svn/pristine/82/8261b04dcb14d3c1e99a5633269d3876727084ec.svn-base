@@ -1,0 +1,73 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: RedissonCacheFactory.java 
+ * @Package saas.framework.cache.redis 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年8月11日 下午2:01:20 
+ * @version 1.0 
+ */
+
+package saas.framework.cache.redis;
+
+import org.redisson.Redisson;
+import org.redisson.core.RMap;
+
+import saas.framework.cache.ICache;
+import saas.framework.utils.SecurityUtils;
+
+/**
+ * @ClassName: RedissonCacheFactory
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年8月11日 下午2:01:20
+ */
+
+public class RedissonCache<K, V> implements ICache<K, V> {
+
+	private Redisson redisson;
+
+	public RedissonCache(Redisson redisson) {
+		this.redisson = redisson;
+	}
+
+	public RMap<K, V> getCacheMap() {
+		Long tenantId = SecurityUtils.getTenantId();
+		if (tenantId != null && tenantId > 0) {
+			return redisson.getMap(tenantId + "cache");
+		} else {
+			return redisson.getMap("sysCache");
+		}
+	}
+
+	@Override
+	public V get(K key) {
+		return getCacheMap().get(key);
+	}
+
+	@Override
+	public V put(K key, V value) {
+		getCacheMap().put(key, value);
+		return get(key);
+	}
+
+	@Override
+	public V remove(K key) {
+		return getCacheMap().remove(key);
+	}
+
+	@Override
+	public int size() {
+		return getCacheMap().size();
+	}
+
+	@Override
+	public void clear() {
+		getCacheMap().clear();
+	}
+}

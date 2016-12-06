@@ -1,0 +1,12 @@
+package saas.framework.cache.redis;
+
+import java.io.Serializable;
+
+public interface IRedisCaheItem extends Serializable{
+	
+	long getCreationTime();
+	
+	Object getObj();
+	
+	public void setObj(Object obj);
+}

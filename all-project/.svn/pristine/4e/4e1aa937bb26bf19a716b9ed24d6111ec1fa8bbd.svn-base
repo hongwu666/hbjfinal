@@ -1,0 +1,16 @@
+package saas.winbons.format;
+
+import java.util.Map;
+
+import com.jfinal.plugin.activerecord.Model;
+
+public interface ICallbackFormat {
+	
+	
+	Object callback(Map<String,Object> map,String name,String dbName);
+
+	Object build(Model model,String name,Object value);
+	
+	String getType();
+	
+}

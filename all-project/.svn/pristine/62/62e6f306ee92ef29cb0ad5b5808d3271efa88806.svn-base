@@ -1,0 +1,33 @@
+package saas.winbons.mq;
+
+import saas.winbons.enumtype.BaseEnum;
+
+public enum ImportErrorTypeEnum implements BaseEnum<Integer> {
+	
+	/*0:异常错误,1:新建档,2:已建档不覆盖,3:其他用户已建档
+	4:已是公海客户,5:输入错误,6:不负责的客户池，
+	7:可负责的客户数已达上限,8覆盖*/
+	unknown(0),//
+	newOne(1),
+	existNtCover(2),
+	otherExist(3),
+	publicCustomer(4),
+	inputError(5),
+	ntChargePool(6),
+	upperLimit(7),
+	cover(8)
+	;
+
+	
+	private Integer dbValue;
+	
+	private ImportErrorTypeEnum(int dbValue) {
+		this.dbValue = dbValue;
+	}
+	
+	@Override
+	public Integer getDbValue() {
+		return dbValue;
+	}
+
+}

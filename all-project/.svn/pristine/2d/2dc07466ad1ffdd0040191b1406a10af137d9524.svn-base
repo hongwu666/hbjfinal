@@ -1,0 +1,298 @@
+package saas.winbons.provider;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.ApplicationEventMulticaster;
+
+import saas.framework.nosql.FileSystemEngine;
+import saas.framework.nosql.domain.AttachmentObject;
+import saas.winbons.data.model.base.ImportLogDetailModel;
+import saas.winbons.data.model.base.ImportLogModel;
+import saas.winbons.data.model.security.User;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.PageDto;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.api.SortDTO;
+import saas.winbons.dubbo.service.AbstractCommonService;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+
+import com.jfinal.ext.kit.ModelKit;
+import com.jfinal.ext.plugin.jms.JmsKit;
+import com.jfinal.kit.PropKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Model;
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.Record;
+
+public class BackendServiceImpl extends AbstractCommonService {
+
+	@Override
+	public Class<? extends Model<?>> getModelClass() {
+		return ImportLogModel.class;
+	}
+	
+	@Autowired
+	private FileSystemEngine fileSystemEngine;
+
+	@Override
+	public Class<? extends IEnumFormat> getFormatClass() {
+		return null;
+	}
+	
+	@Autowired
+	ApplicationEventMulticaster applicationEventMulticaster;  
+	
+	@Override
+	public String getGridId() {
+		return "ID_GRID_IMPORT";
+	}
+
+	@Override
+	public String getTableName() {
+		return "t_crm_importlog";
+	}
+
+	@Override
+	public AbstractCommonService getService() {
+		return this;
+	}
+
+	@Override
+	public FilterItemList buildFilterItem(ContextDTO contextDTO, SimulationHttpServletRequest request) {
+		return null;
+	}
+
+	@Override
+	public String getGridHeadSql() {
+		return "winbons.import.searchLogHead";
+	}
+
+	@Override
+	public String getGridSql() {
+		return "winbons.import.searchLogList";
+	}
+
+	@Override
+	public void rebuildCreateSearchView(RequestDTO requestDTO) {
+		
+	}
+	
+	/*public ResultDTO newImportUser(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		resultDTO.setSuccess(true);
+		try{
+			Map<String, Object> source = new HashMap<String,Object>();
+			String buildSelectSql = ToolJfinalSql.buildSelectSql(ImportLogModel.class, "", "");
+			Map<String, Object> params = new HashMap<String,Object>();
+			requestDTO.putFitler(new FilterDTO("importfile", requestDTO.get("importLogModel.importfile")));
+			requestDTO.putFitler(new FilterDTO("importtype", requestDTO.get("importLogModel.importtype")));
+			params.put("filters", requestDTO.getFitler());
+			params.put("contextDTO", contextDTO);
+			params.put("columns", buildSelectSql);
+			String sql = ToolSqlXml.getSql("winbins.import.search",params);
+			List<Record> find = Db.find(contextDTO, sql);
+			Long id = null;
+			if(find.size() == 0){
+				ImportLogModel importLogModel = new ImportLogModel();
+				Map<String, Object> mapToModelMap = ToolModel.mapToModelMap(requestDTO.getData(), "importLogModel");
+				ImportLogModel put = importLogModel.put(mapToModelMap);
+				put.set("status", 1);
+				put.set("createdate", Calendar.getInstance().getTime());
+				put.set("createid", contextDTO.getUserId());
+				put.set("createby", contextDTO.getUserName());
+				importLogModel.put(put);
+				importLogModel.save(contextDTO);
+				id = importLogModel.getId();
+			}else{
+				Record record = find.get(find.size() - 1);
+				ImportLogModel importLogModel = new ImportLogModel();
+				importLogModel.put(record);
+				Map<String, Object> mapToModelMap = ToolModel.mapToModelMap(requestDTO.getData(), "importLogModel");
+				ImportLogModel put = importLogModel.put(mapToModelMap);
+				importLogModel.put(put);
+				importLogModel.set("status", 1);
+				importLogModel.set("createdate", Calendar.getInstance().getTime());
+				importLogModel.set("createid", contextDTO.getUserId());
+				importLogModel.set("createby", contextDTO.getUserName());
+				importLogModel.update(contextDTO);
+				id = importLogModel.getId();
+			}
+			source.put("data", id);
+			source.put("contextDTO", contextDTO);
+			UserImportEvent userImportEvent = new UserImportEvent(source);
+			applicationEventMulticaster.multicastEvent(userImportEvent);
+		}catch(Exception e){
+			resultDTO.setSuccess(false);
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+		}
+		
+
+		
+		
+		
+		return resultDTO;
+	}*/
+	
+	public ResultDTO newImport(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		resultDTO.setSuccess(true);
+		try{
+			AttachmentObject fileById = fileSystemEngine.getFileById(AttachmentObject.class, requestDTO.get("importfile"));
+			Workbook workbook=null;
+			workbook = WorkbookFactory.create(fileById.getData());
+			Sheet sheetAt = workbook.getSheetAt(0);				
+			int lastRowNum = sheetAt.getLastRowNum();
+			ImportLogModel importLogModel = new ImportLogModel();
+			Map<String, Object> mapToModelMap = ToolModel.mapToModelMap(requestDTO.getData(), null);
+			importLogModel.putForUpdate(mapToModelMap);
+			importLogModel.set("totalQty", lastRowNum);
+			importLogModel.set("fileName", fileById.getFileName());
+			importLogModel.set("fileSize", fileById.getLength());
+			ImportLogModel.dao.saveObj(contextDTO, importLogModel);
+			requestDTO.put("id", importLogModel.getId());
+			switch (importLogModel.getInt("importtype")) {//1:客户,2:联系人,3:
+			case 1:
+				JmsKit.sendQueue(PropKit.use("jms.properties").get("customerImportMq.name"), ToolGson.GsonString(requestDTO), "a");
+				break;
+			case 2:
+				JmsKit.sendQueue(PropKit.use("jms.properties").get("contactImportMq.name"), ToolGson.GsonString(requestDTO), "a");
+				break;
+			case 3:
+				JmsKit.sendQueue(PropKit.use("jms.properties").get("clueImportMq.name"), ToolGson.GsonString(requestDTO), "a");
+				break;
+			default:
+				break;
+			}
+		}catch(Exception e){
+			LOG.error(e.getMessage(),e);
+			resultDTO.setSuccess(false);
+			resultDTO.setError(e.getMessage());
+		}
+		return resultDTO;
+	}
+	
+	public ResultDTO newGetImport(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		resultDTO.setSuccess(true);
+		try{
+			ImportLogModel findById = ImportLogModel.dao.findById(contextDTO, contextDTO.getDbId(),requestDTO.get("id"));
+			resultDTO.setData(ModelKit.toMap(findById));
+		}catch(Exception e){
+			resultDTO.setSuccess(false);
+			e.printStackTrace();
+		}
+		return resultDTO;
+	}
+	
+	
+	public ResultDTO newListNewImport(RequestDTO requestDTO){
+		return super.newListView(requestDTO);
+		
+		/*
+		ResultDTO resultDTO = new ResultDTO();
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		resultDTO.setSuccess(true);
+		try{
+			Map<String,Object> result = new HashMap<String,Object>();
+			Map<Object, Object> data = requestDTO.getData();
+			resultDTO.setSuccess(true);
+			Object object = data.get("page");
+			PageDto page = new PageDto();
+			if(null != object){
+				page = ToolGson.GsonToBean(object.toString(), PageDto.class);
+			}
+			List<FilterDTO> fitler = requestDTO.getFitler();
+			List<SortDTO> sort = requestDTO.getSort();
+			Map<String,Object> param = new HashMap<String, Object>();
+			param.put("contextDTO", contextDTO);
+			param.put("filters", fitler);
+			param.put("sorts", sort);
+			param.put("columns", ToolJfinalSql.buildSelectSql(ImportLogModel.class, "",""));
+			param.put("data", data);
+			String gridHeads = getSqlByBeetl("winbins.import.searchLogHead",param);
+			String gridLists = getSqlByBeetl("winbins.import.searchLogList",param);
+			Page<Record> paginate = Db.paginate(contextDTO,page.getRowStart() , page.getLimit(),gridHeads ,gridLists);
+			List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(paginate.getList());
+			result.put("items", recordListConvert);
+			result.put("currentPage", paginate.getPageNumber());
+			result.put("limit", paginate.getPageSize());
+			int totalPages = paginate.getTotalPage();
+			if(totalPages == 0)totalPages = 1;
+			result.put("totalPages", totalPages);
+			result.put("totalCount", paginate.getTotalRow());
+			reBuildPageResult(contextDTO,result);
+			resultDTO.setData(result);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	*/}
+	
+	public ResultDTO newListNewImportLog(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		resultDTO.setSuccess(true);
+		try{
+			Map<String,Object> result = new HashMap<String,Object>();
+			Map<Object, Object> data = requestDTO.getData();
+			resultDTO.setSuccess(true);
+			Object object = data.get("page");
+			PageDto page = new PageDto();
+			if(null != object){
+				page = ToolGson.GsonToBean(object.toString(), PageDto.class);
+			}
+			List<FilterDTO> fitler = requestDTO.getFitler();
+			List<SortDTO> sort = requestDTO.getSort();
+			Map<String,Object> param = new HashMap<String, Object>();
+			param.put("contextDTO", contextDTO);
+			param.put("filters", fitler);
+			param.put("sorts", sort);
+			param.put("columns", ToolJfinalSql.buildSelectSql(ImportLogDetailModel.class, "",""));
+			param.put("data", data);
+			String gridHeads = getSqlByBeetl("winbons.import.searchLogDetailHead",param);
+			String gridLists = getSqlByBeetl("winbons.import.searchLogDetailList",param);
+			Page<Record> paginate = Db.paginate(contextDTO,page.getRowStart() , page.getLimit(),gridHeads ,gridLists);
+			List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(paginate.getList());
+			result.put("items", recordListConvert);
+			result.put("currentPage", paginate.getPageNumber());
+			result.put("limit", paginate.getPageSize());
+			int totalPages = paginate.getTotalPage();
+			if(totalPages == 0)totalPages = 1;
+			result.put("totalPages", totalPages);
+			result.put("totalCount", paginate.getTotalRow());
+			reBuildPageResult(contextDTO,result);
+			resultDTO.setData(result);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+
+	@Override
+	public void reUpdateCreateSearchView(List<Map<String, Object>> list) {
+		
+	}
+
+}

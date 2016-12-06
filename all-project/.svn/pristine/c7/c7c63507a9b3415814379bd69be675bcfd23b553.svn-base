@@ -1,0 +1,13 @@
+package saas.winbons.mq;
+
+import org.springframework.context.ApplicationEvent;
+
+public class CustomerImportEvent extends ApplicationEvent {
+
+	private static final long serialVersionUID = 1842965037940777332L;
+
+	public CustomerImportEvent(Object source) {
+		super(source);
+	}
+
+}

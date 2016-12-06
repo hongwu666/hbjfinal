@@ -1,0 +1,33 @@
+package saas.winbons.email.job;
+
+import java.util.List;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+public class EmailMonitorRepair {
+	
+	public void repairUpgrade(){
+		String sql = "SELECT emailAccountId FROM `t_monitor_email_receive_logs` GROUP BY emailAccountId";
+		
+		String sql2 = "SELECT emailAccountId FROM `t_monitor_email_receive_logs` where isOk = 'Y' GROUP BY emailAccountId";
+		List<Record> find = Db.find(null, sql);
+		List<Record> find2 = Db.find(null, sql2);
+		for(Record r : find){
+			boolean exist = false;
+			for(Record r2 : find2){
+				if(r.getLong("emailAccountId").equals(r2.getLong("emailAccountId"))){
+					exist = true;
+					break;
+				}
+			}
+			if(!exist){
+				Db.update(null, "delete from t_monitor_email_receive_logs where emailAccountId = ?",r.getLong("emailAccountId"));
+				Db.update(null, "delete from t_monitor_email_account where emailAccountId = ?",r.getLong("emailAccountId"));
+			}
+		}
+		
+		
+	}
+
+}

@@ -1,0 +1,37 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: IResourceRelease.java 
+ * @Package saas.framework.cache 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2015年2月10日 下午5:02:41 
+ * @version 1.0 
+ */
+
+package saas.framework.cache;
+
+/**
+ * @ClassName: IResourceRelease
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2015年2月10日 下午5:02:41
+ */
+
+public interface IResourceRelease {
+
+	/**
+	 * 
+	 * @Title: releaseResource
+	 * @Description:释放缓存信息
+	 * @param 设定文件
+	 * @return void 返回类型
+	 * @throws
+	 * @date 2015年2月10日 下午5:02:54
+	 */
+	public void releaseResource();
+}

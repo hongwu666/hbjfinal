@@ -1,0 +1,40 @@
+package saas.winbons.framework.nosql;
+
+import java.util.Date;
+
+import org.springframework.context.ApplicationListener;
+import org.springframework.data.mongodb.core.mapping.event.BeforeSaveEvent;
+
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.utils.CrmContext;
+
+import com.mongodb.DBObject;
+
+public class DefaultBeforeSaveEvent<E> implements ApplicationListener<BeforeSaveEvent<E>> {
+
+	@Override
+	public void onApplicationEvent(BeforeSaveEvent<E> event) {
+		DBObject dbObject = event.getDBObject();
+		dbObject.removeField("_class");
+		Date now = new Date();
+		ContextDTO context = CrmContext.getContext();
+		if (!dbObject.containsField("createDate") || dbObject.get("createDate") == null) {
+			dbObject.put("createDate", now);
+		}
+		if (!dbObject.containsField("createBy") || dbObject.get("createBy") == null) {
+			dbObject.put("createBy", context.getUserId());
+		}
+		if (!dbObject.containsField("dbid") && context.getDbId() != null) {
+			dbObject.put("dbid", context.getDbId());
+		}
+		if (!dbObject.containsField("updatedDate") || dbObject.get("updatedDate") == null) {
+			dbObject.put("updatedDate", now);
+		}
+		if (!dbObject.containsField("updatedBy") || dbObject.get("updatedBy") == null) {
+			dbObject.put("updatedBy", context.getUserId());
+		}
+		
+		
+	}
+
+}

@@ -1,0 +1,146 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: Address.java 
+ * @Package saas.crm.dynamic.model 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年11月10日 下午2:58:47 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.model;
+
+import java.io.Serializable;
+
+/**
+ * @ClassName: Address
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年11月10日 下午2:58:47
+ */
+
+public class Location implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private double latitude;
+
+	private double longitude;
+
+	private String name;
+
+	private String locationAddress;
+	
+	private String mapImageUrl;
+
+	/**
+	 * @return the locationAddress
+	 */
+
+	public String getLocationAddress() {
+
+		return locationAddress;
+	}
+
+	/**
+	 * @param locationAddress
+	 *            the locationAddress to set
+	 */
+
+	public void setLocationAddress(String locationAddress) {
+
+		this.locationAddress = locationAddress;
+	}
+
+	/**
+	 * @return the latitude
+	 */
+
+	public double getLatitude() {
+
+		return latitude;
+	}
+
+	/**
+	 * @param latitude
+	 *            the latitude to set
+	 */
+
+	public void setLatitude(double latitude) {
+
+		this.latitude = latitude;
+	}
+
+	/**
+	 * @return the longitude
+	 */
+
+	public double getLongitude() {
+
+		return longitude;
+	}
+
+	/**
+	 * @param longitude
+	 *            the longitude to set
+	 */
+
+	public void setLongitude(double longitude) {
+
+		this.longitude = longitude;
+	}
+
+	/**
+	 * @return the name
+	 */
+
+	public String getName() {
+
+		return name;
+	}
+
+	/**
+	 * @param name
+	 *            the name to set
+	 */
+
+	public void setName(String name) {
+
+		this.name = name;
+	}
+
+	public Location(double latitude, double longitude, String name) {
+		this.latitude = latitude;
+		this.longitude = longitude;
+		this.name = name;
+	}
+
+	public Location() {
+	}
+
+	public Location(double latitude, double longitude, String name, String address) {
+		this.latitude = latitude;
+		this.longitude = longitude;
+		this.name = name;
+		this.locationAddress = address;
+	}
+
+	/** 
+	 * @return the mapImageUrl 
+	 */
+	public String getMapImageUrl() {
+		return mapImageUrl;
+	}
+
+	/** 
+	 * @param mapImageUrl the mapImageUrl to set 
+	 */
+	public void setMapImageUrl(String mapImageUrl) {
+		this.mapImageUrl = mapImageUrl;
+	}
+}

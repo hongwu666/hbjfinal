@@ -1,0 +1,7 @@
+package saas.winbons.dubbo.api.competitor;
+
+import saas.winbons.dubbo.api.ApiService;
+
+public interface ICompetitorService extends ApiService {
+
+}

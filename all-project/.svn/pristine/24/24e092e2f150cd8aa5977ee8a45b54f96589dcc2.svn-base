@@ -1,0 +1,37 @@
+package saas.framework.cache;
+
+/**
+ * 
+ * @ClassName: CacheWithLoader
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author yxx
+ * @date 2014年2月24日 下午3:22:02
+ * @param <K>
+ * @param <V>
+ */
+public abstract class CacheWithLoader<K, V> implements ICache<K, V> {
+	protected DataLoader<K, V> cacheLoader;
+
+	protected String cacheName;
+
+	/**
+	 * @param cacheLoader
+	 */
+	protected CacheWithLoader(DataLoader<K, V> cacheLoader) {
+		super();
+		this.cacheLoader = cacheLoader;
+	}
+
+	/**
+	 * 
+	 * 
+	 * @param cacheLoader
+	 * @param cacheName
+	 */
+
+	public CacheWithLoader(DataLoader<K, V> cacheLoader, String cacheName) {
+		super();
+		this.cacheLoader = cacheLoader;
+		this.cacheName = cacheName;
+	}
+}

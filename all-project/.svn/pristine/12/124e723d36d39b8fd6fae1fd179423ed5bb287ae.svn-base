@@ -1,0 +1,34 @@
+package saas.crm.base.enumtype;
+
+/***
+ * 系统消息类型
+ * @company winbons
+ * @author H.Huang
+ * @date 2014年11月11日
+ */
+public enum NotifyType {
+
+	scheduled,//任务
+	email ,//邮件
+	alter,//别人@我的
+	alter_like,	//别人点赞的
+	alter_comment,	//别人评论我的
+	alter_reply,//别人回复我的
+	alter_dynamic,//我关注的新动态
+	examine, //审批
+	customer_pool,	// 公海客户,
+	workreport,//工作报告
+	/*---------新增---------------*/
+	leads,//线索
+	contacter,//联系人
+	opportunity, //商机
+	contract, //合同
+	feedback, //意见反馈
+	calendar,
+	user_add,
+	user_update,
+	user_delete,
+	near_customer,//附近客户的通知类型 by lihaifeng
+	version_announcement
+	;
+}

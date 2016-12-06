@@ -1,0 +1,588 @@
+package saas.winbons.dubbo.service;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import saas.crm.dynamic.manager.IAttentionManager;
+import saas.crm.dynamic.manager.IDynamicManager;
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.data.model.ListItem;
+import saas.winbons.data.model.security.User;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.PageDto;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.api.SortDTO;
+import saas.winbons.dubbo.web.dto.PageResult;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.dubbo.web.dto.UiGridColumnVO;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolString;
+import saas.winbons.provider.UiSettingServiceImpl;
+
+import com.jfinal.kit.StrKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Model;
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.Record;
+
+
+public abstract class AbstractCommonService extends BaseService {
+	
+	
+	@Autowired
+	protected IDynamicManager dynamicManager;
+	
+	@Autowired
+	protected IAttentionManager attentionManager;
+	
+	public abstract Class<? extends Model<?>> getModelClass();
+	public abstract Class<? extends IEnumFormat> getFormatClass();
+
+	/**
+	 * 
+	 * @Title: getGridId
+	 * @Description: 获得表格的ID
+	 * @param @return 设定文件
+	 * @return String 返回类型
+	 * @throws
+	 * @date 2014年6月30日 下午5:38:13
+	 */
+	public abstract String getGridId();
+	
+	public abstract String getTableName();
+	
+
+	protected void rebuildChildDept(RequestDTO requestDTO){
+		List<FilterDTO> fitler = requestDTO.getFitler();
+		for(FilterDTO filterDTO : fitler){
+			if(filterDTO.getProperty().equals("dept_id")){
+				Object[] values = filterDTO.getValues();
+				List<String> ids = new ArrayList<String>();
+				for(Object o : values){
+					ids.add(ToolString.toString(o));
+				}
+				Map<String,Object> map = new HashMap<String,Object>();
+				List<FilterDTO> tempFitler = new ArrayList<FilterDTO>();
+				FilterDTO filterDTO2 = new FilterDTO("parent_id", "","in");
+				filterDTO2.setValues(values);
+				tempFitler.add(filterDTO2);
+				FilterDTO filterDTO3 = new FilterDTO("is_valid", "N");
+				tempFitler.add(filterDTO3);
+				map.put("filters", tempFitler);
+				String sqlByBeetl = getSqlByBeetl("winbons.department.getDeparts",map);
+				List<Record> find = Db.find(requestDTO.getContextDTO(), sqlByBeetl);
+				for(Record record : find){
+					if(!ids.contains(ToolString.toString(record.get("id")))){
+						ids.add(ToolString.toString(record.get("id")));
+					}
+				}
+				filterDTO.setValues(ids.toArray(new String[0]));
+			}
+		}
+	}
+
+	
+	protected FilterDTO getManageDepartIds(RequestDTO requestDTO) throws Exception{
+		List<FilterDTO> fitler = requestDTO.getFitler();
+		boolean existForm = true;
+		boolean existTo = true;
+		for(FilterDTO f : fitler){
+			if(f.getProperty().equals("created_date") && (f.getOperation().equals(">=") || f.getOperation().equals(">"))){
+				//existForm = true;
+			}else if(f.getProperty().equals("created_date") && (f.getOperation().equals("<=") || f.getOperation().equals("<"))){
+				//existTo = true;
+			}
+		}
+		if(!existForm || !existTo){
+			throw new Exception("请输入时间范围");
+		}
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Long currentOwnerId = contextDTO.getUserId();
+		Map<String,Object> tempMap = new HashMap<String,Object>();
+		tempMap.put("userId", currentOwnerId);
+		String sqlByBeetl = getSqlByBeetl("winbons.department.getManagedDeparts",tempMap);
+		List<Record> find = Db.find(contextDTO, sqlByBeetl);
+		List<String> departCodes = new ArrayList<String>();
+		User findById = User.dao.findById(contextDTO, contextDTO.getDbId(),contextDTO.getUserId());
+		List<Long> manageDeptIds = new ArrayList<Long>();
+		manageDeptIds.add(-20L);
+		for(Record record : find){
+			departCodes.add(record.getStr("code"));
+		}
+		tempMap.clear();
+		for(String code : departCodes){
+			tempMap.put("code", code);
+			sqlByBeetl = getSqlByBeetl("winbons.department.getDepartsByCode",tempMap);
+			find = Db.find(contextDTO, sqlByBeetl);
+			for(Record record : find){
+				if(!manageDeptIds.contains(record.getLong("id"))){
+					manageDeptIds.add(record.getLong("id"));
+				}
+			}
+			
+		}
+		
+		FilterDTO filterDTO = new FilterDTO("dept_id", "", "in");
+		filterDTO.setValues(manageDeptIds.toArray(new Long[0]));
+		return filterDTO;
+		
+	}
+	
+	
+	protected FilterDTO getManageUserIds(RequestDTO requestDTO) throws Exception{
+		List<FilterDTO> fitler = requestDTO.getFitler();
+		boolean existForm = true;
+		boolean existTo = true;
+		for(FilterDTO f : fitler){
+			if(f.getProperty().equals("created_date") && (f.getOperation().equals(">=") || f.getOperation().equals(">"))){
+				//existForm = true;
+			}else if(f.getProperty().equals("created_date") && (f.getOperation().equals("<=") || f.getOperation().equals("<"))){
+				//existTo = true;
+			}
+		}
+		if(!existForm || !existTo){
+			throw new Exception("请输入时间范围");
+		}
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Long currentOwnerId = contextDTO.getUserId();
+		Map<String,Object> tempMap = new HashMap<String,Object>();
+		tempMap.put("userId", currentOwnerId);
+		String sqlByBeetl = getSqlByBeetl("winbons.department.getManagedDeparts",tempMap);
+		List<Record> find = Db.find(contextDTO, sqlByBeetl);
+		List<String> departCodes = new ArrayList<String>();
+		User findById = User.dao.findById(contextDTO, contextDTO.getDbId(),contextDTO.getUserId());
+		List<Long> manageDeptIds = new ArrayList<Long>();
+		//manageDeptIds.add(findById.getLong("user_id"));
+		List<Long> userIds = new ArrayList<Long>();
+		userIds.add(findById.getLong("user_id"));
+		for(Record record : find){
+			departCodes.add(record.getStr("code"));
+		}
+		tempMap.clear();
+		for(String code : departCodes){
+			tempMap.put("code", code);
+			sqlByBeetl = getSqlByBeetl("winbons.department.getDepartsByCode",tempMap);
+			find = Db.find(contextDTO, sqlByBeetl);
+			for(Record record : find){
+				if(!manageDeptIds.contains(record.getLong("id"))){
+					manageDeptIds.add(record.getLong("id"));
+				}
+			}
+		}
+		if(manageDeptIds.size() > 0){
+			Map<String,Object> userMap = new HashMap<String,Object>();
+			List<FilterDTO> userFitlers = new ArrayList<FilterDTO>();
+			userFitlers.add(new FilterDTO("is_deleted", "N"));
+			userMap.put("filters", userFitlers);
+			userMap.put("columns",  ToolJfinalSql.buildSelectSql(User.class, "",""));
+			sqlByBeetl = getSqlByBeetl("winbins.user.selectUsers",userMap);
+			find = Db.find(contextDTO, sqlByBeetl);
+			for(Record record : find){
+				if(!userIds.contains(record.getLong("user_id")) && manageDeptIds.contains(record.getLong("department_id"))){
+					userIds.add(record.getLong("user_id"));
+				}
+			}
+		}
+			
+		FilterDTO filterDTO = new FilterDTO("owner_id", "", "in");
+		filterDTO.setValues(userIds.toArray(new Long[0]));
+		return filterDTO;
+		
+	}
+	
+	public ResultDTO listView(RequestDTO requestDTO){
+		Map<Object, Object> requestDTOData = requestDTO.getData();
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Page<Record> findData = findData(requestDTO.getContextDTO(),new SimulationHttpServletRequest(requestDTOData));
+		Object data = ToolModel.recordListConvert(findData.getList());
+		PageResult result = null;
+		if (findData.getPageNumber() == 1 && !contextDTO.isMobileRequest()) {
+			RequestDTO getUserGridColumns = new RequestDTO(contextDTO, "getUserGridColumns");
+			getUserGridColumns.put("gridId", getGridId());
+			UiGridColumnVO[] uiGridColumnVOs = UiSettingServiceImpl.service.getUserGridColumns(getUserGridColumns);
+			result = buildPageResult(contextDTO,data, uiGridColumnVOs, findData.getTotalRow(),
+					findData.getPageSize() , findData.getPageNumber());
+		} else {
+			result = buildPageResult(contextDTO,data, null, findData.getTotalRow(),
+					findData.getPageSize(), findData.getPageNumber());
+		}
+		ResultDTO resultDTO = new ResultDTO();
+		resultDTO.setData(result);
+		resultDTO.setSuccess(true);
+		return resultDTO;
+	}
+
+	public abstract AbstractCommonService getService();
+	
+	public UiGridColumnVO[] changColumnToVO(List<Map<String, Object>> columns,ContextDTO contextDTO) {
+		UiGridColumnVO[] uiGridColumnVO = new UiGridColumnVO[columns.size()];
+		int i = 0;
+		for(Map<String, Object> map : columns){
+			UiGridColumnVO vo = new UiGridColumnVO();
+			Object width = map.get("width");
+			if(null == width || Integer.parseInt(width.toString()) == 0) {
+				width = 160;// 默认
+			}
+			vo.setWidth(Integer.parseInt(width.toString()));
+			vo.setId(Long.parseLong(map.get("id").toString()));
+			vo.setAlign(ToolString.toString(map.get("align")));
+			String lable = ToolString.toString(map.get("label"));
+			vo.setName(lable);
+			if (ToolString.isEmptyString(lable)) {
+				vo.setName(getIl8nMessage(ToolString.toString(map.get("title"))));
+			}
+			String fieldName = ToolString.toString(map.get("name"));
+			vo.setField(fieldName);
+			vo.setDisplay(DataConstant.YES_OR_NO_YES.equals(ToolString.toString(map.get("display"))));
+			vo.setIsSort(DataConstant.YES_OR_NO_YES.equals(ToolString.toString(map.get("sortable"))));
+			vo.setFieldType(ToolString.toString(map.get("field_type_ex")));
+			vo.setColumnName(ToolString.toString(map.get("column_field_name")));
+			Map<String,Object> param = new HashMap<String,Object>();
+			param.put("contextDTO", contextDTO);
+			if(!ToolString.isEmptyString(vo.getColumnName())){
+				vo.setField(vo.getColumnName());
+			}
+			
+			if(vo.getFieldType().equals("combobox")){
+				String comboxid = ToolString.toString(map.get("comboxid"));
+				if(!ToolString.isEmptyString(comboxid)){
+					List<Map<String, Object>> findByListId = ListItem.dao.findByListId(contextDTO, Long.parseLong(comboxid));
+					vo.setValues(findByListId.toArray(new Map[0]));
+				}
+				vo.setFormatter("winbonsListFormat");
+			}else if(vo.getFieldType().equals("fdt")){
+				vo.setFormatter("winbonsFdtFormat");
+			}else if(vo.getFieldType().equals("fdate")){
+				vo.setFormatter("winbonsFdateFormat");
+			}else if(vo.getFieldType().equals("ftime")){
+				vo.setFormatter("winbonsFtimeFormat");
+			}else if(vo.getFieldType().equals("special")){
+				String fieldTypeValue = ToolString.toString(map.get("field_type_value"));
+				if(!ToolString.isEmptyString(fieldTypeValue)){
+					String sqlByBeetl = getSqlByBeetl("winbins.special." + fieldTypeValue,param);
+					List<Record> find = Db.find(contextDTO, sqlByBeetl);
+					vo.setValues(ToolModel.recordListConvert(find).toArray(new Map[0]));
+					vo.setFormatter("winbonsListFormat");
+				}
+			}
+			uiGridColumnVO[i++] = vo;
+		}
+		return uiGridColumnVO;
+		
+	}
+	
+	public PageResult buildPageResult(ContextDTO contextDTO,Object data, Object columnModel, long totalCount, int limit, int currentPage) {
+		PageResult pageResult = new PageResult(currentPage, totalCount, limit, data);
+		if (columnModel != null){
+			pageResult.setColumnModel(columnModel);
+		}
+		return pageResult;
+	}
+	
+	protected String tableJoin(ContextDTO contextDTO) {
+		return ToolJfinalSql.getTableName(getModelClass());
+	}
+	
+	protected String buildSelectSql() {
+		String buildSelectSql = "select ";
+		buildSelectSql += ToolJfinalSql.buildSelectSql(getModelClass(), "",null,null);
+		return buildSelectSql;
+	}
+	
+	public Page<Record> findData(ContextDTO contextDTO,SimulationHttpServletRequest request) {
+		PageDto page = new PageDto();
+		String curpage = request.getParameter("curpage");
+		String pageSize = request.getParameter("pageSize");
+		int Page = 1;
+		if(ToolString.isEmptyString(curpage)){
+			page.setRowStart(0);
+		}else{
+			Page = Integer.parseInt(curpage);
+			page.setRowStart(Integer.parseInt(curpage));
+		}
+	
+		if(ToolString.isEmptyString(pageSize)){
+			page.setLimit(20);
+		}else{
+			page.setLimit(Integer.parseInt(pageSize));
+		}
+		Map<String, Object> param = new HashMap<String, Object>();
+		param.put("tableName", tableJoin(contextDTO));
+		param.put("sql", buildFilterItem(contextDTO,request).toString());
+		Page<Record> paginate = Db.paginate(contextDTO,Page , page.getLimit(), buildSelectSql(),getSqlByBeetl("winbons.common.searchBySql",param));
+		paginate = new Page<Record>(paginate.getList(), Page, page.getLimit(), paginate.getTotalPage(), paginate.getTotalRow());
+		return paginate;
+	}
+	
+	public abstract FilterItemList buildFilterItem(ContextDTO contextDTO,SimulationHttpServletRequest request);
+	
+	protected void entityFormat(ContextDTO contextDTO,Map<String, Object> map){
+		
+	}
+	
+	public Map<String, Object> getModel(RequestDTO requestDTO) {
+		Object object = requestDTO.get("id");
+		String id = object.toString();
+		try{
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			String buildSelectSql = "select ";
+			buildSelectSql += ToolJfinalSql.buildSelectSql(getModelClass(), "","");
+			Record findFirst = Db.findFirst(contextDTO, buildSelectSql + " from " + getTableName() + " where dbid = ? and id = ? limit 0,1",contextDTO.getDbId(),id);
+			return findFirst.getColumns();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public abstract String getGridHeadSql();
+	
+	public abstract String getGridSql();
+	
+	public void reBuildPageResult(ContextDTO contextDTO,Map<String,Object> result){
+		
+	}
+	
+	public String reListBeetl(ContextDTO contextDTO,String gridSql,Map<String,Object> param){
+		return getSqlByBeetl(gridSql,param);
+	}
+	
+	public void reBuildGridHeader(ContextDTO contextDTO,UiGridColumnVO[] changColumnToVO){
+		
+	}
+	
+	public ResultDTO newListView(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			Map<String,Object> result = new HashMap<String,Object>();
+			Map<Object, Object> data = requestDTO.getData();
+			resultDTO.setSuccess(true);
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Map<String,Object> param = new HashMap<String, Object>();
+			List<FilterDTO> fitler = requestDTO.getFitler();
+			List<SortDTO> sort = requestDTO.getSort();
+			param.put("contextDTO", contextDTO);
+			param.put("filters", fitler);
+			param.put("sorts", sort);
+			param.put("columns", ToolJfinalSql.buildSelectSql(getModelClass(), "a",""));
+			param.put("data", data);
+			String gridHeads = getSqlByBeetl(getGridHeadSql(),param);
+			Object object = data.get("page");
+			Object reloadHead = data.get("reloadHead");
+			PageDto page = new PageDto();
+			if(null != object){
+				page = ToolGson.GsonToBean(object.toString(), PageDto.class);
+			}
+			if (page.getRowStart() == 1 && ToolString.isEmptyString(reloadHead)) {
+				RequestDTO getUserGridColumns = new RequestDTO(contextDTO, "getUserGridColumns");
+				getUserGridColumns.put("gridId", getGridId());
+				UiGridColumnVO[] changColumnToVO = UiSettingServiceImpl.service.getUserGridColumns(getUserGridColumns);
+				reBuildGridHeader(contextDTO,changColumnToVO);
+				result.put("columnModel", changColumnToVO);	
+			}
+			Page<Record> paginate = Db.paginate(contextDTO,page.getRowStart() , page.getLimit(), gridHeads,reListBeetl(contextDTO,getGridSql(),param));
+			List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(paginate.getList());
+			result.put("items", recordListConvert);
+			result.put("currentPage", paginate.getPageNumber());
+			result.put("limit", paginate.getPageSize());
+			int totalPages = paginate.getTotalPage();
+			if(totalPages == 0)totalPages = 1;
+			result.put("totalPages", totalPages);
+			result.put("totalCount", paginate.getTotalRow());
+			reBuildPageResult(contextDTO,result);
+			resultDTO.setData(result);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	public ResultDTO newDetail(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			resultDTO.setData(getModel(requestDTO));
+			resultDTO.setSuccess(true);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	public abstract void rebuildCreateSearchView(RequestDTO requestDTO);
+	
+	public abstract void reUpdateCreateSearchView(List<Map<String, Object>> list);
+	
+	public ResultDTO newCreateSearchView(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			requestDTO.putFitler(new FilterDTO("table_name", getTableName()));
+			rebuildCreateSearchView(requestDTO);
+			List<Map<String, Object>> definitionField = UiSettingServiceImpl.service.getDefinitionField(requestDTO);
+			reUpdateCreateSearchView(definitionField);
+			resultDTO.setSuccess(true);
+			resultDTO.setData(definitionField);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	
+	public ResultDTO newCreateView(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		try{
+			resultDTO.setSuccess(true);
+			RequestDTO uiSettingRequestDTO = new RequestDTO();
+			uiSettingRequestDTO.setContextDTO(contextDTO);
+			uiSettingRequestDTO.putFitler(new FilterDTO("table_name", getTableName()));
+			List<Map<String, Object>> definitionField = UiSettingServiceImpl.service.getDefinitionField(uiSettingRequestDTO);
+			String id = requestDTO.get("id");
+			boolean isCreate = (ToolString.isEmptyString(id));
+			checkNotDisplayFields(contextDTO,definitionField, isCreate);
+			Map<String, Object> entity = null;
+			Map<String, Object> mapInfo = new HashMap<String, Object>();
+			if (!isCreate) {
+				entity = getModel(requestDTO);
+				entityFormat(contextDTO,entity);
+				if (contextDTO.isMobileRequest()){
+					mapInfo.put("salesTeamNum", new Integer(0));
+					mapInfo.put("", new Integer(0));
+				}
+			}
+			mapInfo.put("entity", entity);
+			mapInfo.put("items", definitionField);
+			resultDTO.setData(mapInfo);
+			resultDTO.setSuccess(true);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+		
+	}
+	
+/*	public Map<String, Object> getModel(ContextDTO contextDTO,Long id) {
+		Map<String,Object> params = new HashMap<String, Object>();
+		List<FilterDTO> listFilterDTO = new ArrayList<FilterDTO>();
+		listFilterDTO.add(new FilterDTO("dbid", contextDTO.getDbId()));
+		listFilterDTO.add(new FilterDTO("id", id));
+		params.put("filters", listFilterDTO);
+		params.put("tableName", getTableName());
+		String sql = ToolSqlXml.getSql("winbons.common.search", params);
+		String buildSelectSql = "select ";
+		buildSelectSql += ToolJfinalSql.buildSelectSql(getModelClass(), "","");
+		return Db.findFirst(contextDTO, buildSelectSql + sql).getColumns();
+	}*/
+	
+	private void checkNotDisplayFields(ContextDTO contextDTO,List<Map<String,Object>> definedFeilds, boolean isCreate) {
+		String[] filedsName = getNotDisplayFields(contextDTO,isCreate);
+		Iterator<Map<String,Object>> deIterator = definedFeilds.iterator();
+		while (deIterator.hasNext()) {
+			Map<String,Object> type = deIterator.next();
+			String mapping = ToolString.toString(type.get("column_field_name"));
+			boolean flag = ArrayUtils.contains(filedsName, mapping);
+			if (flag)
+				deIterator.remove();
+		}
+	}
+	
+	public String[] getNotDisplayFields(ContextDTO contextDTO,boolean isCreate) {
+		return null;
+	};
+	
+	public ResultDTO newAttention(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		try{
+			
+			
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	public ResultDTO newUpdateProperty(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		try{
+			Object object = requestDTO.get("jsonObj");
+			Map<String,Object> fromJson = ToolGson.GsonToBean(object.toString(), Map.class);
+			Model<?> model = getModelClass().newInstance();
+			model.put(fromJson);
+			model.update(contextDTO);
+			resultDTO.setSuccess(true);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	public ResultDTO newSave(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			resultDTO.setSuccess(true);
+			Map<Object, Object> data = requestDTO.getData();
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Map<String,Object> mapToModelMap = ToolModel.mapToModelMap(data, StrKit.firstCharToLowerCase(getModelClass().getSimpleName()));
+			Model<?> model = getModelClass().newInstance();
+			model.put(mapToModelMap);
+			model.save(contextDTO);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+		
+	}
+	
+	public ResultDTO newDelete(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			String ids = requestDTO.get("id").toString();
+			
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	public String getValueFromItemMap(ContextDTO contextDTO,Long id,Map<Long, String> items){
+		if(id == null)	{return null;}
+		String name = items.get(id);
+		if(name == null){
+			name = ListItem.dao.getListNameById(contextDTO,id);
+			if(name != null){
+				items.put(id, name);
+			}
+		}
+		return name;
+	} 
+}

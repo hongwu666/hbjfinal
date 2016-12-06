@@ -1,0 +1,20 @@
+package saas.framework.cache.redis.cmds;
+
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
+import saas.framework.cache.AbstractRedisCmd;
+@Component
+public class INCRCmd extends AbstractRedisCmd {
+
+	public String getCmdId() {
+		return INCR_CMD;
+	}
+
+	public Object execteBinary(byte[] key, List<byte[]> parmas,Object[] extraParam) {
+		Long incrVal = getJedis().incr(key);
+		return incrVal;
+	}
+
+}

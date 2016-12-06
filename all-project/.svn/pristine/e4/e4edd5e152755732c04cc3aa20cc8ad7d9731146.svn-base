@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- - Copyright 1999-2011 Alibaba Group. - - Licensed under the Apache License, 
+	Version 2.0 (the "License"); - you may not use this file except in compliance 
+	with the License. - You may obtain a copy of the License at - - http://www.apache.org/licenses/LICENSE-2.0 
+	- - Unless required by applicable law or agreed to in writing, software - 
+	distributed under the License is distributed on an "AS IS" BASIS, - WITHOUT 
+	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the 
+	License for the specific language governing permissions and - limitations 
+	under the License. -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+	http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>classpath:dubbo.properties</value>
+			</list>
+		</property>
+	</bean>
+
+	<dubbo:application name="market-provider" owner="programmer" organization="dubbox" />
+
+	<dubbo:registry address="${registryAddr}" />
+
+	<dubbo:protocol id="dubbo1" name="dubbo" port="${dubbo1Port}" serialization="kryo" optimizer="saas.winbons.dubbo.serialize.SerializationOptimizerImpl" />
+	<dubbo:protocol id="dubbo2" name="dubbo" port="${dubbo2Port}" serialization="compactedjava" />
+
+	<!-- use tomcat server -->
+	<!-- <dubbo:protocol name="rest" port="8888" threads="500" contextpath="services" 
+		server="tomcat" accepts="500" extension="com.alibaba.dubbo.rpc.protocol.rest.support.LoggingFilter"/> 
+		<dubbo:service interface="saas.winbons.dubbo.api.market.IMarketRestService" 
+		ref="marketRestService" protocol="rest" /> <bean id="marketRestService" class="saas.winbons.provider.rest.MarketRestServiceImpl"> 
+		<property name="marketService" ref="marketService"/> </bean> -->
+
+	<!-- <dubbo:service interface="saas.winbons.dubbo.api.ApiService" ref="marketService" group="marketService" protocol="dubbo1" />
+	<bean id="marketService" class="saas.winbons.provider.MarketServiceImpl" />
+
+	<dubbo:service interface="saas.winbons.dubbo.api.ApiService" ref="marketMinaService" group="marketMinaService" protocol="dubbo2" />
+	<bean id="marketMinaService" class="saas.winbons.provider.mina.MarketMinaServiceImpl">
+		<property name="marketService" ref="marketService" />
+	</bean>
+ -->
+	<!-- 日程 -->
+	<!-- <dubbo:service interface="saas.winbons.dubbo.api.ApiService" ref="calendarService" group="calendarService" protocol="dubbo1" /> -->
+	<bean id="calendarService" class="saas.winbons.provider.CalendarServiceImpl" />
+	<dubbo:service interface="saas.winbons.dubbo.api.ApiService" ref="calendarMinaService" group="calendarMinaService" protocol="dubbo2" />
+	<bean id="calendarMinaService" class="saas.winbons.provider.mina.CalendarMinaServiceImpl">
+		<property name="calendarService" ref="calendarService" />
+	</bean>
+
+    <!-- 客户统计 -->
+	<bean id="analysisService" class="saas.winbons.provider.AnalysisServiceImpl" />
+	<dubbo:service interface="saas.winbons.dubbo.api.ApiService" ref="analysisMinaService" group="analysisMinaService" protocol="dubbo2" />
+	<bean id="analysisMinaService" class="saas.winbons.provider.mina.AnalysisMinaServiceImpl">
+		<property name="analysisService" ref="analysisService" />
+	</bean>
+	
+	<!-- 
+	<bean id="customerService" class="saas.winbons.provider.CustomerServiceImpl" />
+	<dubbo:service interface="saas.winbons.dubbo.api.ApiService" ref="customerMinaService" group="customerMinaService" protocol="dubbo2" />
+	<bean id="customerMinaService" class="saas.winbons.provider.mina.CustomerMinaServiceImpl">
+		<property name="customerService" ref="customerService" />
+	</bean> -->
+	
+	<!-- 性能监控 -->
+	<!-- <dubbo:monitor address="192.168.2.79:6060" /> -->
+
+
+</beans>

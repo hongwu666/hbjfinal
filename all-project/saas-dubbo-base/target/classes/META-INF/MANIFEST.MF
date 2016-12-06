@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Built-By: Admin
+Build-Jdk: 1.8.0_25
+Specification-Title: saas-base
+Specification-Version: 1.0.0
+Specification-Vendor: WINBONS
+Implementation-Title: saas-base
+Implementation-Version: 1.0.0
+Implementation-Vendor-Id: com.winbons.dubbo
+Implementation-Vendor: WINBONS
+Created-By: Maven Integration for Eclipse
+

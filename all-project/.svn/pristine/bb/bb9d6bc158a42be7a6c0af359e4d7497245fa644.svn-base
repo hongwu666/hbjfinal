@@ -1,0 +1,451 @@
+package saas.winbons.data.constant;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+public final class DataConstant {
+	
+	public static final Pattern DOMAIN_NAME_PATTERN;
+	public static final Pattern EMAIL_ADDRESS_PATTERN;
+	public static final Pattern IP_ADDRESS_PATTERN;
+	public static final Pattern NAME_EMAIL_ADDRESS_PATTERN;
+	public static final Pattern PHONE_PATTERN;
+	public static final Pattern TOP_LEVEL_DOMAIN_PATTERN = Pattern.compile("((aero|arpa|asia|a[cdefgilmnoqrstuwxz])|(biz|b[abdefghijmnorstvwyz])|(cat|com|coop|c[acdfghiklmnoruvxyz])|d[ejkmoz]|(edu|e[cegrstu])|f[ijkmor]|(gov|g[abdefghilmnpqrstuwy])|h[kmnrtu]|(info|int|i[delmnoqrst])|(jobs|j[emop])|k[eghimnrwyz]|l[abcikrstuvy]|(mil|mobi|museum|m[acdghklmnopqrstuvwxyz])|(name|net|n[acefgilopruz])|(org|om)|(pro|p[aefghklmnrstwy])|qa|r[eouw]|s[abcdeghijklmnortuvyz]|(tel|travel|t[cdfghjklmnoprtvwz])|u[agkmsyz]|v[aceginu]|w[fs]|y[etu]|z[amw])");
+	public static final Pattern WEB_URL_PATTERN = Pattern.compile("((?:(http|https|Http|Https):\\/\\/(?:(?:[a-zA-Z0-9\\$\\-\\_\\.\\+\\!\\*\\'\\(\\)\\,\\;\\?\\&\\=]|(?:\\%[a-fA-F0-9]{2})){1,64}(?:\\:(?:[a-zA-Z0-9\\$\\-\\_\\.\\+\\!\\*\\'\\(\\)\\,\\;\\?\\&\\=]|(?:\\%[a-fA-F0-9]{2})){1,25})?\\@)?)?((?:(?:[a-zA-Z0-9][a-zA-Z0-9\\-]{0,64}\\.)+(?:(?:aero|arpa|asia|a[cdefgilmnoqrstuwxz])|(?:biz|b[abdefghijmnorstvwyz])|(?:cat|com|coop|c[acdfghiklmnoruvxyz])|d[ejkmoz]|(?:edu|e[cegrstu])|f[ijkmor]|(?:gov|g[abdefghilmnpqrstuwy])|h[kmnrtu]|(?:info|int|i[delmnoqrst])|(?:jobs|j[emop])|k[eghimnrwyz]|l[abcikrstuvy]|(?:mil|mobi|museum|m[acdghklmnopqrstuvwxyz])|(?:name|net|n[acefgilopruz])|(?:org|om)|(?:pro|p[aefghklmnrstwy])|qa|r[eouw]|s[abcdeghijklmnortuvyz]|(?:tel|travel|t[cdfghjklmnoprtvwz])|u[agkmsyz]|v[aceginu]|w[fs]|y[etu]|z[amw]))|(?:(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[0-9])))(?:\\:\\d{1,5})?)(\\/(?:(?:[a-zA-Z0-9\\;\\/\\?\\:\\@\\&\\=\\#\\~\\-\\.\\+\\!\\*\\'\\(\\)\\,\\_])|(?:\\%[a-fA-F0-9]{2}))*)?(?:\\b|$)");
+
+	static{
+		IP_ADDRESS_PATTERN = Pattern.compile("((25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[0-9]))");
+	    DOMAIN_NAME_PATTERN = Pattern.compile("(((([a-zA-Z0-9][a-zA-Z0-9\\-]*)*[a-zA-Z0-9]\\.)+" + TOP_LEVEL_DOMAIN_PATTERN + ")|" + IP_ADDRESS_PATTERN + ")");
+	    EMAIL_ADDRESS_PATTERN = Pattern.compile("[a-zA-Z0-9\\+\\.\\_\\%\\-]{1,256}\\@[a-zA-Z0-9][a-zA-Z0-9\\-]{0,64}(\\.[a-zA-Z0-9][a-zA-Z0-9\\-\\_]{0,25})+");
+	    NAME_EMAIL_ADDRESS_PATTERN = Pattern.compile("\"(.)*\"( )*<(.)*>");
+	    PHONE_PATTERN = Pattern.compile("(\\+[0-9]+[\\- \\.]*)?(\\([0-9]+\\)[\\- \\.]*)?([0-9][0-9\\- \\.][0-9\\- \\.]+[0-9])");
+	}
+
+	public static final String EMPTY_STRING = "";
+	public static final String SEMICOLON_STRING = ";";
+	public static final String COLON_STRING = ":";
+
+	public static final String TAG_KEY_LEFT_CLOSE = "<";
+	public static final String TAG_KEY_RIGHT_CLOSE = ">";
+
+	public static final String TEMPLATE_KEY_LEFT_CLOSE = "[";
+	public static final String TEMPLATE_KEY_RIGHT_CLOSE = "]";
+
+	public static final String SPECIAL_CHARACTERS_AND = "&amp;"; // &
+	public static final String SPECIAL_CHARACTERS_LEFT_CLOSE = "&lt;"; // <
+	public static final String SPECIAL_CHARACTERS_RIGHT_CLOSE = "&gt;"; // >
+	public static final String SPECIAL_CHARACTERS_DOUBLE_QUOTE = "&#034;"; // "
+	public static final String SPECIAL_CHARACTERS_SINGLE_QUOTE = "&#039;"; // '
+
+	public static final String CHARACTERS_AT = "@";
+
+	public static final String YES_OR_NO_YES = "Y";
+	public static final String YES_OR_NO_NO = "N";
+	public static final char CHAR_DOUBLE_QUOTE = '"';
+	public static final String STRING_CHARACTERS_AND = "&";
+	public static final String STRING_SINGLE_QUOTE = "'";
+	public static final String STRING_DOUBLE_QUOTE = "\"";
+	public static final String STRING_WHITESPACE = " ";
+	public static final String STRING_SEMICOLON = ";";
+	public final static String STRING_COMMA = ",";
+	public final static String STRING_POINT = ".";
+	public final static String VERTICAL_LINE="|";
+	//public final static String WEBSITE_REGEX = "^([^\\/\\.]+?\\..+\\w)$";
+	public final static String WEBSITE_REGEX = "^((http://)?(([0-9a-z_!~*'().&=+$%-]+: )?[0-9a-z_!~*'().&=+$%-]+@)?"
+			+ "(([0-9]{1,3}\\.){3}[0-9]{1,3}"// IP形式的URL- 199.194.52.184
+			+ "|"// 允许IP和DOMAIN（域名）
+			+ "([0-9a-z_!~*'()-]+\\.)*" // 域名- www.
+			+ "([0-9a-z][0-9a-z-]{0,61})?[0-9a-z]\\."// 二级域名
+			+ "[a-z]{2,6})"
+			+ "(:[0-9]{1,4})?" // 端口- :80
+			+ "((/?)|"
+			+ "(/[0-9a-z_!~*'().;?:@&=+$,%#-]+)+/?))$";
+	public final static String CONTACT_REGEX = "^([^%\\'\\\"\\\\])+$";
+	public final static String SECURITY_TYPE_USER = "U";
+	public final static String SECURITY_TYPE_GROUP = "G";
+	public final static String SECURITY_TYPE_ROLE = "R";
+	public final static String SECURITY_TYPE_DIRECTORY = "F";
+	public final static String SECURITY_AUTH_ALLOW = "0";
+	public final static String SECURITY_AUTH_DENY = "1";
+	public final static String SECURITY_AUTH_DONT_CARE = "2";
+	public final static String SECURITY_EMAIL_STATUS_INVALID = "D";
+	public final static String SECURITY_EMAIL_STATUS_VALID = "E";
+	public final static boolean SECURITY_AUTH_DEFAUL = false;
+
+	public final static int OPERATION_TYPE_EQUAL = 0;
+	public final static int OPERATION_OP_TYPE_GT = 1;
+	public final static int OPERATION_OP_TYPE_GE = 2;
+	public final static int OPERATION_OP_TYPE_LT = 3;
+	public final static int OPERATION_OP_TYPE_LE = 4;
+	public final static int OPERATION_OP_TYPE_LIKE = 5;
+	public final static int OPERATION_OP_TYPE_BETWEEN = 6;
+	public final static int OPERATION_OP_TYPE_IN = 7;
+	public final static int OPERATION_OP_TYPE_ISNULL = 8;
+	public final static int OPERATION_OP_TYPE_NOTNULL = 9;
+	public final static int OPERATION_OP_TYPE_NOTIN = 10;
+	public final static int OPERATION_OP_TYPE_NOTEQUAL = 11;
+	
+	//view mode
+	public final static String VIEW_MODE_TILE = "tile";
+	public final static String VIEW_MODE_LIST = "list";
+
+	public final static String MOVE_TYPE_CUT = "T";
+	public final static String MOVE_TYPE_COPY = "C";
+
+	public final static String JUNCTION_AND = "and";
+	public final static String JUNCTION_OR = "or";
+
+	public final static String LANG_ENG = "en";
+	public final static String LANG_CHS = "zh";
+
+	public final static String ASC = "asc";
+	public final static String DESC = "desc";
+
+	public final static String ORDER_UP = "U";
+	public final static String ORDER_DOWN = "D";
+
+	public final static String UNSPECIFIED = "Unspecified";
+
+	// 1-add zero,0-not.for auto increment type
+	public final static String ADD_ZERO_YES = "1";
+	public final static String ADD_ZERO_NOT = "0";
+	// 1-increase,0-decrease.for auto increment type
+	public final static String RISE_INCREMENT = "1";
+	public final static String RISE_DECREMENT = "0";
+
+	public final static String IS_BROWSABLE_YES = "1";
+	public final static String IS_BROWSABLE_NOT = "0";
+	public final static String IS_READABLE_YES = "1";
+	public final static String IS_READABLE_NOT = "0";
+	public final static String IS_HIDDEN_YES = "1";
+	public final static String IS_HIDDEN_NOT = "0";
+
+	public static final String DUMMY_DATE_STRING = "2008-08-08";
+
+	// for default value input method
+	public final static String DEFAUL_VALUE_MENUAL_INPUT = "1";
+	public final static String DEFAUL_VALUE_AUTO_INPUT = "0";
+
+	public final static char AUTH_LEVEL_AUTO_SET_YES = '1';
+	public final static char AUTH_LEVEL_AUTO_SET_NOT = '0';
+	public final static char VERSION_AUTO_INC_YES = '1';
+	public final static char VERSION_AUTO_INC_NOT = '0';
+	public final static char NEED_APPROVE_YES = '1';
+	public final static char NEED_APPROVE_NOT = '0';
+	public final static String HAS_DEFAULT_VALUVE_YES = "1";
+	public final static String HAS_DEFAULT_VALUVE_NOT = "0";
+	public final static String IS_MANDATORY_YES = "1";
+	public final static String IS_MANDATORY_NOT = "0";
+	public final static String IS_UNIQUE_YES = "1";
+	public final static String IS_UNIQUE_NOT = "0";
+	public final static String IS_INCOMPLETE_DATE_YES = "1";
+	public final static String IS_INCOMPLETE_DATE_NOT = "0";
+
+	public final static String GROUP_TYPE_NORMAL = "1";
+	public final static String GROUP_TYPE_APPROVER = "2";
+	public final static String GROUP_TYPE_ALERT = "3";
+	public final static String GROUP_TYPE_SUPER = "4";
+
+	public final static Long ROOT_LIST_ID = 0L;
+	public final static String ITEM_LIST_PLUS_SPACE = "&nbsp;";
+	public final static String ITEM_LIST_PLUS_TREE_SIGN = "|-";
+
+	// for adding zero
+	public final static String STRING_ZERO = "0";
+	public final static String STRING_FIELD = "field";
+	public final static int DOCUMENT_INDEX_FIELDS_COUNT = 50;
+
+	public final static String MASTER_TASK_STATUS_ABORTED = "B";
+	public final static String MASTER_TASK_STATUS_INPROGRESS = "I";
+	public final static String MASTER_TASK_STATUS_APPROVED = "A";
+	public final static String MASTER_TASK_STATUS_TERMINATED = "T";
+
+	public final static String TASK_NAME_APPROVE = "A";
+	public final static String TASK_NAME_CONFIRM = "C";
+
+	public final static long ATTACHMENT_TYPE_ID_DOC = 1;
+	public final static long ATTACHMENT_TYPE_ID_XLS = 2;
+	public final static long ATTACHMENT_TYPE_ID_PDF = 3;
+	public final static long ATTACHMENT_TYPE_ID_IMG = 4;
+	public final static long ATTACHMENT_TYPE_ID_OTHER = 5;
+	public final static long ATTACHMENT_TYPE_ID_PPT = 6;
+	public final static long ATTACHMENT_TYPE_ID_TXT = 7;
+
+	// attachment is encrypted or not.
+	public final static char IS_ENCRYPTED_YES = 'Y';
+	public final static char IS_ENCRYPTED_NOT = 'N';
+	public final static long UPLOAD_SUCCESS = 1;// 成功
+	public final static long UPLOAD_FAILED = 0;// 失败
+	public final static long UNKONW_EXCEPTION = -1;// 未知异常
+	public final static long FILE_OVER_SET_SIZE = -2;// 超出上传最大尺寸限制
+	public final static long FILE_FORMAT_ERROR = -3;//文件格式错误
+
+	// Begin Version
+	public final static String BEGIN_VERSION = "0.0.1.0.0";
+
+	// auto increment type min value (for decrement rise)
+	public final static long AUTO_INCREMENT_TYPE_MIN_VALUE = 1;
+
+	public final static String IS_LINK = "Y";
+
+	// for link
+	public final static char IS_LINK_YES = 'Y';
+	public final static char IS_LINK_NOT = 'N';
+
+	public final static char IS_DELETED_YES = 'Y';
+	public final static char IS_DELETED_NOT = 'N';
+	public final static int PRODTYPE_FIELD_VARCHAR_START_NUMBER = 1;
+	public final static int PRODTYPE_FIELD_NUMBER_START_NUMBER = 1;
+	public final static int PRODTYPE_FIELD_DATETIME_START_NUMBER = 1;
+	public final static int PRODTYPE_FIELD_VARCHAR_MAX_NUMBER = 30;
+	public final static int PRODTYPE_FIELD_NUMBER_MAX_NUMBER = 10;
+	public final static int PRODTYPE_FIELD_DATETIME_MAX_NUMBER = 10;
+	public static final String FIELD_DEFINITON_STATUS_ENABLE = "1";
+	public static final String FIELD_DEFINITON_STATUS_DISABLE = "0";
+
+	public final static String ACTION_STATUS_SUCCESS = "1";
+	public final static String ACTION_STATUS_FAILURE = "0";
+
+	public final static int CONFIDENTIAL_ALERT_LEVEL = 20;
+
+	// for Log Data
+	public final static String EVENT_TYPE_ALL = "all";
+	public final static String EVENT_TYPE_CLEAN_RECYCLE_BIN = "clean_recycle_bin";
+	public final static String EVENT_TYPE_RESTORE_RECYCLE_BIN = "restore_recycle_bin";
+	public final static String EVENT_TYPE_ADD_DIR = "add_dir";
+	public final static String EVENT_TYPE_EDIT_DIR = "edit_dir";
+	public final static String EVENT_TYPE_DELETE_DIR = "delete_dir";
+	public final static String EVENT_TYPE_MOVE_DIR = "move_dir";
+	public final static String EVENT_TYPE_ACL_DIR = "acl_dir";
+	public final static String EVENT_TYPE_ADD_USER = "add_user";
+	public final static String EVENT_TYPE_EDIT_USER = "edit_user";
+	public final static String EVENT_TYPE_DELETE_USER = "delete_user";
+	public final static String EVENT_TYPE_VIEW_USER = "view_user";
+	public final static String EVENT_TYPE_ENABLE_USER = "enablc_user";
+	public final static String EVENT_TYPE_DISABLE_USER = "disable_user";
+	public final static String EVENT_TYPE_RESET_USER_PASSWORD = "reset_password";
+	public final static String EVENT_TYPE_PRIVILEGE_USER = "privilege_user";
+	public final static String EVENT_TYPE_ADD_GROUP = "add_group";
+	public final static String EVENT_TYPE_EDIT_GROUP = "edit_group";
+	public final static String EVENT_TYPE_DELETE_GROUP = "delete_group";
+	public final static String EVENT_TYPE_ADD_ROLE = "add_role";
+	public final static String EVENT_TYPE_EDIT_ROLE = "edit_role";
+	public final static String EVENT_TYPE_DELETE_ROLE = "delete_role";
+	public final static String EVENT_TYPE_PRIVILEGE_GROUP = "privilege_group";
+	public final static String EVENT_TYPE_PRIVILEGE_ROLE = "privilege_role";
+	public final static String EVENT_TYPE_DEFINE_FIELD_SECURITY = "define_field_security";
+	public final static String EVENT_TYPE_USER_LOGIN = "user_login";
+
+	// contract
+	public final static String LABEL_EVENT_TYPE_ADD_CONTRACT = "audit.contract.add";
+	public final static String LABEL_EVENT_TYPE_DELETE_CONTRACT = "audit.contract.delete";
+	public final static String LABEL_EVENT_TYPE_QUERY_CONTRACT = "audit.contract.query";
+	public final static String LABEL_EVENT_TYPE_EDIT_CONTRACT = "audit.contract.edit";
+
+	// customer
+	public final static String LABEL_EVENT_TYPE_ADD_CUSTOMER = "audit.customer.add";
+	public final static String LABEL_EVENT_TYPE_DELETE_CUSTOMER = "audit.customer.delete";
+	public final static String LABEL_EVENT_TYPE_QUERY_CUSTOMER = "audit.customer.query";
+	public final static String LABEL_EVENT_TYPE_EDIT_CUSTOMER = "audit.customer.edit";
+
+	public final static String LABEL_EVENT_TYPE_ALL = "audit.all";
+	public final static String LABEL_EVENT_RESTORE_RECYCLE_BIN = "audit.recyclebin.restore";
+	public final static String LABEL_EVENT_TYPE_ADD_DIR = "audit.dir.add";
+	public final static String LABEL_EVENT_TYPE_EDIT_DIR = "audit.dir.edit";
+	public final static String LABEL_EVENT_TYPE_DELETE_DIR = "audit.dir.delete";
+	public final static String LABEL_EVENT_TYPE_MOVE_DIR = "audit.dir.move";
+	public final static String LABEL_EVENT_TYPE_ACL_DIR = "audit.dir.acl";
+	public final static String LABEL_EVENT_TYPE_ADD_USER = "audit.user.add";
+	public final static String LABEL_EVENT_TYPE_EDIT_USER = "audit.user.edit";
+	public final static String LABEL_EVENT_TYPE_DELETE_USER = "audit.user.delete";
+	public final static String LABEL_EVENT_TYPE_RESET_USER_PASSWORD = "audit.user.resetPassword";
+	public final static String LABEL_EVENT_TYPE_VIEW_USER = "audit.user.view";
+	public final static String LABEL_EVENT_TYPE_ENABLE_USER = "audit.user.enable";
+	public final static String LABEL_EVENT_TYPE_DISABLE_USER = "audit.user.disable";
+	public final static String LABEL_EVENT_TYPE_PRIVILEGE_USER = "audit.user.privilege";
+	public final static String LABEL_EVENT_TYPE_ADD_GROUP = "audit.group.add";
+	public final static String LABEL_EVENT_TYPE_EDIT_GROUP = "audit.group.edit";
+	public final static String LABEL_EVENT_TYPE_DELETE_GROUP = "audit.group.delete";
+	public final static String LABEL_EVENT_TYPE_ADD_ROLE = "audit.role.add";
+	public final static String LABEL_EVENT_TYPE_EDIT_ROLE = "audit.role.edit";
+	public final static String LABEL_EVENT_TYPE_DELETE_ROLE = "audit.role.delete";
+	public final static String LABEL_EVENT_TYPE_PRIVILEGE_GROUP = "audit.group.privilege";
+	public final static String LABEL_EVENT_TYPE_PRIVILEGE_ROLE = "audit.role.privilege";
+	public final static String LABEL_EVENT_TYPE_DEFINE_FIELD_SECURITY = "audit.doctype.field.security";
+	public final static String LABEL_EVENT_TYPE_USER_LOGIN = "audit.user.login";
+	public final static String LABEL_EVENT_TYPE_DELETE_DOC_LINK = "audit.doc.deletelink";
+	public final static String LABEL_EVENT_TYPE_DELETE_TASK = "audit.task.delete";
+	public final static String LABEL_EVENT_TYPE_UPDATE_BYPASS_RECEIVER = "audit.group.updateBypassReceiver";
+
+	public final static Map<String, String> EVENT_TYPE_MAP = new HashMap<String, String>(3);
+	static {
+
+		EVENT_TYPE_MAP.put(EVENT_TYPE_ADD_USER, LABEL_EVENT_TYPE_ADD_USER);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_EDIT_USER, LABEL_EVENT_TYPE_EDIT_USER);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_DELETE_USER, LABEL_EVENT_TYPE_DELETE_USER);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_VIEW_USER, LABEL_EVENT_TYPE_VIEW_USER);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_ENABLE_USER, LABEL_EVENT_TYPE_ENABLE_USER);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_DISABLE_USER, LABEL_EVENT_TYPE_DISABLE_USER);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_PRIVILEGE_USER, LABEL_EVENT_TYPE_PRIVILEGE_USER);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_RESET_USER_PASSWORD, LABEL_EVENT_TYPE_RESET_USER_PASSWORD);
+
+		EVENT_TYPE_MAP.put(EVENT_TYPE_ADD_GROUP, LABEL_EVENT_TYPE_ADD_GROUP);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_EDIT_GROUP, LABEL_EVENT_TYPE_EDIT_GROUP);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_DELETE_GROUP, LABEL_EVENT_TYPE_DELETE_GROUP);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_PRIVILEGE_GROUP, LABEL_EVENT_TYPE_PRIVILEGE_GROUP);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_PRIVILEGE_ROLE, LABEL_EVENT_TYPE_PRIVILEGE_ROLE);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_ADD_ROLE, LABEL_EVENT_TYPE_ADD_ROLE);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_EDIT_ROLE, LABEL_EVENT_TYPE_EDIT_ROLE);
+		EVENT_TYPE_MAP.put(EVENT_TYPE_DELETE_ROLE, LABEL_EVENT_TYPE_DELETE_ROLE);
+
+	}
+
+	public final static String USER_ENABLE = "E";
+	public final static String USER_DISABLE = "D";
+
+	public final static int ADMIN_AUTHORITY_LEVEL = -1;
+	public final static long PLACEHOLDER_ID = -1;
+
+	public final static int PRIVILEGE_END_FRONT = 1;
+	public final static int PRIVILEGE_END_BACK = 0;
+
+	public final static int MINIMUN_YEAR = 1753;
+
+	public final static String NA_DATE = "N/A";
+
+	public final static String PASSWORD_STATUS_CREATE = "C";
+	public final static String PASSWORD_STATUS_UPDATE = "U";
+	public final static String PASSWORD_STATUS_RESET = "R";
+
+	public final static String ACL_DATA_TEMPLATE_DISABLE_DELETE_NOT = "N";
+	public final static String ACL_DATA_TEMPLATE_DISABLE_DELETE = "Y";
+	public final static String ACL_DATA_TEMPLATE_DISABLE_CHANGE_NOT = "N";
+	public final static String ACL_DATA_TEMPLATE_DISABLE_CHANGE = "Y";
+
+	public static final int PRODTYPE_TYPE_PRETEXT_LENGTH = 45;
+	public static final int PRODTYPE_TYPE_SUFFIX_LENGTH = 45;
+
+	public static final String DATA_IS_DELETE_NO = "N";
+	public static final String DATA_IS_DELETE_YES = "Y";
+	public static final int PRODUCT_MEMO_MAX_LENGTH = 100;
+	public static final int PRODUCT_AUTOINC_MAX_LENGTH = 100;
+
+	// date regex in Chinese
+	public static final String TIME_REGEX = "^[0-9]{2}:[0-9]{1,2}:[0-9]{1,2}$";
+	public static final String DATE_REGEX = "^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$";
+	public static final String DATE_TIME_REGEX = "^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{2}:[0-9]{1,2}:[0-9]{1,2}$";
+
+	// float regex
+	public static final String FLOAT_REGX = "^\\d+(.\\d+)?$";
+
+	public static final String PASSWORD_ENCODER_DISCRIMINATOR = "QHCRM";
+
+	/* ====================== Task Begin ======================== */
+	public final static String JBPM_TASK_TYPE_CONFIRM = "C";
+	public final static String JBPM_TASK_TYPE_APPROVE = "A";
+
+	public final static String JBPM_TASK_NAME_START = "test";
+	public final static String JBPM_TASK_NAME_EXAMINE = "Task_AssignToInitiator";
+	public final static String JBPM_TASK_NAME_MODIFY = "Task_AssignActorsToModify";
+	public final static String JBPM_TASK_NAME_END = "";
+	public final static String JBPM_TASK_NAME_ISSUE = "issue document";
+	public final static String JBPM_TASK_NAME_DISTRIBUTION = "distribute document";
+	public final static String JBPM_TASK_NAME_REVIEW = "review document";
+	public final static String JBPM_TASK_NAME_BIGIN = "start";
+	/* ====================== Task End ======================== */
+
+	/* ====================== List Name */
+	public final static String CUST_RATING_LIST_ID = "CUST_RATING_LIST_ID";
+	public final static String CUST_BUSINESS_TYPE_LIST_ID = "CUST_BUSINESS_TYPE_LIST_ID";
+	public final static String CUST_TYPE_LIST_ID = "CUST_TYPE_LIST_ID";
+	public final static String CUST_SOURCE_LIST_ID = "CUST_SOURCE_LIST_ID";
+	public final static String CUST_INDUSTRY_LIST_ID = "CUST_INDUSTRY_LIST_ID";
+	public final static String CUST_TRACE_STATUS_LIST_ID = "CUST_TRACE_STATUS_LIST_ID";
+	public final static String CUST_TRACE_STAGE_LIST_ID = "CUST_TRACE_STAGE_LIST_ID";
+	public final static String CUST_TRACE_TYPE_LIST_ID = "CUST_TRACE_TYPE_LIST_ID";
+	public final static String CUST_TRACE_CHANNEL_LIST_ID = "CUST_TRACE_CHANNEL_LIST_ID";
+	public final static String CUST_COMP_FEED_BACK_TYPE_LIST_ID = "CUST_COMP_FEED_BACK_TYPE_LIST_ID";
+	public final static String CUST_COMP_PROC_STATUS_LIST_ID = "CUST_COMP_PROC_STATUS_LIST_ID";
+	public final static String CUST_CONTACT_TITLE = "CUST_CONTACT_TITLE";
+	public final static String SHIPPING_MODE_LIST_ID = "SHIPPING_MODE_LIST_ID";
+	public final static String SHIPPING_COMPANY_LIST_ID = "SHIPPING_COMPANY_LIST_ID";
+	public final static String SHIPPING_EXPRESS_LIST_ID = "SHIPPING_EXPRESS_LIST_ID";
+	public final static String PURC_PAY_MODE_LIST_ID = "PURC_PAY_MODE_LIST_ID";
+	public final static String BANK_TYPE_LIST_ID = "BANK_TYPE_LIST_ID";
+	public final static String WEIGHT_UNITS_LIST_ID = "WEIGHT_UNITS_LIST_ID";
+	public final static String MEASURE_UNITS_LIST_ID = "MEASURE_UNITS_LIST_ID";
+	public final static String QUANTITY_UNIT_LIST_ID = "QUANTITY_UNIT_LIST_ID";
+	public final static String COMPLAINT_MEANS_LIST_ID = "COMPLAINT_MEANS_LIST_ID";
+	public final static String COMPLAINT_TYPE_LIST_ID = "COMPLAINT_TYPE_LIST_ID";
+	public final static String COMPLAINT_BELONE_LIST_ID = "COMPLAINT_BELONE_LIST_ID";
+	public final static String COMPLAINT_REPLY_LIST_ID = "COMPLAINT_REPLY_LIST_ID";
+	public final static String SAMPLE_SEND_MODEL_LIST_ID = "SAMPLE_SEND_MODEL_LIST_ID";
+	public final static String MARKETING_FORECAST_WAY_ID= "MARKETING_FORECAST_WAY_ID";
+	
+	/* ====================== System Property ================= */
+	public final static String LOCAL_CURRENCY_ID = "LOCAL_CURRENCY_ID";
+	public final static String SALE_CURRENCY_ID = "SALE_CURRENCY_ID";
+	public final static String PURCHASE_CURRENCY_ID = "PURCHASE_CURRENCY_ID";
+
+	public final static String SALE_ORDER_TYPE_LIST_ID = "SALE_ORDER_TYPE_LIST_ID";
+	public final static String SALE_ORDER_PAID_MODE_LIST_ID = "SALE_ORDER_PAID_MODE_LIST_ID";
+	public final static String SALE_ORDER_TRAD_MODE_LIST_ID = "SALE_ORDER_TRAD_MODE_LIST_ID";
+	public final static String SALE_ORDER_EXPENSE_TYPE_LIST_ID = "SALE_ORDER_EXPENSE_TYPE_LIST_ID";
+	public final static String SALE_ORDER_SHIPPING_MODE_LIST_ID = "SALE_ORDER_SHIPPING_MODE_LIST_ID";
+
+	public final static String FINANCE_EXPENSE_TYPE_LIST_ID = "FINANCE_EXPENSE_TYPE_LIST_ID";
+	public final static String SHIPPING_COMPANY_TYPE_LIST_ID = "SHIPPING_COMPANY_TYPE_LIST_ID";
+	
+	public static final String MARKETING_OPPORTUNITY_TYPE_LIST_ID = "MARKETING_OPPORTUNITY_TYPE_LIST_ID";
+	public static final String MARKETING_OPPORTUNITY_SOURCE_LIST_ID = "MARKETING_OPPORTUNITY_SOURCE_LIST_ID";
+	public static final String MARKETING_CAMPAIGN_TYPE_LIST_ID = "MARKETING_CAMPAIGN_TYPE_LIST_ID";
+
+	public static final int SALE_TYPE_PRETEXT_LENGTH = 45;
+	public static final int SALE_TYPE_SUFTEXT_LENGTH = 45;
+	public static final int SALE_FIELD_VARCHAR_START_NUMBER = 1;
+	public static final int SALE_FIELD_VARCHAR_MAX_NUMBER = 30;
+	public static final int SALE_FIELD_NUMBER_START_NUMBER = 1;
+	public static final int SALE_FIELD_NUMBER_MAX_NUMBER = 10;
+	public static final int SALE_FIELD_DATETIME_START_NUMBER = 1;
+	public static final int SALE_FIELD_DATETIME_MAX_NUMBER = 10;
+
+	public static final String MANAGE_PRIVILEGES_ATTRIBUTE_NAME = "managePrivileges";
+	public static final String MANAGE_USER_ID_PARAM_NAME = "__USERID";
+	public static final String MANAGE_CUSTOMER_ID_PARAM_NAME = "__CUSTOMERID";
+	//public static final String MANAGE_SUBTAB_ID_PARAM_NAME = "__SUBTAB_ID";
+	
+	public static final String MODULE_EMAIL = "EMAIL";
+	
+	//邮件跟踪替换内容
+	public static final String MAIL_TRACE_SYMBOL = "%%MAIL_TRACE_SYMBOL%%";
+	
+	public static final String MAIL_OWN_DOMAIN="OWNDOMAIN_";
+	
+	
+	public final class EnumFormatCallBack{
+		public static final int String = 1;
+		public static final int Boolean = 2;
+		public static final int DateTime = 3;
+		public static final int Time = 4;
+		public static final int Date = 5;
+		public static final int Double = 6;
+	}
+	
+	public final class EnumFieldType{
+		public static final String Boolean = "boolean";
+		public static final String Time = "ftime";
+		public static final String DateTime = "fdt";
+		public static final String Date = "fdate";
+	}
+	
+	
+	public static final String STD_MONEY_FORMAT = "###,##0";
+
+	public static final Integer STD_DECIMAL_SCALE = 2;
+	
+	
+	
+	
+	
+}

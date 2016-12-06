@@ -1,0 +1,111 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: JedisPubsubAdapter.java 
+ * @Package saas.data.api.cache 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2015年6月5日 下午1:01:13 
+ * @version 1.0 
+ */
+
+package saas.framework.cache.redis;
+
+import redis.clients.jedis.JedisPubSub;
+
+/**
+ * @ClassName: JedisPubsubAdapter
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2015年6月5日 下午1:01:13
+ */
+
+public class JedisPubsubAdapter extends JedisPubSub {
+
+	public void onMessage(String channel, String message) {
+	}
+
+	/*
+	 * （非 Javadoc）
+	 * 
+	 * 
+	 * @param pattern
+	 * 
+	 * @param channel
+	 * 
+	 * @param message
+	 * 
+	 * @see redis.clients.jedis.JedisPubSub#onPMessage(java.lang.String,
+	 * java.lang.String, java.lang.String)
+	 */
+
+	@Override
+	public void onPMessage(String pattern, String channel, String message) {
+	}
+
+	/*
+	 * （非 Javadoc）
+	 * 
+	 * 
+	 * @param channel
+	 * 
+	 * @param subscribedChannels
+	 * 
+	 * @see redis.clients.jedis.JedisPubSub#onSubscribe(java.lang.String, int)
+	 */
+
+	@Override
+	public void onSubscribe(String channel, int subscribedChannels) {
+	}
+
+	/*
+	 * （非 Javadoc）
+	 * 
+	 * 
+	 * @param channel
+	 * 
+	 * @param subscribedChannels
+	 * 
+	 * @see redis.clients.jedis.JedisPubSub#onUnsubscribe(java.lang.String, int)
+	 */
+
+	@Override
+	public void onUnsubscribe(String channel, int subscribedChannels) {
+	}
+
+	/*
+	 * （非 Javadoc）
+	 * 
+	 * 
+	 * @param pattern
+	 * 
+	 * @param subscribedChannels
+	 * 
+	 * @see redis.clients.jedis.JedisPubSub#onPUnsubscribe(java.lang.String,
+	 * int)
+	 */
+
+	@Override
+	public void onPUnsubscribe(String pattern, int subscribedChannels) {
+	}
+
+	/*
+	 * （非 Javadoc）
+	 * 
+	 * 
+	 * @param pattern
+	 * 
+	 * @param subscribedChannels
+	 * 
+	 * @see redis.clients.jedis.JedisPubSub#onPSubscribe(java.lang.String, int)
+	 */
+
+	@Override
+	public void onPSubscribe(String pattern, int subscribedChannels) {
+	}
+
+}

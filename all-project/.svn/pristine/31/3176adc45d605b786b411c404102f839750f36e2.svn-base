@@ -1,0 +1,37 @@
+package saas.winbons.data.model.analysis;
+
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.enumtype.BaseEnum;
+import saas.winbons.format.IEnumFormat;
+
+public enum AnalysisSettingConvertor implements BaseEnum<String>,IEnumFormat{
+	available("available",DataConstant.EnumFormatCallBack.Boolean);
+
+	private AnalysisSettingConvertor(String dbValue,int formatType){
+		this.formatType = formatType;
+		this.dbValue = dbValue;
+	}
+	
+	private String dbValue;
+	private int formatType;
+
+	@Override
+	public String getDbValue() {
+		return dbValue;
+	}
+
+	@Override
+	public String getColumnName() {
+		return dbValue;
+	}
+
+	@Override
+	public int getCallbackFormatType() {
+		return formatType;
+	}
+
+	
+	
+	
+
+}

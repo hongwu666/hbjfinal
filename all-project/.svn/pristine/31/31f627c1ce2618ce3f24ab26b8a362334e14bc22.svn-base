@@ -1,0 +1,177 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: AbstractGroupDynamic.java 
+ * @Package saas.crm.dynamic.model 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年7月17日 上午10:46:47 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.model;
+
+/**
+ * @ClassName: AbstractGroupDynamic
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年7月17日 上午10:46:47
+ */
+public abstract class AbstractGroupDynamic extends AbstractDynamic {
+
+	private static final long serialVersionUID = 1L;
+
+	public static final int USER_PUBLISH = -1;
+
+	public static final long ALL_CMP = -1L;// 全公司
+
+	protected Long groupId;			// 业务ID
+
+	private String groupName;		// 业务名称
+
+	private Long groupTypeId;		// 标识动态属于哪个模块，首页动态标识为-1，其他模块与ItemTypeEnum对应
+
+	private Long itemTypeId;		// 原本用于标识业务模块，但由于有混用的情况，所以保持现状不变，现为活动记录类型id，例如：电话跟进、签到拜访等等（但-1代表工作报告）
+
+	private Long itemId;			// 评论中标记源动态的ID
+
+	private Long depId;				// 部门ID
+	
+	private Long userGroupId;		// 用户分组ID
+	
+	private Long relModuleId;		// 业务模块动态中与客户模块关联的groupId, 其实就是客户ID
+
+	public Long getUserGroupId() {
+		return userGroupId;
+	}
+
+	public void setUserGroupId(Long userGroupId) {
+		this.userGroupId = userGroupId;
+	}
+
+	/**
+	 * @return the groupName
+	 */
+
+	public String getGroupName() {
+
+		return groupName;
+	}
+
+	/**
+	 * @param groupName
+	 *            the groupName to set
+	 */
+
+	public void setGroupName(String groupName) {
+
+		this.groupName = groupName;
+	}
+
+	/**
+	 * @return the groupTypeId
+	 */
+
+	public Long getGroupTypeId() {
+
+		return groupTypeId;
+	}
+
+	/**
+	 * @param groupTypeId
+	 *            the groupTypeId to set
+	 */
+
+	public void setGroupTypeId(long groupTypeId) {
+
+		this.groupTypeId = groupTypeId;
+	}
+
+	/**
+	 * @return the itemTypeId
+	 */
+
+	public Long getItemTypeId() {
+
+		return itemTypeId;
+	}
+
+	/**
+	 * @param itemTypeId
+	 *            the itemTypeId to set
+	 */
+
+	public void setItemTypeId(Long itemTypeId) {
+		this.itemTypeId = itemTypeId;
+	}
+
+	/**
+	 * @return the itemId
+	 */
+
+	public Long getItemId() {
+
+		return itemId;
+	}
+
+	/**
+	 * @param itemId
+	 *            the itemId to set
+	 */
+
+	public void setItemId(Long itemId) {
+
+		this.itemId = itemId;
+	}
+
+	/**
+	 * @return the depId
+	 */
+
+	public Long getDepId() {
+
+		return depId;
+	}
+
+	/**
+	 * @param depId
+	 *            the depId to set
+	 */
+
+	public void setDepId(Long depId) {
+
+		this.depId = depId;
+	}
+
+	/**
+	 * @return the groupId
+	 */
+
+	public Long getGroupId() {
+
+		return groupId;
+	}
+
+	/**
+	 * @param groupId
+	 *            the groupId to set
+	 */
+
+	public void setGroupId(Long groupId) {
+
+		this.groupId = groupId;
+	}
+
+	public Long getRelModuleId() {
+		return relModuleId;
+	}
+
+	public void setRelModuleId(Long relModuleId) {
+		this.relModuleId = relModuleId;
+	}
+
+}

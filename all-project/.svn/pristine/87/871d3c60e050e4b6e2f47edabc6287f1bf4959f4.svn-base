@@ -1,0 +1,13 @@
+package saas.winbons.data.model.security;
+
+import org.springframework.context.ApplicationEvent;
+
+public class IMUserEvent extends ApplicationEvent {
+
+	private static final long serialVersionUID = 1L;
+
+	public IMUserEvent(Object source) {
+		super(source);
+	}
+
+}

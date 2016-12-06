@@ -1,0 +1,707 @@
+package saas.winbons.data.model.report;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import com.jfinal.kit.StrKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.IAtom;
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.winbons.data.model.BaseModel;
+import saas.winbons.data.model.contact.CustomerContact;
+import saas.winbons.data.model.contract.Contract;
+import saas.winbons.data.model.customer.Customer;
+import saas.winbons.data.model.defined.DefinedFeildModel;
+import saas.winbons.data.model.sales.Opportunity;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.PageDto;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.SortDTO;
+import saas.winbons.framework.execption.ServiceException;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+
+public class ReportForm extends BaseModel<ReportForm>{
+/**
+ * 报表导出功能，报表业务类
+ **/
+	private static final long serialVersionUID = -5034610097389081503L;
+
+	public static final ReportForm dao = new ReportForm();
+
+	
+	//获取当前用户下的自定义的模板
+	public List<Map<String, Object>> getUserDefinedModules(RequestDTO requestDTO) {
+		Map<String,Object> map = new HashMap<String,Object>();
+		ContextDTO ctd = requestDTO.getContextDTO();
+		//添加条件说明是为了查询当前用户自定义模板 ,userId的‘=’约束
+		List<FilterDTO> tempFitler = requestDTO.getFitler();
+		tempFitler.add(new FilterDTO("userId",ctd.getUserId(),"="));
+		map.put("filters", tempFitler);
+		map.put("sorts", requestDTO.getSort());
+		String sql ="SELECT " +ToolJfinalSql.buildSelectSql(ReportForm.class, "t_crm_report_form","") + ToolSqlXml.getSql("winbons.report.getReportInfo",map);
+		List<Record> find = Db.find(ctd, sql);
+		List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find);
+		return recordListConvert;
+	}
+
+	//查询单个report对象和其牵扯的所有report_fields
+	public Map<String, Object> queryReporById(RequestDTO requestDTO) throws Exception {
+		Map<Object, Object>dataMap = requestDTO.getData();
+		Long id = (Long) dataMap.get("id");
+		requestDTO.putFitler(new FilterDTO("id",id,"="));
+		//把id作为追加筛选条件借用getUserDefinedModules方法
+		List<Map<String, Object>> recordListConvert = getUserDefinedModules(requestDTO);
+		if( null==recordListConvert ||recordListConvert.size()==0){
+			throw new Exception("未找到符合条件的报表");
+		}
+		Map<String, Object> report = recordListConvert.get(0);
+		return report;
+	}
+
+	//删除某个报表，同时包括它对应的字段
+	public void deleteReport(RequestDTO requestDTO) {
+		
+		if(!Db.tx(new IAtom() {
+			@Override
+			public boolean run() throws SQLException {
+				ContextDTO contextDTO = requestDTO.getContextDTO();
+				Map<String, Object> map = new HashMap<>();
+				map.put("id", requestDTO.get("id"));
+				map.put("contextDTO", contextDTO);
+				//批量删除报表关联的字段
+				String sql = ToolSqlXml.getSql("winbons.report.deleteFieldsByFormId",map);
+				Db.update(contextDTO, sql);
+				//批量删除报表的过滤字段条件
+				sql = ToolSqlXml.getSql("winbons.report.deleteFiltersByFormId",map);
+				Db.update(contextDTO, sql);
+				//删除报表本身
+				ReportForm reportForm = ReportForm.dao.findById(contextDTO, contextDTO.getDbId(),requestDTO.get("id"));
+				reportForm.delete(contextDTO);
+				return true;
+				
+			}
+		}));
+	}
+
+
+	//修改report对象
+	public void modifyReport(RequestDTO requestDTO, Map<String, Boolean> privilegeMap) throws Exception {
+		System.out.println(ToolGson.GsonString(requestDTO));
+		//保存报表对象，同时还有与之关联的所有字段和filter
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Map<Object, Object> data = requestDTO.getData();
+		Map<String, Object> report = (Map<String,Object>)data.get("report");
+		String module = (String) report.get("module");
+		if(StrKit.isBlank(module)){
+			throw new Exception("提交的报表module不能为空");
+		}
+		checkRightByModule(privilegeMap, module);
+		if(!Db.tx(new IAtom() {
+			@Override
+			public boolean run() throws SQLException {
+				//修改报表对象本身
+				ReportForm reportForm = new ReportForm();
+				reportForm.putForUpdate(report);
+				reportForm.update(contextDTO);
+				Long form_id = (Long) report.get("id");
+				Map<String, Object> map = new HashMap<>();
+				map.put("id", form_id);
+				map.put("contextDTO", contextDTO);
+				//修改报表关联的字段,不认同一个都不显示的情况
+				List<Map<String, Object>> reportFields = (List<Map<String, Object>>) data.get("reportFields");
+				if((null!=reportFields) && reportFields.size()>0){
+					String sql = ToolSqlXml.getSql("winbons.report.deleteFieldsByFormId",map);
+					Db.update(contextDTO, sql);
+					for(Map<String, Object> field:reportFields){
+						field.put("form_id", form_id);
+						ReportFormItem reportFormItem = new ReportFormItem();
+						reportFormItem.put(field);
+						reportFormItem.save(contextDTO);
+					}
+				}
+				//修改报表关联的过滤条件,允许没有过滤条件的情况
+				List<Map<String, Object>> reportFilters = (List<Map<String, Object>>) data.get("reportFilters");
+				if((null!=reportFilters)){
+					String sql = ToolSqlXml.getSql("winbons.report.deleteFiltersByFormId",map);
+					Db.update(contextDTO, sql);
+					for(Map<String, Object> fieldFilter:reportFilters){
+						fieldFilter.put("form_id", form_id);
+						ReportFormFilter reportFormFilter = new ReportFormFilter();
+						reportFormFilter.put(fieldFilter);
+						reportFormFilter.save(contextDTO);
+					}
+				}
+				return true;
+			}
+		}));
+	}
+
+	
+	
+	public void save(RequestDTO requestDTO, Map<String, Boolean> privilegeMap) throws Exception{
+		//保存报表对象，同时还有与之关联的所有字段和filter
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Long userId = contextDTO.getUserId();
+		Map<Object, Object> data = requestDTO.getData();
+		Map<String, Object> report = (Map<String,Object>)data.get("report");
+		String module = (String)report.get("module");
+		if(StrKit.isBlank(module)){
+			throw new ServiceException("提交的报表module不能为空");
+		}
+		checkRightByModule(privilegeMap, module);
+		report.put("module_name", ReportModule.getModuleString((String)report.get("module")));
+		//userId需要手动补充
+		report.put("userId", userId);
+		report.put("updated_by", userId);
+		report.put("updated_date", System.currentTimeMillis());
+		if(!Db.tx(new IAtom() {
+			@Override
+			public boolean run() throws SQLException {
+				
+				ReportForm reportForm = new ReportForm();
+				reportForm.put(report);
+				reportForm.save(contextDTO);
+				//保存关联的所有字段
+				List<Map<String,Object>> formFields = (List<Map<String,Object>>)data.get("reportFields");
+				if(null != formFields){
+					for(Map<String,Object> m : formFields){
+						ReportFormItem reportFormItem = new ReportFormItem();
+						reportFormItem.put(m);
+						reportFormItem.set("form_id", reportForm.getId());
+						reportFormItem.save(contextDTO);
+					}
+				}
+				//保存关联的所有filter
+				List<Map<String,Object>> formFilters = (List<Map<String,Object>>)data.get("reportFilters");
+				if(null != formFilters){
+					for(Map<String,Object> m : formFilters){
+						ReportFormFilter formFilter = new ReportFormFilter();
+						formFilter.put(m);
+						formFilter.set("form_id", reportForm.getId());
+						formFilter.save(contextDTO);
+					}
+				}
+				return true;
+			}
+		}));
+		
+		
+	}
+
+	//初始化报表的可选模板
+	public List<Map<String, Object>> initialModule(RequestDTO requestDTO, Map<String, Boolean> privilegeMap) {
+		//通过读取ReportModule的静态类来实现，方便以后扩展
+		List<Map<String,Object>> list = new ArrayList<Map<String,Object>>();
+		//需要根据权限对某些moduleMap中的项目不返回
+		if(privilegeMap.get("reportManager:customer")){
+			Map<String,Object> map = new HashMap<String,Object>();
+			map.put("name", "客户");
+			map.put("module", ReportModule.getModuleInt("客户"));
+			list.add(map);
+			Map<String,Object> map2 = new HashMap<String,Object>();
+			map2.put("name", "客户联系人");
+			map2.put("module", ReportModule.getModuleInt("客户联系人"));
+			list.add(map2);
+		}
+		if(privilegeMap.get("reportManager:opportunity")){
+			Map<String,Object> map = new HashMap<String,Object>();
+			map.put("name", "商机");
+			map.put("module", ReportModule.getModuleInt("商机"));
+			list.add(map);
+		}
+		if(privilegeMap.get("reportManager:contract")){
+			Map<String,Object> map = new HashMap<String,Object>();
+			map.put("name", "合同");
+			map.put("module", ReportModule.getModuleInt("合同"));
+			list.add(map);
+		}
+		return list;
+	}
+
+	//初始化报表的基本可用字段
+	public Map<String, Object> initialFields(RequestDTO requestDTO, List<Map<String, Object>> availFields) {
+		ContextDTO ctd = requestDTO.getContextDTO();
+		Long dbId = ctd.getDbId();
+		Map<Object, Object> data = requestDTO.getData();
+		String module = (String) data.get("module");
+		String[] BaseFieldNames = ReportModule.getBaseFields(module);
+		List<Map<String, Object>> displayFields = new ArrayList<Map<String, Object>>();
+		List<Map<String, Object>> hiddenFields = new ArrayList<Map<String, Object>>();
+		int displayOrder = 1;
+		for(String str:BaseFieldNames){
+			Map<String, Object>  map = new HashMap<String, Object>();
+			map.put("dbid", dbId);
+			map.put("is_display", 1);
+			map.put("display_order", displayOrder);
+			map.put("column_field_name", str);
+			displayFields.add(map);
+			displayOrder ++;
+		}
+		
+			//遍历所有从defined表里找到的字段
+		for(Map<String, Object> tableFields: availFields){
+			List<Map<String, Object>> list = (List<Map<String, Object>>) tableFields.get("list");
+			for(Map<String, Object> fieldMap :list){
+				boolean displayBool = false;
+				String fullFieldName = (String) fieldMap.get("column_field_name");
+				for(Map<String, Object> displayField: displayFields){
+					if(fullFieldName.equalsIgnoreCase((String) displayField.get("column_field_name"))){
+						//如果某字段需要展示
+						displayField.put("defined_id", fieldMap.get("id"));
+						displayField.put("field_type", (String) fieldMap.get("field_type"));
+						displayField.put("field_type_ex", (String) fieldMap.get("field_type_ex"));
+						displayField.put("values", fieldMap.get("values"));
+						displayField.put("display_name", "[" + ReportModule.getTableName((String) fieldMap.get("table_name"))+"]" + (String) fieldMap.get("field_label"));
+						displayBool = true;
+						break;
+					}
+				}
+				//实质是某某id的字段不能作为显示/隐藏字段的选项，因为客户根本没法看,而且在同一报表中有其他字段可以代替它作为合理的展示字段
+				if((!displayBool)&&(!ReportModule.noneSelectIds.contains(fullFieldName.toLowerCase()))){
+					Map<String, Object> hiddenField = new HashMap<String, Object>();
+					hiddenField.put("dbid", dbId);
+					hiddenField.put("is_display", 0);
+					hiddenField.put("display_order", 999999);
+					hiddenField.put("column_field_name", (String) fieldMap.get("column_field_name"));
+					hiddenField.put("defined_id", fieldMap.get("id"));
+					hiddenField.put("field_type", (String) fieldMap.get("field_type"));
+					hiddenField.put("field_type_ex", (String) fieldMap.get("field_type_ex"));
+					hiddenField.put("values", fieldMap.get("values"));
+					hiddenField.put("display_name", "[" + ReportModule.getTableName((String) fieldMap.get("table_name"))+"]" + (String) fieldMap.get("field_label"));
+					hiddenField = doSpecialField(hiddenField);
+					hiddenFields.add(hiddenField);
+				}
+			}
+		}
+		Map<String, Object> reportFields = new HashMap<String, Object>();
+		reportFields.put("displayFields", displayFields);
+		reportFields.put("hiddenFields", hiddenFields);
+		return reportFields;
+	}
+
+	
+	//仅传输form对象的id,完成查询数据的功能
+	public Map<String, Object> searchDataByFormId(RequestDTO requestDTO) throws Exception {
+		List<SortDTO> sort = requestDTO.getSort();
+		requestDTO.putAllSort(new ArrayList<SortDTO>());
+		Map<String, Object> report = ReportForm.dao.queryReporById(requestDTO);
+		Long form_id = (Long) report.get("id");
+		String module = (String) report.get("module");
+		//显示所有可见字段,这里的字段可以通过适当的方式用来构造表头
+		List<Map<String, Object>> displayFields = ReportForm.dao.getDisplayFields(requestDTO,form_id);
+		//显示所有约束字段条件
+		List<Map<String, Object>> fieldFilters = ReportForm.dao.getFieldFilters(requestDTO,form_id);
+		
+		//把report关联的filter对象组织成过滤条件的属性
+		List<FilterDTO>filterList = new ArrayList<FilterDTO>();
+		for(Map<String, Object> fMap: fieldFilters){
+			String column_field_name = (String)fMap.get("column_field_name");
+			String filter_value = (String)fMap.get("filter_value");
+			String filter_option = (String)fMap.get("filter_option");
+			if ("in".equalsIgnoreCase(filter_option)) {
+				FilterDTO dto = new FilterDTO(column_field_name, filter_value, filter_option);
+				dto.setValues(filter_value.split(","));
+				filterList.add(dto);
+			} else {
+				filterList.add(new FilterDTO(column_field_name, filter_value, filter_option));
+			}
+		}
+		requestDTO.putAllFitler(filterList);
+		requestDTO.put("module", module);
+		
+		//借用原本的查询数据接口
+		requestDTO.putAllSort(sort);
+		Map<String, Object>  dataMap = searchData(requestDTO);
+		
+		Map<String, Object> result =  new HashMap<String, Object>();
+		result.put("displayFields", displayFields);
+		result.put("dataMap", dataMap);
+		result.put("report", report);
+		return result;
+	}
+	
+
+
+	//查询数据
+	public Map<String, Object> searchData(RequestDTO requestDTO) {
+		System.out.println(ToolGson.GsonString(requestDTO));
+		ContextDTO ctd = requestDTO.getContextDTO();
+		Map<Object, Object> data = requestDTO.getData();
+		
+		//拼接所有的字段，不用select *
+		String module = ((String) data.get("module")).trim();
+		String hsql = generateHsql(module);
+		System.err.println(hsql);
+		//寻找后半sql语句
+		String sqlEnd = generateSearchSql(requestDTO,module);
+		System.err.println(sqlEnd);
+		PageDto page = ToolGson.GsonToBean(requestDTO.get("page").toString(), PageDto.class);
+		//生成后半段sql语句
+		Page<Record> paginate = Db.paginate(ctd,page.getRowStart(),page.getLimit(), hsql,sqlEnd);
+		List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(paginate.getList());
+		Map<String,Object> result = new HashMap<String,Object>();
+		result.put("items", recordListConvert);
+		result.put("currentPage", paginate.getPageNumber());
+		result.put("limit", paginate.getPageSize());
+		int totalPages = paginate.getTotalPage();
+		if(totalPages == 0)totalPages = 1;
+		result.put("totalPages", totalPages);
+		result.put("totalCount", paginate.getTotalRow());
+		return result;
+	}
+
+
+	private String generateHsql(String module) {
+		StringBuilder strBuilder = new StringBuilder("SELECT ");
+		if("101".equals(module)){
+			strBuilder.append("t101User.display_name as t101User_display_name,");
+			strBuilder.append(ToolJfinalSql.buildSelectSql(Customer.class, "t101","t101"));
+			
+		}else if("102".equals(module)){
+			strBuilder.append("t101User.display_name as t101User_display_name,");
+			strBuilder.append(ToolJfinalSql.buildSelectSql(Customer.class, "t101","t101"));
+			strBuilder.append(",");
+			strBuilder.append("t102User.display_name as t102User_display_name,");
+			strBuilder.append(ToolJfinalSql.buildSelectSql(CustomerContact.class, "t102","t102"));
+		}else if("201".equals(module)){
+			strBuilder.append("t101User.display_name as t101User_display_name,");
+			strBuilder.append(ToolJfinalSql.buildSelectSql(Customer.class, "t101","t101"));
+			strBuilder.append(",");
+			strBuilder.append("t102User.display_name as t102User_display_name,");
+			strBuilder.append(ToolJfinalSql.buildSelectSql(CustomerContact.class, "t102","t102"));
+			strBuilder.append(",");
+			strBuilder.append("t201User.display_name as t201User_display_name,");
+			strBuilder.append(ToolJfinalSql.buildSelectSql(Opportunity.class, "t201","t201"));
+			strBuilder.append(",");
+			//赢率字段其实不属于t201表，但是deifined表里把它定义给了t201表，必须手动加上了
+			strBuilder.append("s.win_rate AS t201_win_rate");
+		}else if("301".equals(module)){
+			strBuilder.append("t101User.display_name as t101User_display_name,");
+			strBuilder.append("t201.name as t201_opportunityname,");
+			strBuilder.append(ToolJfinalSql.buildSelectSql(Customer.class, "t101","t101"));
+			strBuilder.append(",");
+			strBuilder.append("t301User.display_name as t301User_display_name,");
+			strBuilder.append(ToolJfinalSql.buildSelectSql(Contract.class, "t301","t301"));
+		}
+		return strBuilder.toString();
+	}
+
+
+	//根据不同的情况生产不同的后半段sql语句
+	private String generateSearchSql(RequestDTO requestDTO, String module) {
+		Map<String, Object> map = new HashMap<>();
+		ContextDTO ctd = requestDTO.getContextDTO();
+		List<FilterDTO> filterList = requestDTO.getFitler();
+		for(FilterDTO dto: filterList){
+			String fieldName = dto.getProperty();
+			if("t201.win_rate".equalsIgnoreCase(fieldName)){
+				dto.setProperty("s.win_rate");
+			}else if("t201.opportunityname".equalsIgnoreCase(fieldName)){
+				dto.setProperty("t201.name");
+			}
+		}
+		map.put("filters", filterList);
+		map.put("sorts", requestDTO.getSort());
+		map.put("contextDTO", ctd);
+		Map<String,Object> data = new HashMap<String,Object>();
+		data.put("selectType", "");
+		map.put("data", data);
+		String sql = "";
+		if("101".equals(module)){
+			sql = ToolSqlXml.getSql("winbons.report.searchCustomer", map);
+		}else if("102".equals(module)){
+			sql = ToolSqlXml.getSql("winbons.report.searchCustomerLinker", map);
+			//需要补齐其他条件分支
+		}else if("201".equals(module)){
+			sql = ToolSqlXml.getSql("winbons.opportunity.searchOpportunity", map);
+		}else if("301".equals(module)){
+			sql = ToolSqlXml.getSql("winbons.contract.searchContract", map);
+		}
+		return sql;
+	}
+
+	//显示所有可见字段
+	public List<Map<String, Object>> getDisplayFields(RequestDTO requestDTO, Long form_id, List<Map<String, Object>> availFields) {
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Map<String,Object> map = new HashMap<String,Object>();
+		List<FilterDTO> tempFitler = new ArrayList<FilterDTO>();
+		tempFitler.add(new FilterDTO("t1.form_id", form_id, "="));
+		tempFitler.add(new FilterDTO("t1.is_display", 1, "="));
+		map.put("filters", tempFitler);
+		map.put("sorts", requestDTO.getSort());
+		map.put("contextDTO", contextDTO);
+		
+		StringBuilder strBuilder = new StringBuilder("SELECT ");
+		strBuilder.append(ToolJfinalSql.buildSelectSql(ReportFormItem.class, "t1","t1"));
+		strBuilder.append(",");
+		strBuilder.append(ToolJfinalSql.buildSelectSql(DefinedFeildModel.class, "t2","t2"));
+		String sql = strBuilder.toString() + " " + ToolSqlXml.getSql("winbons.report.getReportFields", map);
+		List<Record> RecordList = Db.find(contextDTO,sql);
+		List<Map<String, Object>> list = ToolModel.recordListConvert(RecordList);
+		List<Map<String, Object>> newList = new ArrayList<>();
+		for(Map<String, Object> field: list){
+			String column_field_name = (String) field.get("t2_column_field_name");
+			Map<String, Object> newField = new HashMap<String, Object>();
+			newField.put("id", field.get("t1_id"));
+			newField.put("dbid", field.get("t1_dbid"));
+			newField.put("is_display", field.get("t1_is_display"));
+			newField.put("display_order", field.get("t1_display_order"));
+			newField.put("form_id", field.get("t1_form_id"));
+			newField.put("defined_id", field.get("t1_defined_id"));
+			newField.put("width", field.get("t1_width"));
+			String table_name = (String) field.get("t2_table_name");
+			table_name = ReportModule.getOtherTableName(table_name);
+			newField.put("column_field_name", table_name+"."+column_field_name);
+			
+			newField.put("display_name","[" + ReportModule.getTableName(table_name)+"]" + (String) field.get("t2_field_label"));
+			newField.put("field_type", (String) field.get("t2_field_type"));
+			newField.put("field_type_ex", (String) field.get("t2_field_type_ex"));
+			String fieldTypeEx = (String) newField.get("field_type_ex");
+			if (!StrKit.isBlank(fieldTypeEx)) {
+				if (fieldTypeEx.equals("combobox") || fieldTypeEx.equals("special")) {
+					newField.put("values", findItemOptionValues(newField, availFields));
+				}
+			}
+			newField = doSpecialField(newField);
+			newList.add(newField);
+		}
+		return newList;
+	}
+
+	public Map<String, Object> doSpecialField(Map<String, Object> map) {
+		if ("t301.opportunityid".equalsIgnoreCase((String) map.get("column_field_name"))) {
+			map.put("column_field_name", "t201.opportunityname");
+			map.put("field_type", "text");
+			map.put("field_type_ex", "text");
+		}
+		return map;
+	}
+
+	// 寻找某些需要找到的选项的所有可选值
+	private Object findItemOptionValues(Map<String, Object> newField, List<Map<String, Object>> availFields) {
+		Long defined_id = (Long) newField.get("defined_id");
+			// 遍历所有从defined表里找到的字段
+		for(Map<String, Object> tableFields :availFields){
+			List<Map<String, Object>> list = (List<Map<String, Object>>) tableFields.get("list");
+			for (Map<String, Object> fieldMap : list) {
+				Long id = (Long) fieldMap.get("id");
+				if (Long.compare(defined_id, id) ==0) {
+					return fieldMap.get("values");
+				}
+			}
+		}
+		return null;
+	}
+	
+	//显示所有可见字段的重构方法
+	public List<Map<String, Object>> getDisplayFields(RequestDTO requestDTO, Long form_id) {
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Map<String,Object> map = new HashMap<String,Object>();
+		List<FilterDTO> tempFitler = new ArrayList<FilterDTO>();
+		tempFitler.add(new FilterDTO("t1.form_id", form_id, "="));
+		tempFitler.add(new FilterDTO("t1.is_display", 1, "="));
+		map.put("filters", tempFitler);
+		map.put("sorts", requestDTO.getSort());
+		map.put("contextDTO", contextDTO);
+		
+		StringBuilder strBuilder = new StringBuilder("SELECT ");
+		strBuilder.append(ToolJfinalSql.buildSelectSql(ReportFormItem.class, "t1","t1"));
+		strBuilder.append(",");
+		strBuilder.append(ToolJfinalSql.buildSelectSql(DefinedFeildModel.class, "t2","t2"));
+		String sql = strBuilder.toString() + " " + ToolSqlXml.getSql("winbons.report.getReportFields", map);
+		List<Record> RecordList = Db.find(contextDTO,sql);
+		List<Map<String, Object>> list = ToolModel.recordListConvert(RecordList);
+		List<Map<String, Object>> newList = new ArrayList<>();
+		for(Map<String, Object> field: list){
+			String column_field_name = (String) field.get("t2_column_field_name");
+			Map<String, Object> newField = new HashMap<String, Object>();
+			newField.put("id", field.get("t1_id"));
+			newField.put("dbid", field.get("t1_dbid"));
+			newField.put("is_display", field.get("t1_is_display"));
+			newField.put("display_order", field.get("t1_display_order"));
+			newField.put("form_id", field.get("t1_form_id"));
+			newField.put("defined_id", field.get("t1_defined_id"));
+			String table_name = (String) field.get("t2_table_name");
+			table_name = ReportModule.getOtherTableName(table_name);
+			newField.put("column_field_name", table_name+"."+column_field_name);
+			newField.put("display_name","[" + ReportModule.getTableName(table_name)+"]" + (String) field.get("t2_field_label"));
+			newField.put("field_type",  field.get("t2_field_type"));
+			newField.put("field_type_ex",  field.get("t2_field_type_ex"));
+			newField.put("comboxid",  field.get("t2_comboxid"));
+			newField.put("field_type_value",  field.get("t2_field_type_value"));
+			newList.add(newField);
+		}
+		return newList;
+	}
+	
+	//2个参数的重构方法
+	public List<Map<String, Object>> getFieldFilters(RequestDTO requestDTO, Long form_id) {
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Map<String,Object> map = new HashMap<String,Object>();
+		List<FilterDTO> tempFitler = new ArrayList<FilterDTO>();
+		tempFitler.add(new FilterDTO("t1.form_id", form_id, "="));
+		map.put("filters", tempFitler);
+		map.put("sorts", requestDTO.getSort());
+		map.put("contextDTO", contextDTO);
+		
+		StringBuilder strBuilder = new StringBuilder("SELECT ");
+		strBuilder.append(ToolJfinalSql.buildSelectSql(ReportFormFilter.class, "t1","t1"));
+		strBuilder.append(",");
+		strBuilder.append(ToolJfinalSql.buildSelectSql(DefinedFeildModel.class, "t2","t2"));
+		String sql = strBuilder.toString() + " " + ToolSqlXml.getSql("winbons.report.getReportFilters", map);
+		System.err.println(sql);
+		List<Record> RecordList = Db.find(contextDTO,sql);
+		List<Map<String, Object>> list = ToolModel.recordListConvert(RecordList);
+		List<Map<String, Object>> newList = new ArrayList<>();
+		for(Map<String, Object> field: list){
+			Map<String, Object> newField = new HashMap<String, Object>();
+			newField.put("id", field.get("t1_id"));
+			newField.put("dbid", field.get("t1_dbid"));
+			newField.put("form_id", field.get("t1_form_id"));
+			newField.put("defined_id", field.get("t1_defined_id"));
+			newField.put("filter_value", field.get("t1_filter_value"));
+			newField.put("filter_option", field.get("t1_filter_option"));
+			String column_field_name = (String) field.get("t2_column_field_name");
+			String table_name = (String) field.get("t2_table_name");
+			table_name = ReportModule.getOtherTableName(table_name);
+			newField.put("column_field_name", table_name+"."+column_field_name);
+			newField.put("display_name","[" + ReportModule.getTableName(table_name)+"]" + (String) field.get("t2_field_label"));
+			newField.put("field_type", field.get("t2_field_type"));
+			newField.put("field_type_ex", field.get("t2_field_type_ex"));
+			newField.put("values", field.get("t2_values"));
+			newList.add(newField);
+		}
+		return newList;
+	}
+	
+	
+	public List<Map<String, Object>> getFieldFilters(RequestDTO requestDTO, Long form_id, List<Map<String, Object>> availFields) {
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Map<String,Object> map = new HashMap<String,Object>();
+		List<FilterDTO> tempFitler = new ArrayList<FilterDTO>();
+		tempFitler.add(new FilterDTO("t1.form_id", form_id, "="));
+		map.put("filters", tempFitler);
+		map.put("sorts", requestDTO.getSort());
+		map.put("contextDTO", contextDTO);
+		
+		StringBuilder strBuilder = new StringBuilder("SELECT ");
+		strBuilder.append(ToolJfinalSql.buildSelectSql(ReportFormFilter.class, "t1","t1"));
+		strBuilder.append(",");
+		strBuilder.append(ToolJfinalSql.buildSelectSql(DefinedFeildModel.class, "t2","t2"));
+		String sql = strBuilder.toString() + " " + ToolSqlXml.getSql("winbons.report.getReportFilters", map);
+		List<Record> RecordList = Db.find(contextDTO,sql);
+		List<Map<String, Object>> list = ToolModel.recordListConvert(RecordList);
+		List<Map<String, Object>> newList = new ArrayList<>();
+		for(Map<String, Object> field: list){
+			Map<String, Object> newField = new HashMap<String, Object>();
+			newField.put("id", field.get("t1_id"));
+			newField.put("dbid", field.get("t1_dbid"));
+			newField.put("form_id", field.get("t1_form_id"));
+			newField.put("defined_id", field.get("t1_defined_id"));
+			newField.put("filter_value", field.get("t1_filter_value"));
+			newField.put("filter_option", field.get("t1_filter_option"));
+			String column_field_name = (String) field.get("t2_column_field_name");
+			String table_name = (String) field.get("t2_table_name");
+			table_name = ReportModule.getOtherTableName(table_name);
+			newField.put("column_field_name", table_name+"."+column_field_name);
+			newField.put("display_name","[" + ReportModule.getTableName(table_name)+"]" + (String) field.get("t2_field_label"));
+			newField.put("field_type", field.get("t2_field_type"));
+			newField.put("field_type_ex", field.get("t2_field_type_ex"));
+			String fieldTypeEx = (String) newField.get("field_type_ex");
+			if (!StrKit.isBlank(fieldTypeEx)) {
+				if (fieldTypeEx.equals("combobox") || fieldTypeEx.equals("special")) {
+					newField.put("values", findItemOptionValues(newField, availFields));
+				}
+			}
+			newField = doSpecialField(newField);
+			newList.add(newField);
+		}
+		return newList;
+	}
+
+	//找到隐藏字段
+	public List<Map<String, Object>> getHiddenFields(List<Map<String, Object>> availFields,List<Map<String, Object>> displayFields) {
+		Set<Long> displayIds = new HashSet<>();
+		for(Map<String, Object> field: displayFields){
+			displayIds.add((Long) field.get("defined_id"));
+		}
+		List<Map<String, Object>> hiddenFields =  new ArrayList<Map<String,Object>>();
+		for(Map<String, Object> tableFields: availFields){
+			List<Map<String, Object>> list = (List<Map<String, Object>>) tableFields.get("list");
+			//遍历所有从defined表里找到的字段
+			for(Map<String, Object> fieldMap :list){
+				Long defined_id = (Long) fieldMap.get("id");
+				if(!displayIds.contains(defined_id)){
+					//id字段不能作为显示/隐藏字段的选项，因为显示出去客户根本无法理解,但是owner_id作为特例
+					String fullFieldName = (String) fieldMap.get("column_field_name");
+					if(ReportModule.noneSelectIds.contains(fullFieldName.toLowerCase())){
+						continue;
+					}
+					Map<String, Object> hiddenField = new HashMap<String, Object>();
+					hiddenField.put("is_display", 0);
+					hiddenField.put("display_order", 999999);
+					hiddenField.put("column_field_name", (String) fieldMap.get("column_field_name"));
+					hiddenField.put("defined_id", fieldMap.get("id"));
+					hiddenField.put("display_name", "[" + ReportModule.getTableName((String) fieldMap.get("table_name"))+"]" + (String) fieldMap.get("field_label"));
+					hiddenField.put("field_type", (String) fieldMap.get("field_type"));
+					hiddenField.put("field_type_ex", (String) fieldMap.get("field_type_ex"));
+					hiddenField.put("values", fieldMap.get("values"));
+					hiddenField = doSpecialField(hiddenField);
+					hiddenFields.add(hiddenField);
+				}
+			}
+		}
+		
+		return hiddenFields;
+	}
+
+	public void checkRightByModule(Map<String, Boolean> privilegeMap, String module) throws Exception {
+		boolean right = false;
+		if("101".equals(module)||"102".equals(module)){
+			right = privilegeMap.get("reportManager:customer");
+		}else if("201".equals(module)){
+			right = privilegeMap.get("reportManager:opportunity");
+		}else if("301".equals(module)){
+			right = privilegeMap.get("reportManager:contract");
+		}
+		if(!right){
+			throw new Exception("用户没有当前报表模块的权限");
+		}
+	}
+
+	public void setFieldWidth(RequestDTO requestDTO) {
+		//修改单个字段的宽度
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Map<Object, Object> data = requestDTO.getData();
+		HashMap<String, Object> map = new HashMap<String, Object>();
+		map.put("contextDTO", contextDTO);
+		map.put("id", data.get("id"));
+		map.put("width", data.get("width"));
+		if(!Db.tx(new IAtom() {
+			@Override
+			public boolean run() throws SQLException {
+				//修改字段宽度
+				String sql = ToolSqlXml.getSql("winbons.report.setFieldWidth", map);
+				Db.update(contextDTO, sql);
+				return true;
+			}
+		}));
+	}
+
+
+
+	
+	
+	
+}

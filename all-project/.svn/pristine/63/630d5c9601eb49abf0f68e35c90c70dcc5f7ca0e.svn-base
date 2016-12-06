@@ -1,0 +1,96 @@
+package saas.winbons.provider;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import saas.winbons.data.model.security.User;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.service.AbstractCommonService;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.tools.ToolSqlXml;
+
+import com.jfinal.aop.Enhancer;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Model;
+import com.jfinal.plugin.activerecord.Record;
+
+public class CrmRightServiceImpl extends AbstractCommonService {
+	
+	public static final CrmRightServiceImpl service = Enhancer.enhance(CrmRightServiceImpl.class);
+
+	@Override
+	public Class<? extends Model<?>> getModelClass() {
+		return User.class;
+	}
+
+	@Override
+	public Class<? extends IEnumFormat> getFormatClass() {
+		return null;
+	}
+
+	@Override
+	public String getGridId() {
+		return null;
+	}
+
+	@Override
+	public String getTableName() {
+		return null;
+	}
+
+	@Override
+	public AbstractCommonService getService() {
+		return null;
+	}
+
+	@Override
+	public FilterItemList buildFilterItem(ContextDTO contextDTO,
+			SimulationHttpServletRequest request) {
+		return null;
+	}
+
+	@Override
+	public String getGridHeadSql() {
+		return null;
+	}
+
+	@Override
+	public String getGridSql() {
+		return null;
+	}
+
+	@Override
+	public void rebuildCreateSearchView(RequestDTO requestDTO) {
+
+	}
+
+	@Override
+	public void reUpdateCreateSearchView(List<Map<String, Object>> list) {
+
+	}
+	
+	public static Map<String, Boolean> getPrivilegeMap(ContextDTO contextDTO,Long userId,String... strs) {
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contextDTO", contextDTO);
+		map.put("userId", userId);
+		String sql = ToolSqlXml.getSql("winbons.department.getUserAcl",map);
+		List<Record> find = Db.find(contextDTO, sql);
+		List<String> rightList = new ArrayList<String>();
+		for(Record record : find){
+			rightList.add(String.valueOf(record.getColumnValues()[0]));
+		}
+		Map<String, Boolean> result = new HashMap<String, Boolean>();
+		for (String string : strs) {
+			result.put(string, rightList.contains(string));
+		} 
+		return result;
+	}
+	
+	
+
+}

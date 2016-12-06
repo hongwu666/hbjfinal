@@ -1,0 +1,8 @@
+package saas.framework.cache;
+
+public interface ICacheListener {
+
+	String FINAL_CACHE_KEY = "FINAL_CACHE_KEY";
+
+	public void update(EhCacheVO ehCacheVO);
+}

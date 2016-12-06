@@ -1,0 +1,106 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: DynamicTopicEn.java 
+ * @Package saas.crm.dynamic.model 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年10月27日 下午1:00:23 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.model;
+
+/**
+ * @ClassName: DynamicTopicEn
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年10月27日 下午1:00:23
+ */
+
+public class DynamicTopicEn {
+
+	private Long id;
+
+	private String name;
+
+	/**
+	 * @return the id
+	 */
+
+	public Long getId() {
+
+		return id;
+	}
+
+	/**
+	 * @param id
+	 *            the id to set
+	 */
+
+	public void setId(Long id) {
+
+		this.id = id;
+	}
+
+	/**
+	 * @return the name
+	 */
+
+	public String getName() {
+
+		return name;
+	}
+
+	/**
+	 * @param name
+	 *            the name to set
+	 */
+
+	public void setName(String name) {
+
+		this.name = name;
+	}
+
+	public DynamicTopicEn(Long id, String name) {
+		super();
+		this.id = id;
+		this.name = name;
+	}
+
+	public DynamicTopicEn() {
+		super();
+	}
+
+	public DynamicTopicEn(String name) {
+		super();
+		this.name = name;
+	}
+
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((name == null) ? 0 : name.hashCode());
+		return result;
+	}
+
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		DynamicTopicEn other = (DynamicTopicEn) obj;
+		if (name == null) {
+			if (other.name != null)
+				return false;
+		} else if (!name.equals(other.name))
+			return false;
+		return true;
+	}
+}

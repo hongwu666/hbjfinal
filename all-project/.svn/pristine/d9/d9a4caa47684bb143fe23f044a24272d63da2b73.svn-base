@@ -1,0 +1,102 @@
+package saas.winbons.data.model.defined;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.poi.hssf.usermodel.HSSFDateUtil;
+
+import saas.winbons.framework.execption.ServiceException;
+import saas.winbons.framework.tools.ToolString;
+
+
+
+public class DefinedFeildModel extends ColumnDefinedFeild<DefinedFeildModel> {
+
+	private static final long serialVersionUID = -7734719201848205364L;
+	
+	public static final DefinedFeildModel dao = new DefinedFeildModel();
+	
+	
+	
+	
+	public void buildMapByDefinedFeildByExecl(Map<String,Object> map,Map<String, Object> definitionField,String value){
+		if(ToolString.isEmptyString(definitionField.get("column_field_name")))return;
+		if(ToolString.isEmptyString(value))return;
+		String fieldTypeEx = ToolString.toString(definitionField.get("field_type_ex"));
+		String columnFieldName = ToolString.toString(definitionField.get("column_field_name"));
+		if(null == fieldTypeEx){
+			map.put(columnFieldName, value);
+		}else{
+			if(fieldTypeEx.equals("number")){
+				try{
+					Double.parseDouble(value);
+				}catch(Exception e){
+					throw new ServiceException("5,%s" + definitionField.get("field_label") + "非数字类型");
+				}
+				map.put(columnFieldName, value);
+			}else if(fieldTypeEx.equals("text") || fieldTypeEx.equals("textarea")){
+				map.put(columnFieldName, value);
+			}else if(fieldTypeEx.equals("combobox") || fieldTypeEx.equals("special")){
+				Map<String,Object>[] object = (Map<String,Object>[])definitionField.get("values");
+				for(Map<String,Object> listItems : object){
+					value = replaceListValue(value);
+					if(ToolString.toString(listItems.get("label")).equals(value)){
+						map.put(columnFieldName, listItems.get("id"));
+						return;
+					}
+				}
+				if(!map.containsKey(columnFieldName)){
+					throw new ServiceException("5,%s" + definitionField.get("field_label") + "无法与系统匹配");
+				}
+			}else if(fieldTypeEx.equals("fdt") || fieldTypeEx.equals("fdate") || fieldTypeEx.equals("ftime")){
+				Date parseDate = null;
+				Calendar c = Calendar.getInstance();
+				try {
+					parseDate = HSSFDateUtil.getJavaDate(Double.parseDouble(value));
+				} catch (Exception e) {
+					throw new ServiceException("5,%s" + definitionField.get("field_label") + "时间格式有问题");
+				}
+				if(null != parseDate){
+					c.setTime(parseDate);
+					if(fieldTypeEx.equals("ftime")){
+						c.set(Calendar.YEAR, 2000);
+						c.set(Calendar.MONTH, 0);
+						c.set(Calendar.DAY_OF_YEAR, 1);
+					}else{
+						if(1900 > c.get(Calendar.YEAR) || c.get(Calendar.YEAR) > 2050){
+							throw new ServiceException("5,%s" + definitionField.get("field_label") + "时间格式有问题");
+						}
+					}
+					map.put(columnFieldName, c.getTimeInMillis());
+					return;
+				}
+			}else if(fieldTypeEx.equals("autocomplete")){
+				map.put(columnFieldName, value);
+			}else if(fieldTypeEx.equals("linkage") || fieldTypeEx.equals("splitline")){
+				return;
+			}else{
+				return ;
+			}
+		}
+		
+		
+		
+	}
+	
+	private Pattern p = Pattern.compile("\\s*|\t|\r|\n");
+	
+	
+	private String replaceListValue(String str){
+		 String dest = "";
+         if (str!=null) {
+             Matcher m = p.matcher(str);
+             dest = m.replaceAll("");
+         }
+		 return dest;
+	}
+	
+	
+}

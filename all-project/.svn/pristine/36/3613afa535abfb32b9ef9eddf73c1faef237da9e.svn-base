@@ -1,0 +1,502 @@
+package com.jfinal.plugin.sql;
+
+import net.sf.jsqlparser.expression.AllComparisonExpression;
+import net.sf.jsqlparser.expression.AnalyticExpression;
+import net.sf.jsqlparser.expression.AnyComparisonExpression;
+import net.sf.jsqlparser.expression.CaseExpression;
+import net.sf.jsqlparser.expression.CastExpression;
+import net.sf.jsqlparser.expression.DateValue;
+import net.sf.jsqlparser.expression.DoubleValue;
+import net.sf.jsqlparser.expression.ExpressionVisitor;
+import net.sf.jsqlparser.expression.ExtractExpression;
+import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.IntervalExpression;
+import net.sf.jsqlparser.expression.JdbcNamedParameter;
+import net.sf.jsqlparser.expression.JdbcParameter;
+import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.NullValue;
+import net.sf.jsqlparser.expression.OracleHierarchicalExpression;
+import net.sf.jsqlparser.expression.Parenthesis;
+import net.sf.jsqlparser.expression.SignedExpression;
+import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.expression.TimeValue;
+import net.sf.jsqlparser.expression.TimestampValue;
+import net.sf.jsqlparser.expression.WhenClause;
+import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
+import net.sf.jsqlparser.expression.operators.arithmetic.BitwiseAnd;
+import net.sf.jsqlparser.expression.operators.arithmetic.BitwiseOr;
+import net.sf.jsqlparser.expression.operators.arithmetic.BitwiseXor;
+import net.sf.jsqlparser.expression.operators.arithmetic.Concat;
+import net.sf.jsqlparser.expression.operators.arithmetic.Division;
+import net.sf.jsqlparser.expression.operators.arithmetic.Modulo;
+import net.sf.jsqlparser.expression.operators.arithmetic.Multiplication;
+import net.sf.jsqlparser.expression.operators.arithmetic.Subtraction;
+import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
+import net.sf.jsqlparser.expression.operators.relational.Between;
+import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
+import net.sf.jsqlparser.expression.operators.relational.ExistsExpression;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
+import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
+import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
+import net.sf.jsqlparser.expression.operators.relational.InExpression;
+import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
+import net.sf.jsqlparser.expression.operators.relational.ItemsListVisitor;
+import net.sf.jsqlparser.expression.operators.relational.LikeExpression;
+import net.sf.jsqlparser.expression.operators.relational.Matches;
+import net.sf.jsqlparser.expression.operators.relational.MinorThan;
+import net.sf.jsqlparser.expression.operators.relational.MinorThanEquals;
+import net.sf.jsqlparser.expression.operators.relational.MultiExpressionList;
+import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
+import net.sf.jsqlparser.expression.operators.relational.RegExpMatchOperator;
+import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.StatementVisitor;
+import net.sf.jsqlparser.statement.Statements;
+import net.sf.jsqlparser.statement.alter.Alter;
+import net.sf.jsqlparser.statement.create.index.CreateIndex;
+import net.sf.jsqlparser.statement.create.table.CreateTable;
+import net.sf.jsqlparser.statement.create.view.CreateView;
+import net.sf.jsqlparser.statement.delete.Delete;
+import net.sf.jsqlparser.statement.drop.Drop;
+import net.sf.jsqlparser.statement.insert.Insert;
+import net.sf.jsqlparser.statement.replace.Replace;
+import net.sf.jsqlparser.statement.select.AllColumns;
+import net.sf.jsqlparser.statement.select.AllTableColumns;
+import net.sf.jsqlparser.statement.select.FromItemVisitor;
+import net.sf.jsqlparser.statement.select.IntoTableVisitor;
+import net.sf.jsqlparser.statement.select.LateralSubSelect;
+import net.sf.jsqlparser.statement.select.OrderByElement;
+import net.sf.jsqlparser.statement.select.OrderByVisitor;
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.Select;
+import net.sf.jsqlparser.statement.select.SelectExpressionItem;
+import net.sf.jsqlparser.statement.select.SelectItemVisitor;
+import net.sf.jsqlparser.statement.select.SelectVisitor;
+import net.sf.jsqlparser.statement.select.SetOperationList;
+import net.sf.jsqlparser.statement.select.SubJoin;
+import net.sf.jsqlparser.statement.select.SubSelect;
+import net.sf.jsqlparser.statement.select.ValuesList;
+import net.sf.jsqlparser.statement.select.WithItem;
+import net.sf.jsqlparser.statement.truncate.Truncate;
+import net.sf.jsqlparser.statement.update.Update;
+
+public class EmptyVisitor implements ExpressionVisitor, ItemsListVisitor,
+		IntoTableVisitor, SelectVisitor, OrderByVisitor, SelectItemVisitor,
+		FromItemVisitor, StatementVisitor {
+
+	@Override
+	public void visit(NullValue nullValue) {
+	}
+
+	@Override
+	public void visit(Function function) {
+	}
+
+
+	@Override
+	public void visit(JdbcParameter jdbcParameter) {
+	}
+
+	@Override
+	public void visit(DoubleValue doubleValue) {
+	}
+
+	@Override
+	public void visit(LongValue longValue) {
+	}
+
+	@Override
+	public void visit(DateValue dateValue) {
+	}
+
+	@Override
+	public void visit(TimeValue timeValue) {
+	}
+
+	@Override
+	public void visit(TimestampValue timestampValue) {
+	}
+
+	@Override
+	public void visit(Parenthesis parenthesis) {
+	}
+
+	@Override
+	public void visit(StringValue stringValue) {
+	}
+
+	@Override
+	public void visit(Addition addition) {
+	}
+
+	@Override
+	public void visit(Division division) {
+	}
+
+	@Override
+	public void visit(Multiplication multiplication) {
+	}
+
+	@Override
+	public void visit(Subtraction subtraction) {
+	}
+
+	@Override
+	public void visit(AndExpression andExpression) {
+	}
+
+	@Override
+	public void visit(OrExpression orExpression) {
+	}
+
+	@Override
+	public void visit(Between between) {
+	}
+
+	@Override
+	public void visit(EqualsTo equalsTo) {
+	}
+
+	@Override
+	public void visit(GreaterThan greaterThan) {
+	}
+
+	@Override
+	public void visit(GreaterThanEquals greaterThanEquals) {
+	}
+
+	@Override
+	public void visit(InExpression inExpression) {
+	}
+
+	@Override
+	public void visit(IsNullExpression isNullExpression) {
+	}
+
+	@Override
+	public void visit(LikeExpression likeExpression) {
+	}
+
+	@Override
+	public void visit(MinorThan minorThan) {
+	}
+
+	@Override
+	public void visit(MinorThanEquals minorThanEquals) {
+	}
+
+	@Override
+	public void visit(NotEqualsTo notEqualsTo) {
+	}
+
+	@Override
+	public void visit(Column tableColumn) {
+	}
+
+	@Override
+	public void visit(SubSelect subSelect) {
+	}
+
+	@Override
+	public void visit(CaseExpression caseExpression) {
+	}
+
+	@Override
+	public void visit(WhenClause whenClause) {
+	}
+
+	@Override
+	public void visit(ExistsExpression existsExpression) {
+	}
+
+	@Override
+	public void visit(AllComparisonExpression allComparisonExpression) {
+	}
+
+	@Override
+	public void visit(AnyComparisonExpression anyComparisonExpression) {
+	}
+
+	@Override
+	public void visit(Concat concat) {
+	}
+
+	@Override
+	public void visit(Matches matches) {
+	}
+
+	@Override
+	public void visit(BitwiseAnd bitwiseAnd) {
+	}
+
+	@Override
+	public void visit(BitwiseOr bitwiseOr) {
+	}
+
+	@Override
+	public void visit(BitwiseXor bitwiseXor) {
+	}
+
+	@Override
+	public void visit(ExpressionList expressionList) {
+	}
+
+	@Override
+	public void visit(Table tableName) {
+	}
+
+	@Override
+	public void visit(PlainSelect plainSelect) {
+	}
+
+	@Override
+	public void visit(OrderByElement orderBy) {
+	}
+
+	@Override
+	public void visit(AllColumns allColumns) {
+	}
+
+	@Override
+	public void visit(AllTableColumns allTableColumns) {
+	}
+
+	@Override
+	public void visit(SelectExpressionItem selectExpressionItem) {
+	}
+
+	@Override
+	public void visit(SubJoin subjoin) {
+	}
+
+	@Override
+	public void visit(Select select) {
+	}
+
+	@Override
+	public void visit(Delete delete) {
+	}
+
+	@Override
+	public void visit(Update update) {
+	}
+
+	@Override
+	public void visit(Insert insert) {
+	}
+
+	@Override
+	public void visit(Replace replace) {
+	}
+
+	@Override
+	public void visit(Drop drop) {
+	}
+
+	@Override
+	public void visit(Truncate truncate) {
+	}
+
+	@Override
+	public void visit(CreateTable createTable) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.statement.StatementVisitor#visit(net.sf.jsqlparser.statement.create.index.CreateIndex) 
+	         */   
+	    
+	@Override
+	public void visit(CreateIndex arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.statement.StatementVisitor#visit(net.sf.jsqlparser.statement.create.view.CreateView) 
+	         */   
+	    
+	@Override
+	public void visit(CreateView arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.statement.StatementVisitor#visit(net.sf.jsqlparser.statement.alter.Alter) 
+	         */   
+	    
+	@Override
+	public void visit(Alter arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.statement.StatementVisitor#visit(net.sf.jsqlparser.statement.Statements) 
+	         */   
+	    
+	@Override
+	public void visit(Statements arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.statement.select.FromItemVisitor#visit(net.sf.jsqlparser.statement.select.LateralSubSelect) 
+	         */   
+	    
+	@Override
+	public void visit(LateralSubSelect arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.statement.select.FromItemVisitor#visit(net.sf.jsqlparser.statement.select.ValuesList) 
+	         */   
+	    
+	@Override
+	public void visit(ValuesList arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.statement.select.SelectVisitor#visit(net.sf.jsqlparser.statement.select.SetOperationList) 
+	         */   
+	    
+	@Override
+	public void visit(SetOperationList arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.statement.select.SelectVisitor#visit(net.sf.jsqlparser.statement.select.WithItem) 
+	         */   
+	    
+	@Override
+	public void visit(WithItem arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.expression.operators.relational.ItemsListVisitor#visit(net.sf.jsqlparser.expression.operators.relational.MultiExpressionList) 
+	         */   
+	    
+	@Override
+	public void visit(MultiExpressionList arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.expression.ExpressionVisitor#visit(net.sf.jsqlparser.expression.SignedExpression) 
+	         */   
+	    
+	@Override
+	public void visit(SignedExpression arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.expression.ExpressionVisitor#visit(net.sf.jsqlparser.expression.JdbcNamedParameter) 
+	         */   
+	    
+	@Override
+	public void visit(JdbcNamedParameter arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.expression.ExpressionVisitor#visit(net.sf.jsqlparser.expression.CastExpression) 
+	         */   
+	    
+	@Override
+	public void visit(CastExpression arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.expression.ExpressionVisitor#visit(net.sf.jsqlparser.expression.operators.arithmetic.Modulo) 
+	         */   
+	    
+	@Override
+	public void visit(Modulo arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.expression.ExpressionVisitor#visit(net.sf.jsqlparser.expression.AnalyticExpression) 
+	         */   
+	    
+	@Override
+	public void visit(AnalyticExpression arg0) {
+	}
+
+	  
+	        /*（非 Javadoc）   
+	         *   
+	         *   
+	         * @param arg0   
+	         * @see net.sf.jsqlparser.expression.ExpressionVisitor#visit(net.sf.jsqlparser.expression.ExtractExpression) 
+	         */   
+	    
+	@Override
+	public void visit(ExtractExpression arg0) {
+	}
+
+	  
+	    
+	@Override
+	public void visit(IntervalExpression arg0) {
+	}
+
+	  
+	@Override
+	public void visit(OracleHierarchicalExpression arg0) {
+	}
+
+	  
+	    
+	@Override
+	public void visit(RegExpMatchOperator arg0) {
+	}
+
+}

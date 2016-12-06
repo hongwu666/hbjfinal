@@ -1,0 +1,13 @@
+package saas.monitor.mvc.base;
+
+import org.apache.log4j.Logger;
+
+import com.jfinal.config.Routes;
+
+public abstract class BaseRoutes extends Routes {
+	
+	protected final Logger LOG = Logger.getLogger(BaseRoutes.class);
+	
+	protected abstract Class<? extends BaseRoutes> getLogClass();
+
+}

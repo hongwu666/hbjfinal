@@ -1,0 +1,128 @@
+
+package saas.crm.data.vo.security;
+
+import java.io.Serializable;
+
+public class UserPhotoVO implements Serializable {
+
+	/**
+	 * @Fields serialVersionUID : TODO(用一句话描述这个变量表示什么)
+	 */
+
+	private static final long serialVersionUID = -2574912382156691845L;
+
+	private Long userId;// 用户id
+
+	private String userName;// 用户昵称
+
+	private String photoUrl;// 用户头像url
+
+	private String realName;// 用户真名
+
+	private String imAccountId;// im账号id
+
+	private boolean selfAttention = false; // 当前用户是否关注了此用户
+
+	private Long latestIndex; // 用来做排序
+
+	public Long getLatestIndex() {
+		return latestIndex;
+	}
+
+	public void setLatestIndex(Long latestIndex) {
+		this.latestIndex = latestIndex;
+	}
+
+	public boolean isSelfAttention() {
+		return selfAttention;
+	}
+
+	public void setSelfAttention(boolean selfAttention) {
+		this.selfAttention = selfAttention;
+	}
+
+	public String getImAccountId() {
+		return imAccountId;
+	}
+
+	public void setImAccountId(String imAccountId) {
+		this.imAccountId = imAccountId;
+	}
+
+	/**
+	 * @return the realName
+	 */
+
+	public String getRealName() {
+
+		return realName;
+	}
+
+	/**
+	 * @param realName
+	 *            the realName to set
+	 */
+
+	public void setRealName(String realName) {
+
+		this.realName = realName;
+	}
+
+	public Long getUserId() {
+		return userId;
+	}
+
+	public void setUserId(Long userId) {
+		this.userId = userId;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public String getPhotoUrl() {
+		return photoUrl;
+	}
+
+	public void setPhotoUrl(String photoUrl) {
+		this.photoUrl = photoUrl;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((userId == null) ? 0 : userId.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		UserPhotoVO other = (UserPhotoVO) obj;
+		if (userId == null) {
+			if (other.userId != null)
+				return false;
+		} else if (!userId.equals(other.userId))
+			return false;
+		return true;
+	}
+
+	public UserPhotoVO(Long userId, String userName) {
+		this.userId = userId;
+		this.userName = userName;
+	}
+
+	public UserPhotoVO() {
+	}
+
+}

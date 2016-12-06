@@ -1,0 +1,31 @@
+package saas.monitor.beetl.func;
+
+import java.io.IOException;
+
+import org.beetl.core.Context;
+import org.beetl.core.Function;
+
+import saas.monitor.tools.ToolString;
+
+public class InParse implements Function {
+
+	@Override
+	public Object call(Object[] paras, Context ctx) {
+		Object o = paras[0];
+		if (o != null) {
+			try {
+				Object[] values = (Object[])o;
+				String sql = "(";
+				for(Object value : values){
+					sql +=  "'" + ToolString.toString(value) + "',";
+				}
+				sql = sql.substring(0, sql.length() - 1) + ")";
+				ctx.byteWriter.writeString(sql);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return "";
+	}
+
+}

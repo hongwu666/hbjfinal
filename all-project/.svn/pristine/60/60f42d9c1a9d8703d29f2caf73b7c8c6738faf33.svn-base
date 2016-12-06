@@ -1,0 +1,39 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: IComments.java 
+ * @Package saas.crm.dynamic 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年7月22日 下午4:36:04 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic;
+
+import saas.crm.dynamic.model.Approvers;
+import saas.crm.dynamic.model.Comment;
+
+/**
+ * @ClassName: IComments
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年7月22日 下午4:36:04
+ */
+
+public interface IComments {
+
+	int MAX_COMMENTS = 5;
+
+	public Long getCommentCount();
+
+	public Comment[] getCommentList();
+	
+	public Long getApproveCount();
+	
+	public Approvers[] getApprovers();
+}

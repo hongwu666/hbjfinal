@@ -1,0 +1,32 @@
+package saas.monitor.mvc.index;
+
+
+public class SimpleExeclTemplateVO implements java.io.Serializable{
+	
+	private static final long serialVersionUID = 5917170342713625679L;
+
+	private String titleName;
+	
+	private SimpleExeclColumnVO[] simpleExeclColumnVOs;
+	private SimpleExeclRowVO[] simpleExeclRowVOs;
+	
+	public String getTitleName() {
+		return titleName;
+	}
+	public void setTitleName(String titleName) {
+		this.titleName = titleName;
+	}
+	public SimpleExeclColumnVO[] getSimpleExeclColumnVOs() {
+		return simpleExeclColumnVOs;
+	}
+	public void setSimpleExeclColumnVOs(SimpleExeclColumnVO[] simpleExeclColumnVOs) {
+		this.simpleExeclColumnVOs = simpleExeclColumnVOs;
+	}
+	public SimpleExeclRowVO[] getSimpleExeclRowVOs() {
+		return simpleExeclRowVOs;
+	}
+	public void setSimpleExeclRowVOs(SimpleExeclRowVO[] simpleExeclRowVOs) {
+		this.simpleExeclRowVOs = simpleExeclRowVOs;
+	}
+
+}

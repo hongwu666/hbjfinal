@@ -1,0 +1,63 @@
+# Default Properties file for use by StdSchedulerFactory
+# to create a Quartz Scheduler Instance, if a different
+# properties file is not explicitly specified.
+#
+ 
+#\u96C6\u7FA4\u914D\u7F6E
+org.quartz.scheduler.instanceName: DefaultQuartzSchedulerX
+org.quartz.scheduler.rmi.export: false
+org.quartz.scheduler.rmi.proxy: false
+org.quartz.scheduler.wrapJobExecutionInUserTransaction: false
+ 
+org.quartz.threadPool.class: org.quartz.simpl.SimpleThreadPool
+org.quartz.threadPool.threadCount: 10
+org.quartz.threadPool.threadPriority: 5
+org.quartz.threadPool.threadsInheritContextClassLoaderOfInitializingThread: true
+ 
+org.quartz.jobStore.misfireThreshold: 60000
+ 
+ 
+ #============================================================================
+# Configure JobStore
+#============================================================================
+ 
+#\u9ED8\u8BA4\u914D\u7F6E\uFF0C\u6570\u636E\u4FDD\u5B58\u5230\u5185\u5B58
+#org.quartz.jobStore.class: org.quartz.simpl.RAMJobStore
+#\u6301\u4E45\u5316\u914D\u7F6E
+org.quartz.jobStore.class:org.quartz.impl.jdbcjobstore.JobStoreTX
+org.quartz.jobStore.driverDelegateClass:org.quartz.impl.jdbcjobstore.StdJDBCDelegate
+org.quartz.jobStore.useProperties:true
+#\u6570\u636E\u5E93\u8868\u524D\u7F00
+org.quartz.jobStore.tablePrefix:QRTZ_
+org.quartz.jobStore.dataSource:qzDS
+org.quartz.dataSource.qzDS.connectionProvider.class:com.alibaba.druid.support.quartz.DruidQuartzConnectionProvider
+#============================================================================
+# Configure Datasources
+#============================================================================
+#JDBC\u9A71\u52A8
+#org.quartz.dataSource.qzDS.driver:com.mysql.jdbc.Driver
+#org.quartz.dataSource.qzDS.URL:jdbc:mysql://192.168.2.166:3306/saas_CRM
+#org.quartz.dataSource.qzDS.user:star
+#org.quartz.dataSource.qzDS.password:123456
+#org.quartz.dataSource.qzDS.maxConnections:10
+
+
+#Druid
+org.quartz.dataSource.qzDS.driverClassName:com.mysql.jdbc.Driver
+#org.quartz.dataSource.qzDS.url:jdbc:mysql://192.168.2.166:3306/saas_CRM
+org.quartz.dataSource.qzDS.url:jdbc:mysql://192.168.2.167:3306/saas_CRM_QUARTZ
+org.quartz.dataSource.qzDS.username:star
+org.quartz.dataSource.qzDS.password:123456
+org.quartz.dataSource.qzDS.initialSize=5
+org.quartz.dataSource.qzDS.minIdle=5
+org.quartz.dataSource.qzDS.maxActive=20
+org.quartz.dataSource.qzDS.maxWait=60000
+org.quartz.dataSource.qzDS.timeBetweenEvictionRunsMillis=60000
+org.quartz.dataSource.qzDS.minEvictableIdleTimeMillis=300000
+org.quartz.dataSource.qzDS.validationQuery=SELECT 'x'
+org.quartz.dataSource.qzDS.testWhileIdle=true
+org.quartz.dataSource.qzDS.testOnBorrow=false
+org.quartz.dataSource.qzDS.testOnReturn=false
+org.quartz.dataSource.qzDS.poolPreparedStatements=true
+org.quartz.dataSource.qzDS.maxPoolPreparedStatementPerConnectionSize=50
+

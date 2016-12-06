@@ -1,0 +1,163 @@
+package saas.winbons.provider;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import saas.crm.market.enumtype.FollowStatusEnum;
+import saas.winbons.data.model.ListItem;
+import saas.winbons.data.model.leads.Leads;
+import saas.winbons.data.model.organization.Department;
+import saas.winbons.data.model.security.User;
+import saas.winbons.data.model.tag.BizRelTag;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.service.AbstractCommonService;
+import saas.winbons.dubbo.web.dto.CommonPageResult;
+import saas.winbons.dubbo.web.dto.FilterValueDTO;
+import saas.winbons.dubbo.web.dto.PageResult;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.dynamic.ItemTypeEnum;
+import saas.winbons.enumtype.Gender;
+import saas.winbons.format.EnumFormatTool;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.sql.FilterItem;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.sql.FilterItemListImpl;
+import saas.winbons.framework.sql.FilterType;
+import saas.winbons.framework.sql.OrderItem;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+import saas.winbons.framework.tools.ToolString;
+import saas.winbons.framework.utils.CrmDateUtils;
+import saas.winbons.market.contant.LeaderMappingFile;
+import saas.winbons.market.contant.LeadsColumnConvertor;
+
+import com.alibaba.fastjson.JSONArray;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Model;
+
+public class MarketServiceImpl extends AbstractCommonService {
+	
+
+	@Override
+	public Class<? extends Model<?>> getModelClass() {
+		return Leads.class;
+	}
+	
+	
+	private static ThreadLocal<HashMap<Long, String>> listItemMap = new ThreadLocal<HashMap<Long, String>>(){
+		@Override 
+		protected HashMap<Long, String> initialValue() { 
+			return new HashMap<Long, String>(); 
+		} 
+	};
+
+	@Override
+	public AbstractCommonService getService() {
+		return this;
+	}
+	
+	
+
+	@Override
+	protected String tableJoin(ContextDTO contextDTO) {
+		return super.tableJoin(contextDTO) + " as leads";
+	}
+	
+	
+	@Override
+	protected String buildSelectSql() {
+		String buildSelectSql = "select ";
+		buildSelectSql += ToolJfinalSql.buildSelectSql(getModelClass(), "leads",null,null);
+		return buildSelectSql;
+	}
+	
+	@Override
+	protected void entityFormat(ContextDTO contextDTO,Map<String, Object> map){
+		EnumFormatTool.dealFormat(LeadsColumnConvertor.class, map);
+	}
+
+	@Override
+	public String getGridId() {
+		return "ID_GRID_LEADS";
+	}
+
+
+	@Override
+	public String getTableName() {
+		return "t_crm_leads";
+	}
+	
+	
+	@Override
+	public String[] getNotDisplayFields(ContextDTO contextDTO,boolean isCreate) {
+		String[] commonHideFields = new String[]{"tag"};
+		if (isCreate){
+			commonHideFields = (String[]) ArrayUtils.addAll(commonHideFields, new String[]{"createdDate", "createdBy", "updatedDate", "updatedBy"});
+		}
+		return commonHideFields;
+	}
+	
+
+
+
+	@Override
+	public Class<? extends IEnumFormat> getFormatClass() {
+		return LeadsColumnConvertor.class;
+	}
+
+
+
+	@Override
+	public String getGridHeadSql() {
+		return null;
+	}
+
+
+
+	@Override
+	public String getGridSql() {
+		return null;
+	}
+
+
+
+	@Override
+	public void rebuildCreateSearchView(RequestDTO requestDTO) {
+		
+	}
+
+
+
+	@Override
+	public void reUpdateCreateSearchView(List<Map<String, Object>> list) {
+		
+	}
+
+
+
+	@Override
+	public FilterItemList buildFilterItem(ContextDTO contextDTO, SimulationHttpServletRequest request) {
+		return null;
+	}
+	
+	
+
+	
+}

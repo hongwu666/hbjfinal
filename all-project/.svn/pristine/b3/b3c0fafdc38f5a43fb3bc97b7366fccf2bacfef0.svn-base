@@ -1,0 +1,193 @@
+package saas.winbons.data.model.defined;
+
+import saas.winbons.data.model.BaseModel;
+
+public abstract class ColumnDefinedFeild<M extends BaseModel<M>> extends BaseModel<M>{
+	
+	private static final long serialVersionUID = 1L;
+
+	public void setTableName(java.lang.String tableName) {
+		set("table_name", tableName);
+	}
+
+	public java.lang.String getTableName() {
+		return get("table_name");
+	}
+
+	public void setFieldLabelEng(java.lang.String fieldLabelEng) {
+		set("field_label_eng", fieldLabelEng);
+	}
+
+	public java.lang.String getFieldLabelEng() {
+		return get("field_label_eng");
+	}
+
+	public void setFieldLabel(java.lang.String fieldLabel) {
+		set("field_label", fieldLabel);
+	}
+
+	public java.lang.String getFieldLabel() {
+		return get("field_label");
+	}
+
+	public void setFieldType(java.lang.String fieldType) {
+		set("field_type", fieldType);
+	}
+
+	public java.lang.String getFieldType() {
+		return get("field_type");
+	}
+
+	public void setComboxid(java.lang.Long comboxid) {
+		set("comboxid", comboxid);
+	}
+
+	public java.lang.Long getComboxid() {
+		return get("comboxid");
+	}
+
+	public void setEnumClass(java.lang.String enumClass) {
+		set("enumClass", enumClass);
+	}
+
+	public java.lang.String getEnumClass() {
+		return get("enumClass");
+	}
+
+	public void setHasDefaultValue(java.lang.String hasDefaultValue) {
+		set("has_default_value", hasDefaultValue);
+	}
+
+	public java.lang.String getHasDefaultValue() {
+		return get("has_default_value");
+	}
+
+	public void setFieldDefaultValue(java.lang.String fieldDefaultValue) {
+		set("field_default_value", fieldDefaultValue);
+	}
+
+	public java.lang.String getFieldDefaultValue() {
+		return get("field_default_value");
+	}
+
+	public void setDisplayOrder(java.lang.Integer displayOrder) {
+		set("display_order", displayOrder);
+	}
+
+	public java.lang.Integer getDisplayOrder() {
+		return get("display_order");
+	}
+
+	public void setMappingFieldName(java.lang.String mappingFieldName) {
+		set("mapping_field_name", mappingFieldName);
+	}
+
+	public java.lang.String getMappingFieldName() {
+		return get("mapping_field_name");
+	}
+
+	public void setMaxLength(java.lang.Integer maxLength) {
+		set("max_length", maxLength);
+	}
+
+	public java.lang.Integer getMaxLength() {
+		return get("max_length");
+	}
+
+	public void setDescn(java.lang.String descn) {
+		set("descn", descn);
+	}
+
+	public java.lang.String getDescn() {
+		return get("descn");
+	}
+
+	public void setIsMandatory(java.lang.String isMandatory) {
+		set("is_mandatory", isMandatory);
+	}
+
+	public java.lang.String getIsMandatory() {
+		return get("is_mandatory");
+	}
+
+	public void setIsUnique(java.lang.String isUnique) {
+		set("is_unique", isUnique);
+	}
+
+	public java.lang.String getIsUnique() {
+		return get("is_unique");
+	}
+
+	public void setIsDelete(java.lang.String isDelete) {
+		set("is_delete", isDelete);
+	}
+
+	public java.lang.String getIsDelete() {
+		return get("is_delete");
+	}
+
+	public void setIsCommon(java.lang.String isCommon) {
+		set("is_common", isCommon);
+	}
+
+	public java.lang.String getIsCommon() {
+		return get("is_common");
+	}
+
+	public void setIsDefine(java.lang.String isDefine) {
+		set("is_define", isDefine);
+	}
+
+	public java.lang.String getIsDefine() {
+		return get("is_define");
+	}
+
+	public void setIsUpdateable(java.lang.String isUpdateable) {
+		set("is_updateable", isUpdateable);
+	}
+
+	public java.lang.String getIsUpdateable() {
+		return get("is_updateable");
+	}
+
+	public void setIsDeleteable(java.lang.String isDeleteable) {
+		set("is_deleteable", isDeleteable);
+	}
+
+	public java.lang.String getIsDeleteable() {
+		return get("is_deleteable");
+	}
+
+	public void setIsdisable(java.lang.String isdisable) {
+		set("isdisable", isdisable);
+	}
+
+	public java.lang.String getIsdisable() {
+		return get("isdisable");
+	}
+
+	public void setIsFilter(java.lang.String isFilter) {
+		set("is_filter", isFilter);
+	}
+
+	public java.lang.String getIsFilter() {
+		return get("is_filter");
+	}
+
+	public void setCheckRepeat(java.lang.String checkRepeat) {
+		set("checkRepeat", checkRepeat);
+	}
+
+	public java.lang.String getCheckRepeat() {
+		return get("checkRepeat");
+	}
+
+	public void setDataSource(java.lang.String dataSource) {
+		set("data_source", dataSource);
+	}
+
+	public java.lang.String getDataSource() {
+		return get("data_source");
+	}
+
+}

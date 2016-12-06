@@ -1,0 +1,59 @@
+package saas.monitor.job;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+
+import saas.monitor.mvc.email.EmailAccountModel;
+import saas.monitor.tools.ToolSqlXml;
+import saas.monitor.tools.ToolString;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+@DisallowConcurrentExecution
+public class CleanEmailAccountJob  implements Job {
+	
+	private static Logger log = Logger.getLogger(CleanEmailAccountJob.class);
+
+	@Override
+	public void execute(JobExecutionContext context)
+			throws JobExecutionException {
+		try{
+			log.info("获取有效的邮箱");
+			String sql = ToolSqlXml.getSql("sql.receipt.buildReceiveEmailJob");
+			List<Record> find = Db.use("jdbcUrlSaas").find(sql);
+			log.info("邮箱数:" + find.size());
+			List<String> ids = new ArrayList<String>();
+			for(Record f : find){
+				sql = "select id from t_monitor_email_account where dbid = ? and emailAccountId = ?";
+				Record findFirst = Db.findFirst(sql,f.getLong("dbid"),f.getLong("id"));
+				if(null == findFirst){
+					EmailAccountModel emailAccountModel = new EmailAccountModel();
+					emailAccountModel.set("dbid", f.getLong("dbid"));
+					emailAccountModel.set("userId", f.getLong("user_id"));
+					emailAccountModel.set("emailAccountId", f.getLong("id"));
+					emailAccountModel.set("emailAccountCode", f.getStr("email_account"));
+					emailAccountModel.set("lastUpdateDate", System.currentTimeMillis());
+					emailAccountModel.save();
+					ids.add(ToolString.toString(emailAccountModel.get("id")));
+				}else{
+					ids.add(ToolString.toString(findFirst.get("id")));
+				}
+			}
+			log.info("清楚多余的邮箱");
+			Db.update("delete from t_monitor_email_account where id not in (" + StringUtils.join(ids,",") + ")");
+		}catch(Exception e){
+			log.error("自动清理邮箱出错",e);
+		}
+		
+		
+	}
+
+}

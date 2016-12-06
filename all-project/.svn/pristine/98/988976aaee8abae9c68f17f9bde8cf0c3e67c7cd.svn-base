@@ -1,0 +1,87 @@
+package saas.winbons.uisetting.contant;
+
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Map;
+
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.framework.tools.ToolString;
+
+public enum DefinedFeildColumnConvertor implements saas.winbons.enumtype.BaseEnum<String> {
+	comboxid("comboxid",true,Long.class),
+	mappingName("mapping_field_name",true,String.class),
+	isCheckRepeat("checkRepeat",true,Boolean.class),
+	lable("field_label",true,String.class),
+	isCommon("is_common",true,Boolean.class),
+	sortOrder("display_order",true,Integer.class),
+	isUnique("is_unique",true,Boolean.class),
+	table_name("table_name",false,Long.class),
+	defaultValue("field_default_value",true,String.class),
+	descn("descn",false,Long.class),
+	isEditable("is_updateable",true,Boolean.class),
+	id("id",true,Long.class),
+	isFilter("is_filter",true,Boolean.class),
+	maxLen("max_length",true,Integer.class),
+	deleteable("is_deleteable",true,Boolean.class),
+	field_label_eng("field_label_eng",false,Long.class),
+	isDisable("isdisable",true,Boolean.class),
+	enumClass("enumClass",false,Long.class),
+	isMust("is_mandatory",true,Boolean.class),
+	isNumber("is_number",true,Boolean.class),
+	data_source("data_source",false,Long.class),
+	isDelete("is_delete",true,Boolean.class),
+	has_default_value("has_default_value",true,Boolean.class),
+	dbid("dbid",true,Long.class),
+	isDefine("is_define",true,Boolean.class),
+	ftype("field_type",true,String.class),
+	is_number("is_number",false,Long.class)
+	;
+	
+	public static void displayDeal(Map<String, Object> map){
+		for(DefinedFeildColumnConvertor leadsColumnConvertor : DefinedFeildColumnConvertor.values()){
+			if(!leadsColumnConvertor.isJson()){
+				map.remove(leadsColumnConvertor.dbValue);
+			}else{
+				if(leadsColumnConvertor.getType().equals(Boolean.class)){
+					map.put(leadsColumnConvertor.dbValue, ToolString.toString(map.get(leadsColumnConvertor.dbValue)).equals(DataConstant.YES_OR_NO_YES));
+					map.put(leadsColumnConvertor.name(), map.get(leadsColumnConvertor.dbValue));
+				}else{
+					map.put(leadsColumnConvertor.name(), map.get(leadsColumnConvertor.dbValue));
+				}
+				/*if(!leadsColumnConvertor.name().equals(leadsColumnConvertor.dbValue)){
+					map.remove(leadsColumnConvertor.dbValue);
+				}*/
+			}
+		}
+	}
+
+	private DefinedFeildColumnConvertor(String dbValue,boolean json,Type type){
+		this.dbValue = dbValue;
+		this.json = json;
+		this.type = type;
+	}
+	
+	private String dbValue;
+	private boolean json;
+	private Type type;
+
+	@Override
+	public String getDbValue() {
+		return dbValue;
+	}
+
+	public boolean isJson() {
+		return json;
+	}
+
+	public Type getType() {
+		return type;
+	}
+	
+	
+	public static void main(String[] args){
+		
+		DefinedFeildColumnConvertor.displayDeal(new HashMap<String, Object>());
+	}
+	
+}

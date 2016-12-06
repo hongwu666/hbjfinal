@@ -1,0 +1,59 @@
+/** 
+ * Copyright (C) 2010 QIHAN Technology Co.,Ltd
+ * All Rights Reserved.
+ * Development of this software QIHAN Technology Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: entityClass.java 
+ * @Package crm.data.model.hibernate.type 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author Mac.Lam
+ * @date 2010-8-11 下午02:55:50 
+ * @version 1.0 
+ */
+
+package saas.winbons.enumtype;
+
+
+/**
+ * @ClassName: entityClass
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author Mac.Lam
+ * @date 2010-8-11 下午02:55:50
+ */
+
+public enum Gender implements BaseEnum<String>, JmesaMapEnum {
+	male(Gender.GENDER_MALE, "gender.male"), female(Gender.GENDER_FEMALE,
+			"gender.female");
+
+	private String dbValue;
+	private String msgKey;
+
+	private static final String GENDER_MALE = "0";
+	private static final String GENDER_FEMALE = "1";
+
+	private Gender(String dbValue, String msgKey) {
+		this.dbValue = dbValue;
+		this.msgKey = msgKey;
+	}
+
+	@Override
+	public String getDbValue() {
+		return dbValue;
+	}
+
+	@Override
+	public String getMessageKey() {
+		return msgKey;
+	}
+
+	public static Gender getType(String value) {
+		for (Gender gender : values()) {
+			if (gender.dbValue.equals(value)) {
+				return gender;
+			}
+		}
+		return Gender.male;
+	}
+}

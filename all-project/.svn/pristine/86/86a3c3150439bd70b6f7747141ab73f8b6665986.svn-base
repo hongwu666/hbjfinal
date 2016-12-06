@@ -1,0 +1,50 @@
+package saas.winbons.data.model.leads;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import saas.winbons.data.model.tag.BizRelTag;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dynamic.ItemTypeEnum;
+import saas.winbons.framework.tools.ToolString;
+import saas.winbons.market.contant.LeadsColumnConvertor;
+
+
+
+public class Leads extends ColumnLeads<Leads> {
+
+	private static final long serialVersionUID = -5788280815034684919L;
+	
+	public static final Leads dao = new Leads();
+	
+	public Leads saveObj(ContextDTO contextDTO,Map<String, Object> map){
+		
+		Leads leads = new Leads();
+		for(LeadsColumnConvertor leadsColumnConvertor : LeadsColumnConvertor.values()){
+			if(map.containsKey(leadsColumnConvertor.name())){
+				Object object = map.get(leadsColumnConvertor.name());
+				if(!ToolString.isEmptyString(object)){
+					leads.set(leadsColumnConvertor.getDbValue(), map.get(leadsColumnConvertor.name()));
+				}
+			}
+		}
+		leads.save(contextDTO);
+		
+		/***添加标签**/
+		String tagIds = ToolString.toString(map.get("tagIds")); 
+		if(!ToolString.isEmptyString(tagIds)){
+			List<String> tagIdList = Arrays.asList(tagIds.split(","));
+			for(String tagId:tagIdList){
+				BizRelTag bizRelTag = new BizRelTag();
+				bizRelTag.put("module",ItemTypeEnum.Leads.name());
+				bizRelTag.put("itemid", map.get("id"));
+				bizRelTag.put("tagid",Long.parseLong(tagId));
+				bizRelTag.put("userid",contextDTO.getUserId());
+				bizRelTag.save(contextDTO);
+			}
+		}
+		
+		return leads;
+	}
+}

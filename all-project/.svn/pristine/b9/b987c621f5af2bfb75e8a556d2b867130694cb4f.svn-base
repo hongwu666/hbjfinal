@@ -1,0 +1,59 @@
+package saas.monitor.constantInit;
+
+public class ConstantInit {
+	
+	public static final String YES_OR_NO_YES = "Y";
+	public static final String YES_OR_NO_NO = "N";
+	
+	
+	public static final class TaskSource {
+		
+		public static final String SYSTEM = "SYSTEM";
+		public static final String USER = "USER";
+	}
+	
+	public static String RedisPlugin = "RedisPlugin";
+	public static final String EMPTY_STRING = "";
+	public static final String SEMICOLON_STRING = ";";
+	public static final String COLON_STRING = ":";
+	public static final String UNDERLINE_STRING = "_";
+	
+	public static final String BuildReceiveEmailJob = "BuildReceiveEmailJob_";
+	
+
+	/**
+	 * 加密密钥
+	 */
+	public static final String config_securityKey_key = "config.securityKey";
+	
+	/**
+	 * 密码最大错误次数
+	 */
+	public static final String config_passErrorCount_key = "config.passErrorCount";
+	
+	/**
+	 * 密码错误最大次数后间隔登陆时间（小时）
+	 */
+	
+	/**
+	 * # cookie 值的时间
+	 */
+	public static final String config_maxAge_key = "config.maxAge";
+	
+	
+	/**
+	 *  国际化配置，资源文件前缀
+	 */
+	public static final String config_i18n_filePrefix = "config.i18n.filePrefix";
+	
+	/**
+	 * 扫描的包
+	 */
+	public static final String config_scan_package = "config.scan.package";
+
+	/**
+	 * 扫描的jar
+	 */
+	public static final String config_scan_jar = "config.scan.jar";
+	
+}

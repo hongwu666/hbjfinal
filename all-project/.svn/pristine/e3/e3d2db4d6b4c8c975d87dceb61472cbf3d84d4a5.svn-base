@@ -1,0 +1,561 @@
+package saas.winbons.framework.tools;
+
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.Locale;
+import java.util.TimeZone;
+
+import org.apache.log4j.Logger;
+
+public class ToolDate {
+
+	private static Logger logger = Logger.getLogger(ToolDate.class);
+
+	private static final int[] day31 = { 1, 3, 5, 7, 8, 10, 12 };
+	
+	public static final String pattern_ymd = "yyyy-MM-dd"; // pattern_ymd
+	public static final String pattern_ymd_hms = "yyyy-MM-dd HH:mm:ss"; // pattern_ymdtime
+	public static final String pattern_ymd_hms_s = "yyyy-MM-dd HH:mm:ss:SSS"; // pattern_ymdtimeMillisecond
+
+	private ToolDate() {
+		// prevent instantiation
+	}
+
+	/**
+	 * Cut time on the Date object including hour, min, sec and msec and return a new object contains year, month and day only.
+	 * 
+	 * @param date The date to be trimmed
+	 * @param unit see Calendar.HOUR_OF_DAY, MINUTE, SECOND, etc
+	 * @return
+	 */
+	public static Date trimDate(Date date, int unit) {
+		if (date != null) {
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(date);
+
+			return trimDate(cal, unit).getTime();
+		} else
+			return null;
+	}
+
+	public static Calendar trimDate(Calendar cal, int unit) {
+		Calendar calendar = (Calendar) cal.clone();
+		switch (unit) {
+		case Calendar.YEAR:
+			calendar.set(Calendar.MONTH, 0);
+		case Calendar.MONTH:
+			calendar.set(Calendar.DAY_OF_MONTH, 0);
+		case Calendar.DAY_OF_MONTH:
+			calendar.set(Calendar.HOUR, 0);
+			calendar.set(Calendar.HOUR_OF_DAY, 0);
+		case Calendar.HOUR_OF_DAY:
+			calendar.set(Calendar.MINUTE, 0);
+		case Calendar.MINUTE:
+			calendar.set(Calendar.SECOND, 0);
+		case Calendar.SECOND:
+			calendar.set(Calendar.MILLISECOND, 0);
+		case Calendar.MILLISECOND:
+			// clear nothing
+			break;
+		}
+		return calendar;
+	}
+
+	public static Calendar changeTimeZone(Calendar date, TimeZone timezone) {
+		if (!date.getTimeZone().equals(timezone)) {
+			Calendar newDate = Calendar.getInstance(timezone);
+			newDate.setTimeInMillis(date.getTimeInMillis());
+			return newDate;
+		}
+
+		return date;
+	}
+
+	/**
+	 * used computer default timezone
+	 */
+	public static Calendar changeTimeZone(Calendar date) {
+		return changeTimeZone(date, TimeZone.getDefault());
+	}
+
+	/**
+	 * pass object to automatically change call the Calendar fields timezone and not trim the time
+	 * 
+	 * @param object
+	 * @param timeZone
+	 * @throws IntrospectionException
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 * @throws InvocationTargetException
+	 */
+	public static void changeInstanceFieldsTimeZone(Object object, TimeZone timeZone) throws IntrospectionException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		BeanInfo beanInfo = Introspector.getBeanInfo(object.getClass());
+		PropertyDescriptor[] pds = beanInfo.getPropertyDescriptors();
+		for (int i = 0; i < pds.length; i++) {
+			PropertyDescriptor pd = pds[i];
+			if (pd.getPropertyType().equals(Calendar.class) && pd.getReadMethod().getParameterTypes().length == 0) {
+				Method getter = pd.getReadMethod();
+				Method setter = pd.getWriteMethod();
+
+				Calendar orginalc = (Calendar) getter.invoke(object, null);
+				if (orginalc != null)
+					setter.invoke(object, new Object[] { changeTimeZone(orginalc, timeZone) });
+			}
+		}
+	}
+
+	public static void changeInstanceFieldsTimeZone(Object object) throws IllegalArgumentException, IntrospectionException, IllegalAccessException, InvocationTargetException {
+		changeInstanceFieldsTimeZone(object, TimeZone.getDefault());
+	}
+
+	public static Date parse(String format, String dateString) throws ParseException {
+		SimpleDateFormat sdf = new SimpleDateFormat(format);
+
+		return sdf.parse(dateString);
+	}
+
+	public static String toString(Calendar cal) {
+		if (cal == null)
+			return null;
+		else {
+			return "{" + cal.getTime().toString() + ", locale=" + cal.getTimeZone().getDisplayName() + "}";
+		}
+	}
+
+	public static String toString(ArrayList<Calendar> cals) {
+		if (cals == null)
+			return null;
+
+		StringBuffer sb = new StringBuffer();
+		sb.append(cals.getClass().getSimpleName());
+		sb.append("{");
+		for (int i = 0; i < cals.size(); i++) {
+
+			sb.append(toString(cals.get(i)));
+
+			if (i < cals.size() - 1)
+				sb.append(", ");
+		}
+		sb.append("}");
+		return sb.toString();
+	}
+
+	public static int getDayOfWeek(Date date) {
+		return toCalendar(date).get(Calendar.DAY_OF_WEEK);
+	}
+
+	public static String toString(Calendar[] cals) {
+		if (cals == null)
+			return null;
+
+		StringBuffer sb = new StringBuffer();
+		sb.append(cals.getClass().getSimpleName());
+		sb.append("{");
+		for (int i = 0; i < cals.length; i++) {
+
+			sb.append(toString(cals[i]));
+
+			if (i < cals.length)
+				sb.append(", ");
+		}
+		sb.append("}");
+		return sb.toString();
+	}
+
+	public static int getTotalDaysOfMonth(int year, int month) {
+
+		if (month == 2) {
+			if (year / 4 == 0 && year / 100 != 0) {
+				return 28;
+			} else
+				return 29;
+		}
+
+		for (int i = 0; i < day31.length; i++) {
+			if (month == day31[i]) {
+				return 31;
+			}
+		}
+		return 30;
+	}
+
+	/**
+	 * <p>
+	 * Calculates the number of days between two calendar days in a manner which
+	 * is independent of the <code>Calendar</code> type used.
+	 * </p>
+	 * 
+	 * @param d1 The first date.
+	 * @param d2 The second date.
+	 * 
+	 * @return The number of days between the two dates. The order of the dates
+	 *         does not matter, the value returned is always >= 0. If
+	 *         <code>Calendar</code> types of <code>d1</code> and
+	 *         <code>d2</code> are different, the result may not be accurate.
+	 */
+	public static int getDateDiff(java.util.Calendar d1, java.util.Calendar d2) {
+		if (d1.after(d2)) { // swap dates so that d1 is start and d2 is end
+			java.util.Calendar swap = d1;
+			d1 = d2;
+			d2 = swap;
+		}
+		int days = d2.get(java.util.Calendar.DAY_OF_YEAR) - d1.get(java.util.Calendar.DAY_OF_YEAR);
+
+		int y2 = d2.get(java.util.Calendar.YEAR);
+		if (d1.get(java.util.Calendar.YEAR) != y2) {
+			d1 = (java.util.Calendar) d1.clone();
+			do {
+				days += d1.getActualMaximum(java.util.Calendar.DAY_OF_YEAR);
+				d1.add(java.util.Calendar.YEAR, 1);
+			} while (d1.get(java.util.Calendar.YEAR) != y2);
+		}
+		// Sys.log.printDebug("int getDaysBetween : " + days);
+		return days;
+	}
+
+	public static int getDateDiff(Date firstDate, Date secondDate) {
+
+		long differenceInMillis = firstDate.getTime() - secondDate.getTime();
+		// Sys.log.printDebug("Diff : " + firstDate.getTime()+ " " +
+		// secondDate.getTime());
+		double differenceInDays = (differenceInMillis / 86400000.0);
+		int intDay = (int) Math.round(differenceInDays);
+		// Sys.log.printDebug(" Math.round(differenceInDays) : " +
+		// differenceInDays + " " + Math.round(differenceInDays));
+		return intDay;
+	}
+
+	public int getDateDiff(String startDate, String endDate) {
+		DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, Locale.US);
+		Date sDate = new Date();
+		Date eDate = new Date();
+
+		try {
+			// Sys.log.printDebug("Testing Start Date : " + startDate);
+			// Sys.log.printDebug("Testing End Date : " + endDate);
+			sDate = df.parse(startDate);
+			eDate = df.parse(endDate);
+		} catch (Exception e) {
+			logger.error(e.toString());
+		}
+		Integer diff = new Integer((int) ((eDate.getTime() - sDate.getTime()) / 86400000) + 1);
+
+		// Sys.log.printDebug("String getDaysBetween : " + result);
+		return (diff.intValue());
+	}
+
+	public static Date addDate(Date d, int dayOffset) {
+		GregorianCalendar gc = new GregorianCalendar();
+		gc.setTime(d);
+		gc.add(Calendar.DATE, dayOffset);
+		return gc.getTime();
+	}
+
+	public static Date addMonth(Date d, int monthOffset) {
+		GregorianCalendar gc = new GregorianCalendar();
+		gc.setTime(d);
+		gc.add(Calendar.MONTH, monthOffset);
+		return gc.getTime();
+	}
+
+	public static Date addYear(Date d, int yearOffset) {
+		GregorianCalendar gc = new GregorianCalendar();
+		gc.setTime(d);
+		gc.add(Calendar.YEAR, yearOffset);
+		return gc.getTime();
+	}
+
+	public static Date addDate(String strDate, String strfmt, int numDay) {
+		Date bdate = null;
+		try {
+			SimpleDateFormat formatter = new SimpleDateFormat(strfmt);
+			Date sd = formatter.parse(strDate);
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(sd);
+			// add number of days
+			cal.add(Calendar.DATE, numDay);
+			bdate = cal.getTime();
+			// Sys.log.printDebug("today's date: " + end_date);
+		} catch (ParseException e) {
+			logger.error(e.toString());
+		}
+		return bdate;
+	}
+
+	public static Date parseDate(String strdate, String format) throws ParseException {
+		Date bdate = null;
+		try {
+			if (null == strdate) {
+				return bdate;
+			}
+			SimpleDateFormat dFormat = new SimpleDateFormat(format);
+			dFormat.setLenient(false);
+			bdate = new Date(dFormat.parse(strdate).getTime());
+			// Sys.log.printDebug("Convert StringToDate : " + bdate);
+		} catch (ParseException e) {
+			logger.error(e.toString());
+			throw e;
+		}
+		return bdate;
+	}
+
+	public static Date parseDate(String yyyy, String mm, String dd) throws ParseException {
+		Date bdate = null;
+
+		if (yyyy == null || yyyy.trim().length() == 0)
+			return null;
+		if (mm == null || mm.trim().length() == 0)
+			return null;
+		if (dd == null || dd.trim().length() == 0)
+			return null;
+		if (mm.length() == 1)
+			mm = "0" + mm;
+		if (dd.length() == 1)
+			dd = "0" + dd;
+
+		try {
+			bdate = parseDate(yyyy + "-" + mm + "-" + dd, "yyyy-MM-dd");
+		} catch (ParseException e) {
+			logger.error(e.toString());
+			throw e;
+		}
+		return bdate;
+	}
+
+	public static Date parseDate(String yyyy, String MM, String dd, String HH, String mm, String ss) throws ParseException {
+		Date bdate = null;
+
+		if (yyyy == null || yyyy.trim().length() == 0)
+			return null;
+		if (MM == null || MM.trim().length() == 0)
+			return null;
+		if (dd == null || dd.trim().length() == 0)
+			return null;
+		if (HH == null || HH.trim().length() == 0)
+			return null;
+		if (mm == null || mm.trim().length() == 0)
+			return null;
+		if (ss == null || ss.trim().length() == 0)
+			return null;
+		if (MM.length() == 1)
+			MM = "0" + MM;
+		if (dd.length() == 1)
+			dd = "0" + dd;
+		if (HH.length() == 1)
+			HH = "0" + HH;
+		if (mm.length() == 1)
+			mm = "0" + mm;
+		if (ss.length() == 1)
+			ss = "0" + ss;
+
+		try {
+			bdate = parseDate(yyyy + "-" + MM + "-" + dd + " " + HH + ":" + mm + ":" + ss, "yyyy-MM-dd HH:mm:ss");
+		} catch (ParseException e) {
+			logger.error(e.toString());
+			throw e;
+		}
+		return bdate;
+	}
+
+	public static String getYYMMDD() {
+		Date currentTime = Calendar.getInstance().getTime();
+		String tempStrDate = null;
+		try {
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			tempStrDate = sdf.format(currentTime);
+		} catch (Exception e) {
+		}
+		return tempStrDate;
+	}
+
+	/**
+	 * 根据日期获取季度
+	 * 
+	 * @param cal
+	 * @return
+	 */
+	public static int getQuarter(Calendar cal) {
+		int season = 0;
+
+		int month = cal.get(Calendar.MONTH);
+		switch (month) {
+		case Calendar.JANUARY:
+		case Calendar.FEBRUARY:
+		case Calendar.MARCH:
+			season = 1;
+			break;
+		case Calendar.APRIL:
+		case Calendar.MAY:
+		case Calendar.JUNE:
+			season = 2;
+			break;
+		case Calendar.JULY:
+		case Calendar.AUGUST:
+		case Calendar.SEPTEMBER:
+			season = 3;
+			break;
+		case Calendar.OCTOBER:
+		case Calendar.NOVEMBER:
+		case Calendar.DECEMBER:
+			season = 4;
+			break;
+		default:
+			break;
+		}
+		return season;
+	}
+
+	public static Date getSystemDate() {
+		java.util.Date bdate;
+
+		Calendar today = new GregorianCalendar();
+		bdate = today.getTime();
+		// Sys.log.printDebug("today's date: " +
+		// sdf.format(todaysdate.getTime()) + bdate + " Time : " +
+		// System.currentTimeMillis());
+		return bdate;
+	}
+
+	/**
+	 * 
+	 * Convert LDAP date format (yyyyMMdd-HHmmss) to java.util.Date
+	 */
+	public static Date formatLDAPDate(String stime) {
+		Date currentTime = null;
+		try {
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd-HHmmss");
+			currentTime = sdf.parse(stime);
+		} catch (Exception e) {
+		}
+		return currentTime;
+	}
+
+	public static Calendar toCalendar(Date date) {
+		if (date == null)
+			return null;
+		else {
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(date);
+			return cal;
+		}
+	}
+
+	public static boolean isDateTimeAfter(long date_1, long date_2) {
+		java.util.Calendar c1 = java.util.Calendar.getInstance();
+		java.util.Calendar c2 = java.util.Calendar.getInstance();
+		c1.setTime(new Date(date_1));
+		c2.setTime(new Date(date_2));
+
+		return c1.compareTo(c2) > 0 ? true : false;
+	}
+
+	public static boolean isSameDay(Date date1, Date date2) {
+		Calendar cal1 = Calendar.getInstance(), cal2 = Calendar.getInstance();
+		cal1.setTime(date1);
+		cal2.setTime(date2);
+		return (cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR)) && (cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH)) && (cal1.get(Calendar.DATE) == cal2.get(Calendar.DATE));
+	}
+
+	public static boolean isSameDay(long date1, long date2) {
+		Calendar cal1 = Calendar.getInstance(), cal2 = Calendar.getInstance();
+		cal1.setTimeInMillis(date1);
+		cal2.setTimeInMillis(date2);
+		return (cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR)) && (cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH)) && (cal1.get(Calendar.DATE) == cal2.get(Calendar.DATE));
+	}
+
+	public static boolean isSameMonth(Date date1, Date date2) {
+		Calendar cal1 = Calendar.getInstance(), cal2 = Calendar.getInstance();
+		cal1.setTime(date1);
+		cal2.setTime(date2);
+		return (cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR)) && (cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH));
+	}
+
+	public static boolean isSameMonth(long date1, long date2) {
+		Calendar cal1 = Calendar.getInstance(), cal2 = Calendar.getInstance();
+		cal1.setTimeInMillis(date1);
+		cal2.setTimeInMillis(date2);
+		return (cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR)) && (cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH));
+	}
+
+	public static boolean isSameYear(Date date1, Date date2) {
+		Calendar cal1 = Calendar.getInstance(), cal2 = Calendar.getInstance();
+		cal1.setTime(date1);
+		cal2.setTime(date2);
+		return (cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR));
+	}
+
+	public static boolean isSameYear(long date1, long date2) {
+		Calendar cal1 = Calendar.getInstance(), cal2 = Calendar.getInstance();
+		cal1.setTimeInMillis(date1);
+		cal2.setTimeInMillis(date2);
+		return (cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR));
+	}
+
+	/**
+	 * 某年某月的第一天
+	 * 
+	 * @param year
+	 * @param month
+	 * @return
+	 */
+	public static long getBeginDateTime(int year, int month) {
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.YEAR, year);
+		cal.set(Calendar.MONTH, month - 1);
+		cal.set(Calendar.DATE, 1);
+		cal.set(Calendar.HOUR_OF_DAY, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		cal.set(Calendar.MILLISECOND, 0);
+		return cal.getTimeInMillis();
+	}
+
+	/**
+	 * 某年某月的最后一天
+	 * 
+	 * @param year
+	 * @param month
+	 * @return
+	 */
+	public static long getEndDateTime(int year, int month) {
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.YEAR, year);
+		cal.set(Calendar.MONTH, month - 1);
+		cal.set(Calendar.DATE, cal.getActualMaximum(Calendar.DATE));
+		cal.set(Calendar.HOUR_OF_DAY, 23);
+		cal.set(Calendar.MINUTE, 59);
+		cal.set(Calendar.SECOND, 59);
+		cal.set(Calendar.MILLISECOND, 999);
+		return cal.getTimeInMillis();
+	}
+
+	private static SimpleDateFormat sdf = new SimpleDateFormat("ss mm HH dd MM ? yyyy");
+
+	private static SimpleDateFormat YYYY_MM_DD_SDF = new SimpleDateFormat("yyyy-MM-dd");
+
+	public static String buildQuartzCron(Date date) {
+		return sdf.format(date);
+	}
+
+	public static String toDateOfYYYYMMDD(long time) {
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTimeInMillis(time);
+		return YYYY_MM_DD_SDF.format(calendar.getTime());
+	}
+
+	public static void main(String[] args) {
+		System.out.println(getYYMMDD());
+	}
+
+}

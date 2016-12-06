@@ -1,0 +1,55 @@
+package saas.framework.cache.impl;
+
+import java.util.Set;
+
+import saas.framework.cache.ICache;
+import saas.framework.cache.RedisCmdHelper;
+import saas.framework.cache.redis.RedisCmdConstant;
+
+public class RedisCache<K, V> implements ICache<K, V> {
+
+	private RedisCmdHelper redisCmdHelper;
+
+	public void setRedisCmdHelper(RedisCmdHelper redisCmdHelper) {
+		this.redisCmdHelper = redisCmdHelper;
+	}
+
+	public void clear() {
+		// redisCmdHelper.doRedisCmd("clear",null);
+	}
+
+	@SuppressWarnings("unchecked")
+	private Set<String> getKeys(String keyPatter) {
+		return ((Set<String>) redisCmdHelper.doRedisCmd(RedisCmdConstant.SET_ENTRY, keyPatter + ""));
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public V get(K key) {
+		return (V) redisCmdHelper.doRedisCmd(RedisCmdConstant.GET_CMD, key);
+	}
+
+	@Override
+	public V put(K key, V value) {
+		redisCmdHelper.doRedisCmd(RedisCmdConstant.SET_CMD, key, new Object[] { value });
+		return get(key);
+	}
+
+	public V put(K key, V value, int expire) {
+		redisCmdHelper.doRedisCmd(RedisCmdConstant.SET_CMD, key, new Object[] { value }, new Object[] { expire });
+		return get(key);
+	}
+
+	@Override
+	public V remove(K key) {
+		V value = get(key);
+		if (value != null)
+			redisCmdHelper.doRedisCmd(RedisCmdConstant.DEL_CMD, key);
+		return value;
+	}
+
+	@Override
+	public int size() {
+		return getKeys("*").size();
+	}
+}

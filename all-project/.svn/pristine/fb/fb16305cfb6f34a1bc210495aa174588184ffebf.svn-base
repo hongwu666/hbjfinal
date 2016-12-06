@@ -1,0 +1,46 @@
+package saas.winbons.email.job;
+
+import java.util.List;
+
+import saas.winbons.framework.tools.ToolGson;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+public class EmailContactsRepeatedRepair {
+	
+	public void repairUpgrade(){
+		String sql = "select dbid from t_crm_email_contacts_rel_users GROUP BY dbid";
+		List<Record> find = Db.find(null, sql);
+		for(Record r : find){
+			Long dbid = r.getLong("dbid");
+			String repairSql = "select max(id) as id from t_crm_email_contacts_rel_users where dbid = ? group by dbid , user_id , mail_address_id  HAVING count(1) >1";
+			List<Record> find2 = Db.find(null, repairSql,dbid);
+			if(null != find2 && find2.size() > 0){
+				System.out.println(String.format("存在重复问题的租户,dbid:%s", dbid));
+				deleteRepeated(dbid);
+			}
+		}
+		
+	}
+	
+	
+	private void deleteRepeated(long dbid){
+		for(int i = 0;i<3;i++){
+			String repairSql = "delete from t_crm_email_contacts_rel_users where id in ("
+					+ "select id from("
+					+ "select max(id) as id from t_crm_email_contacts_rel_users where dbid = ? group by dbid , user_id , mail_address_id  HAVING count(1) >1) as xxx"
+					+ ") and dbid = ?";
+			Db.update(null, repairSql,dbid,dbid);
+			/*List<Record> find2 = Db.find(null, repairSql,dbid,dbid);
+			if(null != find2 && find2.size() > 0){
+				for(Record r : find2){
+					System.out.println(ToolGson.GsonString(r.getColumns()));
+				}
+			}*/
+		}
+	}
+
+
+
+}

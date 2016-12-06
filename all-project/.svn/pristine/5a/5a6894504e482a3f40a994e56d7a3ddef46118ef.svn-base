@@ -1,0 +1,13 @@
+package saas.winbons.data.model.customer;
+
+import org.springframework.context.ApplicationEvent;
+
+public class CustomerPoolEvent extends ApplicationEvent {
+
+	private static final long serialVersionUID = 1842965037940777332L;
+
+	public CustomerPoolEvent(Object source) {
+		super(source);
+	}
+
+}

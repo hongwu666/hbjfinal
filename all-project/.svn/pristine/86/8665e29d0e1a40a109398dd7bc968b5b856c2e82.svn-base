@@ -1,0 +1,177 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: RedisMap.java 
+ * @Package saas.framework.cache.redis 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年9月24日 下午3:56:33 
+ * @version 1.0 
+ */
+
+package saas.framework.cache.redis;
+
+import java.io.Serializable;
+import java.util.AbstractMap;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+
+import redis.clients.jedis.Jedis;
+import saas.framework.cache.JedisCallback;
+import saas.framework.cache.RedisCmdHelper;
+
+/**
+ * @ClassName: RedisMap
+ * @Description: redis 并发map线程安全类
+ * @author star.ye
+ * @date 2014年9月24日 下午3:56:33
+ */
+public class RedisMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V>,Serializable {
+
+  private static final long serialVersionUID = 1L;
+
+  private final RedisCmdHelper redisCmdHelper;
+
+	private ISerializer serializer;
+
+	private byte[] redisMapKeys = null;
+
+	public RedisMap(RedisCmdHelper redisCmdHelper, ISerializer serializer, String mapKey) {
+		this.redisCmdHelper = redisCmdHelper;
+		this.serializer = serializer;
+		this.redisMapKeys = mapKey.getBytes();
+	}
+
+	public boolean containsKey(Object key) {
+		final byte[] tempKey = key.toString().getBytes();
+		return (Boolean) redisCmdHelper.executeCallBack(new JedisCallback() {
+			public Object executCmd(Jedis jedis) {
+				return jedis.hexists(redisMapKeys, tempKey);
+			}
+		});
+	}
+
+	public V put(K key, V value) {
+		final byte[] tempKey = key.toString().getBytes();
+		final byte[] redisValue = serializer.serializeFrom(new DefaultRedisItem(value));
+		if (redisValue != null) {
+			redisCmdHelper.executeCallBack(new JedisCallback() {
+				public Object executCmd(Jedis jedis) {
+					return jedis.hset(redisMapKeys, tempKey, redisValue);
+				}
+			});
+		}
+		return value;
+	}
+
+	public int size() {
+		return (Integer) redisCmdHelper.executeCallBack(new JedisCallback() {
+			public Object executCmd(Jedis jedis) {
+				Long longValue = jedis.hlen(redisMapKeys);
+				return longValue.intValue();
+			}
+		});
+	}
+
+	public V remove(Object key) {
+		final byte[] tempKey = key.toString().getBytes();
+		redisCmdHelper.executeCallBack(new JedisCallback() {
+			public Object executCmd(Jedis jedis) {
+				return jedis.hdel(redisMapKeys, tempKey);
+			}
+		});
+		return null;
+	}
+
+	@SuppressWarnings("unchecked")
+	public V get(Object key) {
+		final byte[] tempKey = key.toString().getBytes();
+		IRedisCaheItem redisCaheItem = (IRedisCaheItem) redisCmdHelper.executeCallBack(new JedisCallback() {
+			public Object executCmd(Jedis jedis) {
+				byte[] value = jedis.hget(redisMapKeys, tempKey);
+				return serializer.deserializeInto(value);
+			}
+		});
+		if (redisCaheItem != null) {
+			return (V) redisCaheItem.getObj();
+		}
+		return null;
+	}
+
+	
+	
+  @SuppressWarnings({ "unchecked", "rawtypes" })
+  @Override
+  public Set keySet() {
+    return  (Set) redisCmdHelper.executeCallBack(new JedisCallback() {
+      public Object executCmd(Jedis jedis) {
+        return jedis.hkeys(redisMapKeys);
+      }
+    });
+  }
+
+  public Set<java.util.Map.Entry<K, V>> entrySet() {
+    return  (Set) redisCmdHelper.executeCallBack(new JedisCallback() {
+      public Object executCmd(Jedis jedis) {
+        return jedis.hvals(redisMapKeys);
+      }
+    });
+	}
+
+	public void clear() {
+		redisCmdHelper.executeCallBack(new JedisCallback() {
+			public Object executCmd(Jedis jedis) {
+				return jedis.del(redisMapKeys);
+			}
+		});
+	}
+
+	public V putIfAbsent(K key, V value) {
+		final byte[] tempKey = key.toString().getBytes();
+		final byte[] redisValue = serializer.serializeFrom(new DefaultRedisItem(value));
+		Long num = (Long) redisCmdHelper.executeCallBack(new JedisCallback() {
+			public Object executCmd(Jedis jedis) {
+				return jedis.hsetnx(redisMapKeys, tempKey, redisValue);
+			}
+		});
+		if (num > 0)
+			return value;
+		return null;
+	}
+
+	public boolean remove(Object key, Object value) {
+		if (containsKey(key)) {
+			Object tempValue = get(key);
+			if (value != null && value.equals(tempValue)) {
+				remove(key);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean replace(K key, V oldValue, V newValue) {
+		if (containsKey(key)) {
+			Object tempValue = get(key);
+			if (oldValue != null && oldValue.equals(tempValue)) {
+				put(key, newValue);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public V replace(K key, V value) {
+		if (containsKey(key)) {
+			return put(key, value);
+		}
+		return null;
+	}
+
+	
+}

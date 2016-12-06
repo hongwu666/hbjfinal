@@ -1,0 +1,13 @@
+package saas.winbons.data.model.analysis;
+
+import saas.winbons.data.model.BaseModel;
+
+public class AnalysisSetting extends BaseModel<AnalysisSetting> {
+
+	private static final long serialVersionUID = 7103887719081139557L;
+	
+	public static final AnalysisSetting dao = new AnalysisSetting();
+	
+	
+
+}

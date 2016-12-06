@@ -1,0 +1,13 @@
+package saas.crm.data.model.dynamic;
+
+import com.jfinal.plugin.activerecord.Model;
+
+public class DynamicTopic extends Model<DynamicTopic> {
+
+	private static final long serialVersionUID = 6123507706635635218L;
+	
+	public static final DynamicTopic dao = new DynamicTopic();
+	
+	
+
+}

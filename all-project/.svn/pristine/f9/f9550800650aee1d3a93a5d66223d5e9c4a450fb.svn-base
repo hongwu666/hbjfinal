@@ -1,0 +1,62 @@
+package saas.framework.cache;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import redis.clients.jedis.Jedis;
+import saas.framework.cache.redis.DefaultRedisItem;
+import saas.framework.cache.redis.ISerializer;
+import saas.framework.cache.redis.JavaSerializer;
+import saas.framework.cache.redis.RedisCmdConstant;
+import saas.framework.cache.redis.cmds.RedisCmdsFactory;
+
+public abstract class AbstractRedisCmd implements IRedisCmd, RedisCmdConstant,
+		InitializingBean {
+
+	private ISerializer serializer = new JavaSerializer();
+
+	@Autowired
+	private RedisCmdsFactory redisCmdsFactory;
+
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		redisCmdsFactory.registCmd(this);
+	}
+
+	public Jedis getJedis() {
+		return RedisCmdHelper.getCurrentJedis();
+	}
+
+	@Override
+	public Object exeute(Object key, Object[] params, Object[] extraParam) {
+		ArrayList<byte[]> bytes=null;
+		if (params != null) {
+			bytes = new ArrayList<byte[]>(params.length);
+			for (Object obj : params) {
+				bytes.add(serializer.serializeFrom(new DefaultRedisItem(obj)));
+			}
+		}
+		return execteBinary(serializer.serializeKey(key), bytes, extraParam);
+	}
+
+	public abstract Object execteBinary(byte[] key, List<byte[]> parmas,
+			Object[] extraParam);
+
+	public Object getCahceFromRedisReturn(byte[] datas) {
+		if (datas != null)
+			return serializer.deserializeInto(datas).getObj();
+		return null;
+	}
+
+	/**
+	 * 
+	 * @param datas
+	 * @return
+	 */
+	public Object getCahceFromRedisReturn(List<byte[]> datas) {
+		return serializer.deserializeInto(datas.get(1)).getObj();
+	}
+}

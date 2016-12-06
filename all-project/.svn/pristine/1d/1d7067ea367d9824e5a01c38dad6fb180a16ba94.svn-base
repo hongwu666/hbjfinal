@@ -1,0 +1,160 @@
+package saas.winbons.jfinal;
+
+import java.io.IOException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.alibaba.druid.filter.stat.StatFilter;
+import com.alibaba.druid.wall.WallConfig;
+import com.alibaba.druid.wall.WallFilter;
+import com.jfinal.ext.plugin.jms.JmsPlugin;
+import com.jfinal.ext.plugin.quartz.QuartzPlugin;
+import com.jfinal.i18n.I18n;
+import com.jfinal.kit.PathKit;
+import com.jfinal.kit.PropKit;
+import com.jfinal.plugin.activerecord.ActiveRecordPlugin;
+import com.jfinal.plugin.druid.DruidPlugin;
+import com.jfinal.plugin.ehcache.EhCachePlugin;
+
+import saas.winbons.data.model.ListItem;
+import saas.winbons.data.model.SystemProfile;
+import saas.winbons.data.model.analysis.AnalysisSetting;
+import saas.winbons.data.model.base.ImportLogModel;
+import saas.winbons.data.model.calendar.CalendarInfo;
+import saas.winbons.data.model.calendar.CalendarRelUser;
+import saas.winbons.data.model.contact.CustomerContact;
+import saas.winbons.data.model.contact.CustomerContactMail;
+import saas.winbons.data.model.contract.Contract;
+import saas.winbons.data.model.customer.Customer;
+import saas.winbons.data.model.customer.CustomerOwnerAcl;
+import saas.winbons.data.model.customer.CustomerPool;
+import saas.winbons.data.model.customer.CustomerPoolRule;
+import saas.winbons.data.model.defined.DefinedFeildModel;
+import saas.winbons.data.model.defined.DefinedGridColumn;
+import saas.winbons.data.model.defined.VUiGridColumnModel;
+import saas.winbons.data.model.email.EmailContactBox;
+import saas.winbons.data.model.email.EmailContactBoxRelUser;
+import saas.winbons.data.model.email.EmailContactGroupRelContact;
+import saas.winbons.data.model.email.EmailInfo;
+import saas.winbons.data.model.email.MailAddress;
+import saas.winbons.data.model.leads.Leads;
+import saas.winbons.data.model.organization.Department;
+import saas.winbons.data.model.product.ProductCatalog;
+import saas.winbons.data.model.report.ReportForm;
+import saas.winbons.data.model.report.ReportFormFilter;
+import saas.winbons.data.model.report.ReportFormItem;
+import saas.winbons.data.model.sales.Opportunity;
+import saas.winbons.data.model.sales.OpportunityContactAcl;
+import saas.winbons.data.model.sales.OpportunityStage;
+import saas.winbons.data.model.security.BsUserModel;
+import saas.winbons.data.model.security.ImUserModel;
+import saas.winbons.data.model.security.User;
+import saas.winbons.data.model.security.UserContactModel;
+import saas.winbons.data.model.security.UserServiceAssoModel;
+import saas.winbons.data.model.tag.BizRelTag;
+import saas.winbons.framework.tools.ToolBeetl;
+import saas.winbons.jfinal.plugin.SqlXmlPlugin;
+
+public class JfinalCoreInit {
+	
+	
+	private final Logger log = LoggerFactory.getLogger(JfinalCoreInit.class);
+	
+	 public JfinalCoreInit() throws IOException {
+			PropKit.use("a_little_config.txt");
+			PathKit.setWebRootPath(PropKit.get("WebRootPath"));
+			log.info("启用Druid连接池");
+			log.info("jdbcUrl:" + PropKit.get("jdbcUrl"));
+			DruidPlugin druidPlugin = new DruidPlugin(PropKit.get("jdbcUrl"), PropKit.get("user"), PropKit.get("password").trim());
+			druidPlugin.addFilter(new StatFilter());
+			WallFilter wall = new WallFilter();
+			wall.setDbType("mysql");
+			WallConfig wallConfig = new WallConfig("META-INF/druid/wall/mysql");
+			wallConfig.setCommentAllow(true);
+			wallConfig.setSelectWhereAlwayTrueCheck(false);
+			wallConfig.setConditionAndAlwayTrueAllow(true);
+			wallConfig.setMultiStatementAllow(true);
+			wallConfig.setNoneBaseStatementAllow(true);
+			wall.setConfig(wallConfig);
+			druidPlugin.addFilter(wall);
+			//DruidSqlInterceptor druidSqlInterceptor = new DruidSqlInterceptor();
+			//druidPlugin.addFilter(druidSqlInterceptor);
+			druidPlugin.start();
+			
+			log.info("启用ActiveRecordPlugin插件");
+			ActiveRecordPlugin activeRecordPlugin = new ActiveRecordPlugin(druidPlugin);
+			activeRecordPlugin.addMapping("t_crm_leads", Leads.class);
+			activeRecordPlugin.addMapping("t_crm_definition_field","dbid,id", DefinedFeildModel.class);
+			activeRecordPlugin.addMapping("t_crm_ui_grid_column","dbid,id", VUiGridColumnModel.class);
+			activeRecordPlugin.addMapping("t_crm_define_grid_column","dbid,id,ownerId", DefinedGridColumn.class);
+			activeRecordPlugin.addMapping("t_crm_biz_rel_tag","dbid,id", BizRelTag.class);
+			activeRecordPlugin.addMapping("t_crm_user","dbid,user_id", User.class);
+			activeRecordPlugin.addMapping("t_crm_user_contact_info","dbid,id,user_id", UserContactModel.class);
+			//activeRecordPlugin.addMapping("t_crm_user_login_info","dbid,id", UserLoginModel.class);
+			activeRecordPlugin.addMapping("t_bs_user","id", BsUserModel.class);
+			
+			activeRecordPlugin.addMapping("t_crm_list_item","dbid,id", ListItem.class);
+			activeRecordPlugin.addMapping("t_crm_department","dbid,id", Department.class);
+			activeRecordPlugin.addMapping("t_crm_sales_opportunity","dbid,id", Opportunity.class);
+			activeRecordPlugin.addMapping("t_crm_sales_opportunity_stage","dbid,id", OpportunityStage.class);
+			activeRecordPlugin.addMapping("t_bs_systemprofile","dbid,id", SystemProfile.class);
+			activeRecordPlugin.addMapping("t_crm_customer","dbid,id", Customer.class);
+			activeRecordPlugin.addMapping("t_crm_cust_public_pool","dbid,id", CustomerPool.class);
+			activeRecordPlugin.addMapping("t_crm_cust_public_pool_rules","dbid,id", CustomerPoolRule.class);
+			activeRecordPlugin.addMapping("t_crm_cust_owner_acl","dbid,secure_id", CustomerOwnerAcl.class);
+			activeRecordPlugin.addMapping("t_bs_userserviceaccess","dbid,userno", UserServiceAssoModel.class);
+			activeRecordPlugin.addMapping("t_im_user","dbid,user_id", ImUserModel.class);
+			
+			
+			activeRecordPlugin.addMapping("t_crm_product_catalog","dbid,id", ProductCatalog.class);
+			activeRecordPlugin.addMapping("t_crm_calendar_info","dbid,id", CalendarInfo.class);
+			activeRecordPlugin.addMapping("t_crm_calendar_info_rel_user","dbid,id", CalendarRelUser.class);
+			activeRecordPlugin.addMapping("t_crm_analysis_setting","dbid,id", AnalysisSetting.class);
+			activeRecordPlugin.addMapping("t_crm_cust_contact","dbid,id", CustomerContact.class);
+			activeRecordPlugin.addMapping("t_crm_mail_address","dbid,id", MailAddress.class);
+			activeRecordPlugin.addMapping("t_crm_contact_mail","dbid,id", CustomerContactMail.class);
+			activeRecordPlugin.addMapping("t_crm_email_group_rel_contact","dbid,id", EmailContactGroupRelContact.class);
+			activeRecordPlugin.addMapping("t_crm_contact_mail","dbid,id", CustomerContactMail.class);
+			activeRecordPlugin.addMapping("t_crm_email_info","dbid,id", EmailInfo.class);
+			activeRecordPlugin.addMapping("t_crm_email_contact_box_rel_user","dbid,id", EmailContactBoxRelUser.class);
+			activeRecordPlugin.addMapping("t_crm_email_contact_box","dbid,id", EmailContactBox.class);
+			
+			activeRecordPlugin.addMapping("t_crm_sales_opportunity_contact_acl","dbid,id", OpportunityContactAcl.class);
+			activeRecordPlugin.addMapping("t_crm_importlog","dbid,id", ImportLogModel.class);
+			
+			//报表
+			activeRecordPlugin.addMapping("t_crm_report_form","dbid,id", ReportForm.class);
+			activeRecordPlugin.addMapping("t_crm_report_form_field","dbid,id", ReportFormItem.class);
+			activeRecordPlugin.addMapping("t_crm_report_form_filter","dbid,id", ReportFormFilter.class);
+			
+			//合同
+			activeRecordPlugin.addMapping("t_crm_contract","dbid,id", Contract.class);
+			
+			activeRecordPlugin.setShowSql(true);
+			activeRecordPlugin.start();
+			EhCachePlugin ehCachePlugin = new EhCachePlugin(Thread.currentThread().getContextClassLoader().getResourceAsStream("ehcache.xml"));
+			ehCachePlugin.start();
+			
+			log.info("SqlXmlPlugin 解析并缓存 xml sql");
+			SqlXmlPlugin sqlXmlPlugin = new SqlXmlPlugin();
+			sqlXmlPlugin.start();
+				
+			ToolBeetl.regiseter();
+			
+			JmsPlugin jmsPlugin = new JmsPlugin("jms.properties");
+			jmsPlugin.start();
+			
+			QuartzPlugin quartzPlugin = new QuartzPlugin();
+			quartzPlugin.confConfig("quartz.properties");
+			quartzPlugin.start();
+			
+			I18n.setDefaultBaseName("message/application");
+			I18n.setDefaultLocale("zh_CN");
+			
+			//MongodbPlugin mongodbPlugin = new MongodbPlugin(PropKit.get("mongodb.url"),PropKit.get("mongodb.dbname"));
+			//mongodbPlugin.start();
+		
+	 }
+
+}

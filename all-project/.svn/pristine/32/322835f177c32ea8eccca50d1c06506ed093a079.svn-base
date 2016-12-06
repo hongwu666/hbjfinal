@@ -1,0 +1,24 @@
+package saas.winbons.beetl.func;
+
+import org.beetl.core.Context;
+import org.beetl.core.Function;
+
+public class IIFFn implements Function {
+
+	@Override
+	public Object call(Object[] paras, Context ctx) {
+		Object o = paras[0];
+		Object o1 = paras[1];
+		Object o2 = paras[2];
+		if(o != null){
+			Boolean b = (Boolean)o;
+			if(b == true){
+				return o1;
+			}else{
+				return o2;
+			}
+		}
+		return null;
+	}
+
+}

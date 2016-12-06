@@ -1,0 +1,114 @@
+package saas.framework.cache.redis;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class JavaSerializer implements ISerializer {
+
+	private static final Logger logger = LoggerFactory.getLogger(JavaSerializer.class);
+
+	@Override
+	public byte[] serializeFrom(IRedisCaheItem obj) {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = null;
+		try {
+			oos = new ObjectOutputStream(new BufferedOutputStream(bos));
+			oos.writeLong(obj.getCreationTime());
+			oos.writeObject(obj.getObj());
+			oos.close();
+			return bos.toByteArray();
+		} catch (IOException e) {
+			logger.error("io exception", e);
+			return null;
+		} finally {
+			if (oos != null) {
+				try {
+					oos.close();
+				} catch (IOException e) {
+					logger.error("io exception", e);
+				}
+			}
+		}
+
+	}
+
+	@Override
+	public IRedisCaheItem deserializeInto(byte[] data) {
+		if (data == null) {
+			return null;
+		}
+		DefaultRedisItem redisCaheItem = null;
+		BufferedInputStream bis = new BufferedInputStream(new ByteArrayInputStream(data));
+		ObjectInputStream ois = null;
+		try {
+			redisCaheItem = new DefaultRedisItem();
+			ois = new ObjectInputStream(bis);
+			redisCaheItem.setCreateTime(ois.readLong());
+			redisCaheItem.readObject(ois);
+		} catch (IOException e) {
+			logger.error("io exception", e);
+		} finally {
+			if (ois != null) {
+				try {
+					ois.close();
+				} catch (IOException e) {
+					logger.error("io exception", e);
+				}
+			}
+		}
+		return redisCaheItem;
+	}
+
+	@Override
+	public byte[] serializeKey(Object obj) {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = null;
+		try {
+			oos = new ObjectOutputStream(new BufferedOutputStream(bos));
+			oos.writeObject(obj);
+			oos.close();
+			return bos.toByteArray();
+		} catch (IOException e) {
+			logger.error("io exception", e);
+			return null;
+		} finally {
+			if (oos != null) {
+				try {
+					oos.close();
+				} catch (IOException e) {
+					logger.error("io exception", e);
+				}
+			}
+		}
+	}
+
+	public Object deSerializeKey(byte[] data) {
+		BufferedInputStream bis = new BufferedInputStream(new ByteArrayInputStream(data));
+		ObjectInputStream ois = null;
+		try {
+			ois = new ObjectInputStream(bis);
+			return ois.readObject();
+		} catch (IOException e) {
+			logger.error("io exception", e);
+		} catch (ClassNotFoundException e) {
+			logger.error("ClassNotFoundException exception", e);
+		} finally {
+			if (ois != null) {
+				try {
+					ois.close();
+				} catch (IOException e) {
+					logger.error("io exception", e);
+				}
+			}
+		}
+		return null;
+	}
+}

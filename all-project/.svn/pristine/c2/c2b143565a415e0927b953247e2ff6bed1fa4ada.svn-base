@@ -1,0 +1,9 @@
+package saas.winbons.data.model.sales;
+
+import saas.winbons.data.model.BaseModel;
+
+public class OpportunityContactAcl extends BaseModel<OpportunityContactAcl> {
+
+	private static final long serialVersionUID = -4348900913788363256L;
+
+}

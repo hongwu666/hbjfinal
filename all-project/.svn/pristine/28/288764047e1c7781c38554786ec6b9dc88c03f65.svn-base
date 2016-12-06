@@ -1,0 +1,59 @@
+package saas.winbons.data.model.security;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationListener;
+
+import com.jfinal.ext.kit.ModelKit;
+import com.jfinal.ext.plugin.jms.JmsKit;
+import com.jfinal.kit.PropKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.crm.base.enumtype.NotifyType;
+import saas.crm.base.event.SystemNotifyEvent;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolModel;
+
+public class UserAddEventListener implements ApplicationListener<UserAddEvent> {
+	
+	private static final Logger logger = LoggerFactory.getLogger(UserAddEventListener.class);
+
+	@Override
+	public void onApplicationEvent(UserAddEvent event) {
+		Map<String, Object> source = (Map<String, Object>) event.getSource();
+		Long userId = (Long) source.get("data");
+		ContextDTO contextDTO = (ContextDTO) source.get("contextDTO");
+		try{
+			User u = User.dao.findById(contextDTO, contextDTO.getDbId(),userId);
+			Map<String, Object> uMap = ModelKit.toMap(u);
+			ImUserModel imUserModel = ImUserModel.dao.findById(contextDTO, contextDTO.getDbId(),userId);
+			if(null != imUserModel){
+				uMap.put("imAccountId", imUserModel.getStr("im_account_id"));
+			}
+			List<Record> find = Db.find(contextDTO, "select user_id from t_crm_user where is_deleted <> 'Y'");
+			List<Long> userIds = new ArrayList<Long>();
+			for(Record r: find){
+				userIds.add(r.getLong("user_id"));
+			}
+			Long dbId = contextDTO.getDbId();
+			SystemNotifyEvent systemNotifyEvent = new SystemNotifyEvent();
+			systemNotifyEvent.setContent(ToolGson.GsonString(uMap));
+			Calendar c = Calendar.getInstance();
+			systemNotifyEvent.setDbid(dbId);
+			systemNotifyEvent.setNow(true);
+			systemNotifyEvent.setReceiverIds(userIds.toArray(new Long[0]));
+			systemNotifyEvent.setType(NotifyType.user_add);
+			JmsKit.sendQueue(PropKit.use("jms.properties").get("systemnotifyevent.name"), systemNotifyEvent, "a");
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+
+}

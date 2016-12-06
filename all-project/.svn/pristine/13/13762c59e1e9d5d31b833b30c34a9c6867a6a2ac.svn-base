@@ -1,0 +1,39 @@
+package saas.winbons.format;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Map;
+
+import com.jfinal.plugin.activerecord.Model;
+
+import saas.winbons.framework.tools.ToolString;
+
+public class DateTimeFormtCallback implements ICallbackFormat {
+	 
+	SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+	@Override
+	public Object callback(Map<String, Object> map, String name, String dbName) {
+		Object object = map.get(dbName);
+		String value = ToolString.toString(object);
+		if(!ToolString.isEmptyString(value)){
+			Calendar calendar = Calendar.getInstance();  
+			calendar.setTimeInMillis(Long.parseLong(value));
+			value = simpleDateFormat.format(calendar.getTime());
+		}
+		map.put(name, value);
+		return value;
+	}
+
+	@Override
+	public Object build(Model model,String attr,Object value){
+		model.set(attr, value);
+		return value;
+	}
+	
+	@Override
+	public String getType() {
+		return "fdt";
+	}
+
+}

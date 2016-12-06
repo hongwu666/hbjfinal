@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 菜单sql -->
+<sql-statement namespace="winbins.defined">
+
+	<sql id="getUserGridColumns">
+	<![CDATA[ 
+		<%
+		var tableName = " and table_name = ";
+			switch(gridId){
+			case 'ID_GRID_CUSTOMER':
+				tableName = tableName + " 't_crm_customer' ";
+			        break;	
+			case 'ID_GRID_CONTACT':
+				tableName = " 't_crm_cust_contact' ";
+			        break;	
+			case 'ID_GRID_OPPORTUNITY':
+				tableName = " 't_crm_sales_opportunity' ";
+			        break;	
+			case 'ID_GRID_COMPETITOR':
+				tableName = " 't_crm_competitor' ";	
+			        break;
+			case 'ID_GRID_PRODUCT':
+				tableName = tableName + " 't_crm_product' ";
+			        break;
+			case 'ID_GRID_CONTRACT':
+				tableName = tableName + " 't_crm_contract' ";
+			        break;
+			case 'ID_GRID_LEADS':
+				tableName = tableName + " 't_crm_leads' ";
+			        break;	
+			case 'ID_GRID_REPORT':
+				tableName = tableName + " 't_crm_report_form' ";
+	        	break;	
+	        case 'ID_GRID_IMPORT':
+				tableName = tableName + " 't_crm_import' ";
+	        	break;	
+			default:
+				tableName = "";
+			}
+			var selectDisableColumn = "(select mapping_field_name,field_type,is_delete,isdisable,field_type_ex,field_type_value,column_field_name,comboxid from t_crm_definition_field where dbid =" + contextDTO.dbId + tableName + ") b";
+			
+			switch(gridId){
+			case 'ID_GRID_CUSTOMER':
+			case 'ID_GRID_CONTACT':
+			case 'ID_GRID_OPPORTUNITY':
+			case 'ID_GRID_COMPETITOR':
+			case 'ID_GRID_PRODUCT':
+			case 'ID_GRID_CONTRACT':
+			case 'ID_GRID_LEADS':
+			case 'ID_GRID_REPORT':
+			case 'ID_GRID_IMPORT':
+				sql = "( select id,grid_id,name,width,is_auto_width,index_num,renderer,align,label,title,sortable,display,mapping_field_name" +
+				" from t_crm_define_grid_column where grid_id = '" + gridId + "' and dbid=" + contextDTO.dbId + " and ownerId=" +  + contextDTO.userId + " order by index_num ) a left join";
+			    break;	
+			default:
+				sql = "( select id,grid_id,name,width,is_auto_width,index_num,renderer,align,label,title,sortable,display,mapping_field_name" +
+				" from t_crm_ui_grid_column where grid_id ='" + gridId + "' and dbid=" + contextDTO.dbId + " order by index_num ) a left join";
+				break;	
+			}
+			sql = "select a.id,a.grid_id,a.name,a.width,a.is_auto_width,a.index_num,a.renderer,a.align,a.label,a.title,a.sortable,a.display,a.mapping_field_name,b.field_type,b.field_type_ex,b.field_type_value,b.column_field_name,b.comboxid from " + sql + selectDisableColumn + " on a.mapping_field_name = b.mapping_field_name where b.is_delete = 'N' AND b.isDisable = 'N' order by a.index_num";
+			print(sql);
+		     %>
+	]]>
+	</sql>
+
+	<sql id="getModelDefineField">
+	<![CDATA[ 
+		select ${columns} from t_crm_definition_field where 1 = 1 
+		<%
+			commonSql("winbons.common.params",filters!,sorts!);
+		 %>
+	]]>
+	</sql>
+	
+	<sql id="getGridColumnByParam">
+	<![CDATA[ 
+		select a.id,a.grid_id,a.name,a.width,a.is_auto_width,a.index_num,a.renderer,a.align,a.label,a.title,a.sortable,a.display,a.mapping_field_name,b.field_type,
+		b.table_name,b.field_label,b.is_define,b.field_type_ex,b.field_type_value,column_field_name 
+		from t_crm_define_grid_column a inner join 
+		t_crm_definition_field b 
+		on a.mapping_field_name = b.mapping_field_name and b.dbid = ${contextDTO.dbId} and b.is_delete = 'N' AND b.isDisable = 'N' 
+		where a.dbid = ${contextDTO.dbId}  and a.ownerId = ${contextDTO.userId} 
+		<%
+			commonSql("winbons.common.params",filters!,sorts!);
+		%> 
+	]]>
+	</sql>
+	
+	
+
+
+</sql-statement>

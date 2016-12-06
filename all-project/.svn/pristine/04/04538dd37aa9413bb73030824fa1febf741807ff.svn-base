@@ -1,0 +1,41 @@
+package saas.winbons.data.model.sales;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import saas.winbons.data.model.BaseModel;
+import saas.winbons.data.model.ListItem;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+
+
+public class Opportunity extends BaseModel<Opportunity> {
+
+	private static final long serialVersionUID = -4264714399887864565L;
+	
+	public static final Opportunity dao = new Opportunity();
+	
+	public List<Map<String,Object>> findAll(ContextDTO contextDTO){
+		Map<String,Object> map = new HashMap<String,Object>();
+		String buildSelectSql = " ";
+		buildSelectSql += ToolJfinalSql.buildSelectSql(Opportunity.class, "a",null,null);
+		buildSelectSql += ",b.item_label as statusName ,b.item_label  as lable";
+		
+		map.put("opportunityColumns", ToolJfinalSql.buildSelectSql(Opportunity.class, "",null,null));
+		map.put("listColumns", ToolJfinalSql.buildSelectSql(ListItem.class, "",null,null));
+		map.put("columns", buildSelectSql);
+		map.put("contextDTO", contextDTO);
+		String sql = ToolSqlXml.getSql("winbons.opportunityStage.findAll",map);
+		List<Record> find = Db.find(contextDTO, sql);
+		List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find);
+		return recordListConvert;
+	}
+
+}

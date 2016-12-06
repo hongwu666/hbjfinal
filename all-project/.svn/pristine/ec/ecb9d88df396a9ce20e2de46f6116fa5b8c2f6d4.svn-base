@@ -1,0 +1,27 @@
+package saas.winbons.data.model;
+
+
+public abstract class AbstractTenantModel<M extends BaseModel<M>> extends BaseModel<M> {
+	
+	private static final long serialVersionUID = 2182973549625564379L;
+	
+	public void setDbid(java.lang.Long dbid) {
+		set("dbid", dbid);
+	}
+
+	public java.lang.Long getDbid() {
+		return get("dbid");
+	}
+
+	public void setId(java.lang.Long id) {
+		set("id", id);
+	}
+
+	public java.lang.Long getId() {
+		return get("id");
+	}
+	
+	
+	
+	
+}

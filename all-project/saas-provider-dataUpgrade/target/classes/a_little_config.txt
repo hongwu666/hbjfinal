@@ -1,0 +1,41 @@
+#jdbcUrl=jdbc:mysql://192.168.2.166:3306/saas_CRM?useUnicode\=true&amp;characterEncoding\=UTF-8
+#jdbcUrl=jdbc:mysql://192.168.2.167:3306/saas_CRM?useUnicode\=true&amp;characterEncoding\=UTF-8
+#jdbcUrl=jdbc:mysql://192.168.2.167:3306/saas_CRM?useUnicode\=true&amp;characterEncoding\=UTF-8
+#user=star
+#password=123456
+
+
+jdbcUrl=jdbc:mysql://rm-bp1m9w36c13019kbbo.mysql.rds.aliyuncs.com:3306/crm1?useUnicode\=true&amp;characterEncoding\=UTF-8
+user=star
+password=123456hbyjs_c0m
+
+
+redis.ip=192.168.2.41
+redis.port=6379
+redis.password=winbons2015db
+
+devMode=true
+
+#sqlPath=E:/Java/dubbo-saas/saas-dubbo-provider-market/target/classes/sql
+sqlPath=/usr/local/crm/config/sql
+#WindowsSqlPath=E:/Java/winbons-dubbo/dev20160720/20160716/saas-dubbo-parent/src/main/resources/sql
+WindowsSqlPath=E:/Java/winbons-dubbo/dev20160815/all-project/saas-dubbo-parent/src/main/resources/sql
+
+WebRootPath=E:\Java\dubbo-saas\saas-dubbo-provider-market\target\classes
+
+mongodb.url=192.168.2.73:27017
+mongodb.dbname=crm
+
+
+#IDEA加密秘钥
+config.securityKey = ttJw6Oc4NEtwPf8CbmwLNQ==
+
+
+
+#cookie最大时间 3600 * 24 * 15 = 12960000 秒 = 15 天
+config.maxAge = 12960000
+
+#
+is_nim_server=true
+
+new.im.server=http://192.168.2.168:8092/imnew/

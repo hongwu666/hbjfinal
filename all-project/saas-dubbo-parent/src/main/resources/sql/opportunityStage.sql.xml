@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--  
+	菜单sql
+-->
+<sql-statement namespace="winbons.opportunityStage">
+	
+	<!-- 查询根菜单 -->
+	<sql id="findAll">
+		<![CDATA[ 
+			select ${columns} from 
+			(select ${opportunityColumns} from t_crm_sales_opportunity_stage  where  dbid = ${contextDTO.dbId}) a  left join 
+			(select ${listColumns} from t_crm_list_item where dbid = ${contextDTO.dbId}) b on a.status = b.id order by a.display_order 
+    	]]>
+	</sql>
+
+</sql-statement>

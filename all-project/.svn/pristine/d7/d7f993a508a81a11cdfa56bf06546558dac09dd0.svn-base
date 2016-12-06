@@ -1,0 +1,11 @@
+PostAlarmData.job=saas.monitor.job.CleanEmailAccountJob
+PostAlarmData.cron=0 0/30 * * * ?
+PostAlarmData.enable=true
+
+PostRealData.job=saas.monitor.job.BuildReceiveEmailJob
+PostRealData.cron=0 0/5 * * * ?
+PostRealData.cron.enable=true
+
+RemoveReceiveLog.job=saas.monitor.job.RemoveReceiveLogJob
+RemoveReceiveLog.cron=0 0 1 * * ?
+RemoveReceiveLog.cron.enable=true

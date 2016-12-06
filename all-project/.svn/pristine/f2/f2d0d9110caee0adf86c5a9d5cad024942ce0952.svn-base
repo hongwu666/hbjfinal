@@ -1,0 +1,119 @@
+package saas.winbons.data.model.contact;
+
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.enumtype.BaseEnum;
+import saas.winbons.format.IEnumFormat;
+
+public enum ContractConvertor implements BaseEnum<String>, IEnumFormat {
+
+	createdBy ( "created_by" , DataConstant.EnumFormatCallBack.String ) ,
+	createdDate ( "created_date" , DataConstant.EnumFormatCallBack.DateTime ) ,
+	updatedBy ( "updated_by" , DataConstant.EnumFormatCallBack.String ) ,
+	updatedDate ( "updated_date" , DataConstant.EnumFormatCallBack.DateTime ) ,
+	dateField01 ( "date_field01" , DataConstant.EnumFormatCallBack.String ) ,
+	dateField02 ( "date_field02" , DataConstant.EnumFormatCallBack.String ) ,
+	dateField03 ( "date_field03" , DataConstant.EnumFormatCallBack.String ) ,
+	dateField04 ( "date_field04" , DataConstant.EnumFormatCallBack.String ) ,
+	dateField05 ( "date_field05" , DataConstant.EnumFormatCallBack.String ) ,
+	dateField06 ( "date_field06" , DataConstant.EnumFormatCallBack.String ) ,
+	dateField07 ( "date_field07" , DataConstant.EnumFormatCallBack.String ) ,
+	dateField08 ( "date_field08" , DataConstant.EnumFormatCallBack.String ) ,
+	dateField09 ( "date_field09" , DataConstant.EnumFormatCallBack.String ) ,
+	dateField10 ( "date_field10" , DataConstant.EnumFormatCallBack.String ) ,
+	numField01 ( "num_field01" , DataConstant.EnumFormatCallBack.Double ) ,
+	numField02 ( "num_field02" , DataConstant.EnumFormatCallBack.Double ) ,
+	numField03 ( "num_field03" , DataConstant.EnumFormatCallBack.Double ) ,
+	numField04 ( "num_field04" , DataConstant.EnumFormatCallBack.Double ) ,
+	numField05 ( "num_field05" , DataConstant.EnumFormatCallBack.Double ) ,
+	numField06 ( "num_field06" , DataConstant.EnumFormatCallBack.Double ) ,
+	numField07 ( "num_field07" , DataConstant.EnumFormatCallBack.Double ) ,
+	numField08 ( "num_field08" , DataConstant.EnumFormatCallBack.Double ) ,
+	numField09 ( "num_field09" , DataConstant.EnumFormatCallBack.Double ) ,
+	numField10 ( "num_field10" , DataConstant.EnumFormatCallBack.Double ) ,
+	textField01 ( "text_field01" , DataConstant.EnumFormatCallBack.String ) ,
+	textField02 ( "text_field02" , DataConstant.EnumFormatCallBack.String ) ,
+	textField03 ( "text_field03" , DataConstant.EnumFormatCallBack.String ) ,
+	textField04 ( "text_field04" , DataConstant.EnumFormatCallBack.String ) ,
+	textField05 ( "text_field05" , DataConstant.EnumFormatCallBack.String ) ,
+	textField06 ( "text_field06" , DataConstant.EnumFormatCallBack.String ) ,
+	textField07 ( "text_field07" , DataConstant.EnumFormatCallBack.String ) ,
+	textField08 ( "text_field08" , DataConstant.EnumFormatCallBack.String ) ,
+	textField09 ( "text_field09" , DataConstant.EnumFormatCallBack.String ) ,
+	textField10 ( "text_field10" , DataConstant.EnumFormatCallBack.String ) ,
+	textField11 ( "text_field11" , DataConstant.EnumFormatCallBack.String ) ,
+	textField12 ( "text_field12" , DataConstant.EnumFormatCallBack.String ) ,
+	textField13 ( "text_field13" , DataConstant.EnumFormatCallBack.String ) ,
+	textField14 ( "text_field14" , DataConstant.EnumFormatCallBack.String ) ,
+	textField15 ( "text_field15" , DataConstant.EnumFormatCallBack.String ) ,
+	textField16 ( "text_field16" , DataConstant.EnumFormatCallBack.String ) ,
+	textField17 ( "text_field17" , DataConstant.EnumFormatCallBack.String ) ,
+	textField18 ( "text_field18" , DataConstant.EnumFormatCallBack.String ) ,
+	textField19 ( "text_field19" , DataConstant.EnumFormatCallBack.String ) ,
+	textField20 ( "text_field20" , DataConstant.EnumFormatCallBack.String ) ,
+	textField21 ( "text_field21" , DataConstant.EnumFormatCallBack.String ) ,
+	textField22 ( "text_field22" , DataConstant.EnumFormatCallBack.String ) ,
+	textField23 ( "text_field23" , DataConstant.EnumFormatCallBack.String ) ,
+	textField24 ( "text_field24" , DataConstant.EnumFormatCallBack.String ) ,
+	textField25 ( "text_field25" , DataConstant.EnumFormatCallBack.String ) ,
+	textField26 ( "text_field26" , DataConstant.EnumFormatCallBack.String ) ,
+	textField27 ( "text_field27" , DataConstant.EnumFormatCallBack.String ) ,
+	textField28 ( "text_field28" , DataConstant.EnumFormatCallBack.String ) ,
+	textField29 ( "text_field29" , DataConstant.EnumFormatCallBack.String ) ,
+	textField30 ( "text_field30" , DataConstant.EnumFormatCallBack.String ) ,
+
+	id ( "id" , DataConstant.EnumFormatCallBack.String ) ,
+	dbId ( "dbid" , DataConstant.EnumFormatCallBack.String ) ,
+	subject ( "subject" , DataConstant.EnumFormatCallBack.String ) ,
+	customerid ( "customerid" , DataConstant.EnumFormatCallBack.String ) ,
+	total ( "total" , DataConstant.EnumFormatCallBack.Double ) ,
+	discountBeforMoney ( "befor_discount" , DataConstant.EnumFormatCallBack.String ) ,
+	discountTotal ( "discount_total" , DataConstant.EnumFormatCallBack.String ) ,
+	discount ( "discount" , DataConstant.EnumFormatCallBack.String ) ,
+	payment ( "payments" , DataConstant.EnumFormatCallBack.String ) ,
+	invoicePayment ( "invoice_pay" , DataConstant.EnumFormatCallBack.String ) ,
+	begindate ( "begindate" , DataConstant.EnumFormatCallBack.Date ) ,
+	enddate ( "enddate" , DataConstant.EnumFormatCallBack.Date ) ,
+	ownerId ( "owner_id" , DataConstant.EnumFormatCallBack.String ) ,
+	deptId ( "departmentid" , DataConstant.EnumFormatCallBack.String ) ,
+	othercontractor ( "othercontractor" , DataConstant.EnumFormatCallBack.String ) ,
+	opportunityid ( "opportunityid" , DataConstant.EnumFormatCallBack.String ) ,
+	type ( "type" , DataConstant.EnumFormatCallBack.String ) ,
+	status ( "status" , DataConstant.EnumFormatCallBack.String ) ,
+	paytype ( "paytype" , DataConstant.EnumFormatCallBack.String ) ,
+	productid ( "productid" , DataConstant.EnumFormatCallBack.String ) ,
+	contract ( "contract" , DataConstant.EnumFormatCallBack.String ) ,
+	contractno ( "contractno" , DataConstant.EnumFormatCallBack.String ) ,
+	ourcontractor ( "ourcontractor" , DataConstant.EnumFormatCallBack.String ) ,
+	signDBDate ( "signdate" , DataConstant.EnumFormatCallBack.Date ) ,
+	fdescribe ( "fdescribe" , DataConstant.EnumFormatCallBack.String ) ,
+	checkstatus ( "checkstatus" , DataConstant.EnumFormatCallBack.String ) ,
+	session ( "session" , DataConstant.EnumFormatCallBack.String ) ,
+	year ( "year" , DataConstant.EnumFormatCallBack.String ) ,
+	month ( "month" , DataConstant.EnumFormatCallBack.String ) ,
+	approveSubmitDate ( "wfsubmit_date" , DataConstant.EnumFormatCallBack.String ) ,
+	wechat ( "map_opportunity_id" , DataConstant.EnumFormatCallBack.String );
+
+	private ContractConvertor(String dbValue, int formatType) {
+		this.formatType = formatType;
+		this.dbValue = dbValue;
+	}
+
+	private String dbValue;
+	private int formatType;
+
+	@Override
+	public String getDbValue() {
+		return dbValue;
+	}
+
+	@Override
+	public String getColumnName() {
+		return dbValue;
+	}
+
+	@Override
+	public int getCallbackFormatType() {
+		return formatType;
+	}
+
+}

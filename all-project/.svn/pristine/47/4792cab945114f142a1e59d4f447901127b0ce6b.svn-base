@@ -1,0 +1,146 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: TopicMananger.java 
+ * @Package saas.crm.dynamic.manager 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年10月27日 下午1:38:08 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.manager;
+
+import java.util.Calendar;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import saas.crm.data.model.dynamic.DynamicTopic;
+import saas.crm.dynamic.model.DynamicTopicEn;
+import saas.crm.dynamic.model.StreamDynamic;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.nosql.CustomMongoTemplate;
+import saas.winbons.framework.utils.CrmContext;
+
+import com.jfinal.plugin.activerecord.Db;
+
+/**
+ * @ClassName: TopicMananger
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年10月27日 下午1:38:08
+ */
+@Component
+public class TopicManager implements ITopicManager {
+
+	@Autowired
+	private CustomMongoTemplate mongoTemplate;
+	
+
+	
+	private static final int LIMIT_TOPICS = 20;
+
+	@Transactional
+	public DynamicTopic addTopic(ContextDTO contextDTO,DynamicTopicEn en) {
+		final String name = en.getName();
+		DynamicTopic dynamicTopic = null;
+		if (null != en.getId()) {
+			dynamicTopic = new DynamicTopic();
+			dynamicTopic.put("name", name);
+			dynamicTopic.put("lastUpdate", System.currentTimeMillis());
+			dynamicTopic.put("dyCount", 1);
+			dynamicTopic.set("createBy", contextDTO.getUserId());
+			dynamicTopic.set("createOn", Calendar.getInstance().getTime());
+			dynamicTopic.save(contextDTO);
+			en.setId(dynamicTopic.getLong("id"));
+			Db.update(contextDTO, "insert into t_crm_dynamic_dep_acl(depid,dytopicid) values(?,?)", -1, dynamicTopic.getLong("id"));
+			Db.update(contextDTO, "insert into t_crm_dynamic_user_acl(userid,dytopicid) values(?,?)", contextDTO.getUserId(), dynamicTopic.getLong("id"));
+		} else {
+			Long dyCount = findTopicCount(contextDTO,en.getId()) + 1;
+			dynamicTopic =  DynamicTopic.dao.findById(contextDTO, contextDTO.getDbId(),en.getId());
+			dynamicTopic.put("dyCount", dyCount);
+			dynamicTopic.put("lastUpdate", System.currentTimeMillis());
+			dynamicTopic.set("updateBy", contextDTO.getUserId());
+			dynamicTopic.set("updateOn", Calendar.getInstance().getTime());
+			dynamicTopic.update(contextDTO);
+		}
+		return dynamicTopic;
+	}
+	
+	private Long findTopicCount(ContextDTO contextDTO,Long topicId) {
+		long count = 1;
+		try{
+			CrmContext.setContext(contextDTO);
+			Query query = new Query(Criteria.where("topics.id").is(topicId));
+			count = mongoTemplate.count(query, StreamDynamic.class);
+		}catch(Exception e){
+			e.printStackTrace();
+		}finally{
+			CrmContext.clear();
+		}
+		return count;
+		
+	}
+
+	@Override
+	public void updateTopic(String name) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public List<DynamicTopic> findAllTopics(Integer type, Long lastUpdate,
+			Integer pageNo) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<DynamicTopic> findMyTopics(Long userId, Long lastUpdate) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void attentionTopic(Long topicId) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void unattentionTopic(Long topicId) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public List<DynamicTopic> findMyAttenTopic(Long lastUpdate) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void removeDyUpdate(Long topicId) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public List<String> findTopicByKeyword(String keyword) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	
+}

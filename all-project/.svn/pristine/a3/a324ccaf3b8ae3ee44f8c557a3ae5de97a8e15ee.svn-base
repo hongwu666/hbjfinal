@@ -1,0 +1,13 @@
+package saas.winbons.data.model.security;
+
+import saas.winbons.data.model.BaseModel;
+
+public class UserLoginModel extends BaseModel<UserLoginModel> {
+
+	private static final long serialVersionUID = 1L;
+	
+	public static final UserLoginModel dao = new UserLoginModel();
+	
+	
+
+}

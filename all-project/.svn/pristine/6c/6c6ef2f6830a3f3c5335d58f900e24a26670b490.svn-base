@@ -1,0 +1,130 @@
+package saas.crm.dynamic.manager;
+
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.stereotype.Component;
+
+import saas.crm.base.utils.CrmDateUtils;
+import saas.crm.data.constant.GlobalConstant;
+import saas.crm.dynamic.ItemTypeEnum;
+import saas.crm.dynamic.ItemTypeValueEnum;
+import saas.crm.dynamic.model.AbstractDynamic;
+import saas.crm.dynamic.model.StreamDynamic;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.nosql.CustomMongoTemplate;
+
+@Component
+public class DynamicManager implements IDynamicManager {
+	
+	private static final Logger logger = org.slf4j.LoggerFactory.getLogger(DynamicManager.class);
+	
+	@Autowired
+	private CustomMongoTemplate mongoTemplate;
+
+	@Override
+	public List<Long> getSendDynamicIdList(ContextDTO contextDTO,Long[] module, int day){
+		List<Criteria> filterCriteria = new ArrayList<Criteria>();
+		long moduleL = module[0].longValue();
+		
+		if(moduleL == ItemTypeEnum.Customer.dbValue){//当客户模块时，需要将客户模块关联的联系人，商机，合同模块的动态包含进去
+			
+			Long[] modules = {ItemTypeEnum.Customer.dbValue,ItemTypeEnum.Contact.dbValue,
+					ItemTypeEnum.Opportunity.dbValue,ItemTypeEnum.Contract.dbValue};
+			List<Long> moduleList = Arrays.asList(modules);
+			
+			String[] dynaMicType = {ItemTypeValueEnum.releaseDynamic.value,ItemTypeValueEnum.opportunityDynamic.value,ItemTypeValueEnum.contractDynamic.value,
+					ItemTypeValueEnum.releaseDynamicPic.value,ItemTypeValueEnum.opportunityDynamicPic.value,ItemTypeValueEnum.contractDynamicPic.value,
+					ItemTypeValueEnum.releaseDynamicFile.value,ItemTypeValueEnum.opportunityDynamicFile.value,ItemTypeValueEnum.contractDynamicFile.value,
+					ItemTypeValueEnum.releaseDynamicPicAndFile.value,ItemTypeValueEnum.opportunityDynamicPicAndFile.value,ItemTypeValueEnum.contractDynamicPicAndFile.value,
+					"callHistory"};
+			List<String> dynaMicTypeList = Arrays.asList(dynaMicType);
+			Criteria moduleCriteria = Criteria.where("groupTypeId").in(moduleList).and("itemTypeValue").in(dynaMicTypeList);
+			filterCriteria.add(moduleCriteria);
+			
+		}else if(moduleL == ItemTypeEnum.Contact.dbValue){//联系人
+			
+			String[] dynaMicType = {ItemTypeValueEnum.releaseDynamic.value,ItemTypeValueEnum.releaseDynamicPic.value,
+					ItemTypeValueEnum.releaseDynamicFile.value,ItemTypeValueEnum.releaseDynamicPicAndFile.value,"callHistory"};
+			List<String> dynaMicTypeList = Arrays.asList(dynaMicType);
+			Criteria moduleCriteria = Criteria.where("groupTypeId").is(module[0]).and("itemTypeValue").in(dynaMicTypeList);
+			filterCriteria.add(moduleCriteria);
+					
+		}else if(moduleL == ItemTypeEnum.Opportunity.dbValue){//商机
+			
+			String[] dynaMicType = {ItemTypeValueEnum.opportunityDynamic.value,ItemTypeValueEnum.opportunityDynamicPic.value,
+					ItemTypeValueEnum.opportunityDynamicFile.value,ItemTypeValueEnum.opportunityDynamicPicAndFile.value,"callHistory"};
+			List<String> dynaMicTypeList = Arrays.asList(dynaMicType);
+			Criteria moduleCriteria = Criteria.where("groupTypeId").is(module[0]).and("itemTypeValue").in(dynaMicTypeList);
+			filterCriteria.add(moduleCriteria);
+			
+		}else if(moduleL == ItemTypeEnum.Contract.dbValue){//合同
+			
+			String[] dynaMicType = {ItemTypeValueEnum.contractDynamic.value,ItemTypeValueEnum.contractDynamicPic.value,
+					ItemTypeValueEnum.contractDynamicFile.value,ItemTypeValueEnum.contractDynamicPicAndFile.value,"callHistory"};
+			List<String> dynaMicTypeList = Arrays.asList(dynaMicType);
+			Criteria moduleCriteria = Criteria.where("groupTypeId").is(module[0]).and("itemTypeValue").in(dynaMicTypeList);
+			filterCriteria.add(moduleCriteria);
+		}else{
+			return (new ArrayList<Long>());
+		}
+		Query query = new Query();
+		query.addCriteria(new Criteria().andOperator(filterCriteria.toArray(new Criteria[filterCriteria.size()])));
+		
+		//排除非业务产生的任务日志数据
+		query.addCriteria(Criteria.where("groupId").gt(GlobalConstant.notBizGroupId));
+		//转换指定天数前后的时间，day为正数则指day天后，day为负数则指day天前
+		Date startDate = Calendar.getInstance().getTime();
+		try {
+			startDate = CrmDateUtils.getNDate(day);
+		} catch (ParseException e) {
+			e.printStackTrace();
+			logger.info("sevenDays date:"+startDate);	
+		}
+		
+		query.addCriteria(Criteria.where("createDate").gte(startDate));
+		List<StreamDynamic> list = mongoTemplate.find(contextDTO,query, StreamDynamic.class);
+		logger.info("七天未联系动态数量:"+list.size());
+		
+		List<Long> listRet = new ArrayList<Long>();
+		Set<Long> setList = new HashSet<Long>();
+		if(list != null && list.size()>0){
+			for(int i=0;i<list.size();i++){
+				StreamDynamic streamDynamic = list.get(i);
+				Long relModuleId = streamDynamic.getRelModuleId();
+				Long groupId = streamDynamic.getGroupId();
+				logger.info("relModuleId And groupId:"+relModuleId+"   "+groupId);
+				//当请求为客户模块时，则返回关联客户id给对方，如果为其他模块时，则直接返回对应模块id
+				if(module[0] == ItemTypeEnum.Customer.dbValue){
+					if(relModuleId !=null){
+						setList.add(relModuleId);
+					}
+				}else{
+					setList.add(groupId);
+				}
+				
+			}
+			listRet = new ArrayList<Long>(setList);
+		}
+		logger.info("七天未联系groupId集合:"+listRet.toString());
+		return listRet;
+	}
+
+	@Override
+	public String addDynamic(ContextDTO contextDTO,
+			AbstractDynamic streamDynamic) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

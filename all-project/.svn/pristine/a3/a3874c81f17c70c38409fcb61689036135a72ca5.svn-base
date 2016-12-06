@@ -1,0 +1,66 @@
+package saas.monitor.mq;
+
+import java.io.Serializable;
+
+import org.apache.log4j.Logger;
+
+import saas.crm.data.dto.email.EmailAccountLogJmsDTO;
+import saas.monitor.constantInit.ConstantInit;
+import saas.monitor.mvc.email.EmailReceiveLogModel;
+import saas.monitor.mvc.email.EmailSendLogModel;
+import saas.monitor.tools.ToolGson;
+
+import com.jfinal.ext.plugin.jms.ReceiveResolver;
+import com.jfinal.plugin.redis.Redis;
+
+public class EmailAccountLogMq implements ReceiveResolver {
+	
+	private static Logger log = Logger.getLogger(EmailAccountLogMq.class);
+
+	@Override
+	public void resolve(Serializable objectMessage) throws Exception {
+		try{
+			//EmailAccountLogJmsDTO emailAccountLogJmsDTO  = (EmailAccountLogJmsDTO)(objectMessage);
+			EmailAccountLogJmsDTO emailAccountLogJmsDTO  = ToolGson.GsonToBean(objectMessage.toString(), EmailAccountLogJmsDTO.class);
+			if(emailAccountLogJmsDTO.getType().equals("R")){
+				Long dbid = emailAccountLogJmsDTO.getDbId();
+				Long userId = emailAccountLogJmsDTO.getUserId();
+				Long emailAccountId = emailAccountLogJmsDTO.getEmailAccountId();
+				String queueKey = ConstantInit.BuildReceiveEmailJob + dbid + ConstantInit.UNDERLINE_STRING + userId + ConstantInit.UNDERLINE_STRING + emailAccountId;
+				Redis.use(ConstantInit.RedisPlugin).del(queueKey);
+				EmailReceiveLogModel emailReceiveLogModel = new EmailReceiveLogModel();
+				emailReceiveLogModel.set("dbid", dbid);
+				emailReceiveLogModel.set("userId", userId);
+				emailReceiveLogModel.set("emailAccountId", emailAccountId);
+				emailReceiveLogModel.set("emailAccountString", emailAccountLogJmsDTO.getEmailAccount());
+				emailReceiveLogModel.set("createDate", System.currentTimeMillis());
+				emailReceiveLogModel.set("memo", emailAccountLogJmsDTO.getMsg());
+				emailReceiveLogModel.set("type", emailAccountLogJmsDTO.getType());
+				emailReceiveLogModel.set("isOk", emailAccountLogJmsDTO.isSuccess() == true ? "Y" : "N");
+				emailReceiveLogModel.save();
+				log.info("收到邮箱反馈 用户【dbId:" + dbid + ", userId:" + userId + ",emailAccountId=" + emailAccountId + "】");
+			}else if(emailAccountLogJmsDTO.getType().equals("S")){
+				Long dbid = emailAccountLogJmsDTO.getDbId();
+				Long userId = emailAccountLogJmsDTO.getUserId();
+				Long emailAccountId = emailAccountLogJmsDTO.getEmailAccountId();
+				EmailSendLogModel emailReceiveLogModel = new EmailSendLogModel();
+				emailReceiveLogModel.set("dbid", dbid);
+				emailReceiveLogModel.set("userId", userId);
+				emailReceiveLogModel.set("emailAccountId", emailAccountId);
+				emailReceiveLogModel.set("emailAccountString", emailAccountLogJmsDTO.getEmailAccount());
+				emailReceiveLogModel.set("createDate", System.currentTimeMillis());
+				emailReceiveLogModel.set("memo", emailAccountLogJmsDTO.getMsg());
+				emailReceiveLogModel.set("type", emailAccountLogJmsDTO.getType());
+				emailReceiveLogModel.set("isOk", emailAccountLogJmsDTO.isSuccess() == true ? "Y" : "N");
+				emailReceiveLogModel.save();
+				log.info("解析邮箱反馈 用户【dbId:" + dbid + ", userId:" + userId + ",emailAccountId=" + emailAccountId + "】");
+				
+			}
+
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+			
+	}
+
+}

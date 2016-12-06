@@ -1,0 +1,99 @@
+package saas.winbons.data.model;
+
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import saas.winbons.dubbo.api.ContextDTO;
+
+import com.google.common.base.Preconditions;
+import com.jfinal.plugin.activerecord.Model;
+import com.jfinal.plugin.activerecord.Table;
+import com.jfinal.plugin.activerecord.TableMapping;
+
+public abstract class BaseModel<M extends Model<M>> extends Model<M> {
+
+	private static final long serialVersionUID = 8729332768083742997L;
+	private Class<? extends BaseModel<M>> clazz;
+	
+	public void setDbid(java.lang.Long dbid) {
+		set("dbid", dbid);
+	}
+
+	public java.lang.Long getDbid() {
+		return Long.parseLong(get("dbid").toString());
+	}
+	
+	public void setId(java.lang.Long id) {
+		set("id", id);
+	}
+
+	public java.lang.Long getId() {
+		return Long.parseLong(get("id").toString());
+	}
+	
+	public String getStrForce(String attr){
+		return String.valueOf(get(attr));
+	}
+	public Long getLongForce(String attr){
+		String value = getStrForce(attr);
+		if(null != value) {
+			return Long.parseLong(value);
+		}
+		return null;
+	}
+	
+	public Integer getIntForce(String attr){
+		String value = getStrForce(attr);
+		if(null != value) {
+			return Integer.parseInt(value);
+		}
+		return null;
+	}
+	
+	
+	
+	
+	@SuppressWarnings("unchecked")
+	public BaseModel() {
+		Type genericSuperclass = getClass().getGenericSuperclass();
+		clazz = (Class<? extends BaseModel<M>>) ((ParameterizedType) genericSuperclass)
+				.getActualTypeArguments()[0];
+	}
+
+	public List<M> findByColumns(ContextDTO contextDTO,Map<String, Object> map) {
+		Preconditions.checkArgument(map.size() > 0,"map is empty");
+		String sql = "select * from " + tableName() + " where 1=1";
+		Set<String> columns = map.keySet();
+		Object[] values = new Object[map.size()];
+		int i = 0;
+		for (String column : columns) {
+			sql += " and " + column + " = ?";
+			values[i++] = map.get(column);
+		}
+		return find(contextDTO,sql, values);
+	}
+
+	public List<M> findByColumn(ContextDTO contextDTO,String column, Object value) {
+		String sql = "select * from " + tableName() + " where 1=1";
+		sql += " and " + column + " = ?";
+		return find(contextDTO,sql, value);
+	}
+	
+	public void putForUpdate(Map<String, Object> u){
+		for (String key : u.keySet()) {
+			this.set(key, u.get(key));
+		}
+	}
+
+
+
+
+	private String tableName() {
+		Table table = TableMapping.me().getTable(clazz);
+		return TableMapping.me().getTable(clazz).getName();
+	}
+
+}

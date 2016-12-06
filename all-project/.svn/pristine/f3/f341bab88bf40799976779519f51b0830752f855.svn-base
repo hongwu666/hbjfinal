@@ -1,0 +1,88 @@
+package com.jfinal.ext.plugin.quartz;
+
+import java.util.Date;
+import java.util.Map;
+
+import org.quartz.CronScheduleBuilder;
+import org.quartz.CronTrigger;
+import org.quartz.Job;
+import org.quartz.JobBuilder;
+import org.quartz.JobDataMap;
+import org.quartz.JobDetail;
+import org.quartz.JobKey;
+import org.quartz.Scheduler;
+import org.quartz.Trigger;
+import org.quartz.TriggerBuilder;
+import org.quartz.TriggerKey;
+
+import com.jfinal.ext.kit.Reflect;
+import com.jfinal.log.Logger;
+import com.jfinal.plugin.activerecord.Model;
+
+public class QuartzKit {
+	
+    protected static Logger logger = Logger.getLogger(QuartzKit.class);
+    
+    private static Scheduler scheduler;
+    
+    
+    public static void init(Scheduler scheduler) {
+    	QuartzKit.scheduler = scheduler;
+
+    }
+    
+    
+    public static void addJob(String jobKey, Class<? extends Job> jobClass,String cronExpression,Map<String,Object> map){
+/*    	scheduler.pauseTrigger(triggerKey)
+    	scheduler.deleteJob(jobKey);*/
+    	try{
+    			removeJob(jobKey);
+    	       // JobDetail jobDetail = Reflect.on("org.quartz.JobBuilder").call("newJob", jobClass).call("withIdentity", jobKey,jobKey).call("setJobData", new JobDataMap(map)).call("build").get();
+    	    	/*
+    			JobDetail jobDetail = Reflect.on("org.quartz.JobBuilder").call("newJob", jobClass).call("withIdentity", jobKey,jobKey).call("usingJobData", new JobDataMap(map)).call("build").get();
+    	        
+    	        Object temp = Reflect.on("org.quartz.TriggerBuilder").call("newTrigger").get();
+    	        temp = Reflect.on(temp).call("withIdentity", jobKey,jobKey).get();
+    	        temp = Reflect.on(temp).call("withSchedule",
+    	                Reflect.on("org.quartz.CronScheduleBuilder").call("cronSchedule", cronExpression).get())
+    	                .get();
+    	        CronTrigger trigger = Reflect.on(temp).call("build").get();
+    	        Date ft = Reflect.on(scheduler).call("scheduleJob", jobDetail, trigger).get();
+    	        logger.debug(Reflect.on(jobDetail).call("getKey") + " has been scheduled to run at: " + ft + " " +
+    	                "and repeat based on expression: " + Reflect.on(trigger).call("getCronExpression"));*/
+    			
+    			JobDetail jobDetail = JobBuilder.newJob(jobClass).withIdentity(jobKey, jobKey).usingJobData( new JobDataMap(map)).build();
+    			System.out.println(jobDetail);
+    			
+    			TriggerBuilder<Trigger> newTrigger = TriggerBuilder.newTrigger();
+    			System.out.println();
+    			newTrigger = newTrigger.withIdentity(jobKey, jobKey);
+    			TriggerBuilder<CronTrigger> withSchedule = newTrigger.withSchedule(CronScheduleBuilder.cronSchedule(cronExpression));
+    			CronTrigger trigger = withSchedule.build();
+    			System.out.println(trigger);
+    			System.out.println(scheduler);
+    			 Date ft = scheduler.scheduleJob(jobDetail, trigger);
+    			 logger.debug(jobDetail.getKey() + " has been scheduled to run at: " + ft + " " +
+     	                "and repeat based on expression: " + trigger.getCronExpression());
+    			
+    			
+    	}catch(Exception e){
+    		e.printStackTrace();
+    	}
+    	
+    }
+    
+    
+    public static void removeJob(String jobKey){
+    	try{
+    		TriggerKey triggerKey = new TriggerKey(jobKey,jobKey);
+    		scheduler.pauseTrigger(triggerKey);
+    		scheduler.unscheduleJob(triggerKey);
+        	scheduler.deleteJob(new JobKey(jobKey,jobKey));
+    	}catch(Exception e){
+    		e.printStackTrace();
+    	}
+
+    }
+
+}

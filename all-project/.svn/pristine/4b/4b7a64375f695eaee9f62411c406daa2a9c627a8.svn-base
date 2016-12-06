@@ -1,0 +1,10 @@
+package saas.framework.cache;
+
+import org.springframework.cache.ehcache.EhCacheManagerFactoryBean;
+
+public class WinbonsCacheManager extends EhCacheManagerFactoryBean {
+	
+	static{
+		System.setProperty("net.sf.ehcache.skipUpdateCheck", "true");
+	}
+}

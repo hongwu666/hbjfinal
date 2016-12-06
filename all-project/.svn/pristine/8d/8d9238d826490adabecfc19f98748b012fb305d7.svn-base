@@ -1,0 +1,15 @@
+
+package saas.framework.cache;
+
+public interface ICache<K, V> {
+
+	public V get(K key);
+
+	public V put(K key, V value);
+
+	V remove(K key);
+
+	int size();
+
+	void clear();
+}

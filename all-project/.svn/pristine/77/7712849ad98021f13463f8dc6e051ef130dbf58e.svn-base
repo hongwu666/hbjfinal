@@ -1,0 +1,118 @@
+package saas.winbons.data.model.customer;
+
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.enumtype.BaseEnum;
+import saas.winbons.format.IEnumFormat;
+
+public enum CustomerConvertor implements BaseEnum<String>,IEnumFormat{
+	createdBy("created_by",DataConstant.EnumFormatCallBack.String),
+	createdDate("created_date",DataConstant.EnumFormatCallBack.DateTime),
+	updatedBy("updated_by",DataConstant.EnumFormatCallBack.String),
+	updatedDate("updated_date",DataConstant.EnumFormatCallBack.DateTime),
+	dateField01("date_field01",DataConstant.EnumFormatCallBack.DateTime),
+	dateField02("date_field02",DataConstant.EnumFormatCallBack.DateTime),
+	dateField03("date_field03",DataConstant.EnumFormatCallBack.DateTime),
+	dateField04("date_field04",DataConstant.EnumFormatCallBack.DateTime),
+	dateField05("date_field05",DataConstant.EnumFormatCallBack.DateTime),
+	dateField06("date_field06",DataConstant.EnumFormatCallBack.DateTime),
+	dateField07("date_field07",DataConstant.EnumFormatCallBack.DateTime),
+	dateField08("date_field08",DataConstant.EnumFormatCallBack.DateTime),
+	dateField09("date_field09",DataConstant.EnumFormatCallBack.DateTime),
+	dateField10("date_field10",DataConstant.EnumFormatCallBack.DateTime),
+	numField01("num_field01",DataConstant.EnumFormatCallBack.String),
+	numField02("num_field02",DataConstant.EnumFormatCallBack.String),
+	numField03("num_field03",DataConstant.EnumFormatCallBack.String),
+	numField04("num_field04",DataConstant.EnumFormatCallBack.String),
+	numField05("num_field05",DataConstant.EnumFormatCallBack.String),
+	numField06("num_field06",DataConstant.EnumFormatCallBack.String),
+	numField07("num_field07",DataConstant.EnumFormatCallBack.String),
+	numField08("num_field08",DataConstant.EnumFormatCallBack.String),
+	numField09("num_field09",DataConstant.EnumFormatCallBack.String),
+	numField10("num_field10",DataConstant.EnumFormatCallBack.String),
+	textField01("text_field01",DataConstant.EnumFormatCallBack.String),
+	textField02("text_field02",DataConstant.EnumFormatCallBack.String),
+	textField03("text_field03",DataConstant.EnumFormatCallBack.String),
+	textField04("text_field04",DataConstant.EnumFormatCallBack.String),
+	textField05("text_field05",DataConstant.EnumFormatCallBack.String),
+	textField06("text_field06",DataConstant.EnumFormatCallBack.String),
+	textField07("text_field07",DataConstant.EnumFormatCallBack.String),
+	textField08("text_field08",DataConstant.EnumFormatCallBack.String),
+	textField09("text_field09",DataConstant.EnumFormatCallBack.String),
+	textField10("text_field10",DataConstant.EnumFormatCallBack.String),
+	textField11("text_field11",DataConstant.EnumFormatCallBack.String),
+	textField12("text_field12",DataConstant.EnumFormatCallBack.String),
+	textField13("text_field13",DataConstant.EnumFormatCallBack.String),
+	textField14("text_field14",DataConstant.EnumFormatCallBack.String),
+	textField15("text_field15",DataConstant.EnumFormatCallBack.String),
+	textField16("text_field16",DataConstant.EnumFormatCallBack.String),
+	textField17("text_field17",DataConstant.EnumFormatCallBack.String),
+	textField18("text_field18",DataConstant.EnumFormatCallBack.String),
+	textField19("text_field19",DataConstant.EnumFormatCallBack.String),
+	textField20("text_field20",DataConstant.EnumFormatCallBack.String),
+	textField21("text_field21",DataConstant.EnumFormatCallBack.String),
+	textField22("text_field22",DataConstant.EnumFormatCallBack.String),
+	textField23("text_field23",DataConstant.EnumFormatCallBack.String),
+	textField24("text_field24",DataConstant.EnumFormatCallBack.String),
+	textField25("text_field25",DataConstant.EnumFormatCallBack.String),
+	textField26("text_field26",DataConstant.EnumFormatCallBack.String),
+	textField27("text_field27",DataConstant.EnumFormatCallBack.String),
+	textField28("text_field28",DataConstant.EnumFormatCallBack.String),
+	textField29("text_field29",DataConstant.EnumFormatCallBack.String),
+	textField30("text_field30",DataConstant.EnumFormatCallBack.String),
+	accountCode("account_code",DataConstant.EnumFormatCallBack.String),
+	accountName("account_name",DataConstant.EnumFormatCallBack.String),
+	addr("addr",DataConstant.EnumFormatCallBack.String),
+	area("tarea",DataConstant.EnumFormatCallBack.String),
+	city("tcity",DataConstant.EnumFormatCallBack.String),
+	code("code",DataConstant.EnumFormatCallBack.String),
+	companyDbid("cust_dbid",DataConstant.EnumFormatCallBack.String),
+	cooperationStatus("c_status",DataConstant.EnumFormatCallBack.String),
+	country("tcountry",DataConstant.EnumFormatCallBack.String),
+	customerType("type",DataConstant.EnumFormatCallBack.String),
+	deptId("dept_id",DataConstant.EnumFormatCallBack.String),
+	email("email",DataConstant.EnumFormatCallBack.String),
+	expireDate("expire_date",DataConstant.EnumFormatCallBack.DateTime),
+	expressAccount("express_account",DataConstant.EnumFormatCallBack.String),
+	fax("fax",DataConstant.EnumFormatCallBack.String),
+	firstContact("first_contact",DataConstant.EnumFormatCallBack.String),
+	lastContactDate("lastcontact_date",DataConstant.EnumFormatCallBack.String),
+	name("name",DataConstant.EnumFormatCallBack.String),
+	nameEn("name_en",DataConstant.EnumFormatCallBack.String),
+	ownerId("owner_id",DataConstant.EnumFormatCallBack.String),
+	pictureLocation("picture_location",DataConstant.EnumFormatCallBack.String),
+	poolId("cust_pool_id",DataConstant.EnumFormatCallBack.String),
+	province("tprovince",DataConstant.EnumFormatCallBack.String),
+	receiveDate("receive_date",DataConstant.EnumFormatCallBack.DateTime),
+	remarks("remarks",DataConstant.EnumFormatCallBack.String),
+	shortName("short_name",DataConstant.EnumFormatCallBack.String),
+	street("tstreet",DataConstant.EnumFormatCallBack.String),
+	tel("tel",DataConstant.EnumFormatCallBack.String),
+	webSite("website",DataConstant.EnumFormatCallBack.String),
+	wechat("wechat",DataConstant.EnumFormatCallBack.String),
+	weibo("weibo",DataConstant.EnumFormatCallBack.String),
+	zip("zip",DataConstant.EnumFormatCallBack.String);
+
+	private CustomerConvertor(String dbValue,int formatType){
+		this.formatType = formatType;
+		this.dbValue = dbValue;
+	}
+	
+	private String dbValue;
+	private int formatType;
+
+	@Override
+	public String getDbValue() {
+		return dbValue;
+	}
+
+	@Override
+	public String getColumnName() {
+		return dbValue;
+	}
+
+	@Override
+	public int getCallbackFormatType() {
+		return formatType;
+	}
+
+}

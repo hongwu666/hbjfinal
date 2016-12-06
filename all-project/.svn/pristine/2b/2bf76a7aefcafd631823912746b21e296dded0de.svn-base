@@ -1,0 +1,29 @@
+package saas.monitor.tools;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+
+import org.dom4j.DocumentException;
+import org.xml.sax.SAXException;
+
+public class XMLException extends RuntimeException {
+
+	public XMLException(String string, DocumentException de) {
+		// TODO Auto-generated constructor stub
+	}
+
+	public XMLException(String string, SAXException se) {
+		// TODO Auto-generated constructor stub
+	}
+
+	public XMLException(String string, UnsupportedEncodingException ue) {
+		// TODO Auto-generated constructor stub
+	}
+
+	public XMLException(String string, IOException ie) {
+		// TODO Auto-generated constructor stub
+	}
+
+	private static final long serialVersionUID = -830671608065483634L;
+
+}

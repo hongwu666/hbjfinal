@@ -1,0 +1,11 @@
+package saas.winbons.data.model.base;
+
+import saas.winbons.data.model.BaseModel;
+
+public class ImportLogDetailModel extends BaseModel<ImportLogDetailModel> {
+
+	private static final long serialVersionUID = 5580084524185210370L;
+	
+	
+
+}

@@ -1,0 +1,615 @@
+package saas.winbons.provider;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.jfinal.kit.PropKit;
+import com.jfinal.kit.StrKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Model;
+
+import saas.winbons.data.model.ListItem;
+import saas.winbons.data.model.report.ReportForm;
+import saas.winbons.data.model.report.ReportModule;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.service.AbstractCommonService;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.dubbo.web.dto.UiGridColumnVO;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.dto.SimpleExeclColumnVO;
+import saas.winbons.framework.dto.SimpleExeclRowVO;
+import saas.winbons.framework.dto.SimpleExeclTemplateVO;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolString;
+import saas.winbons.framework.utils.SimpleExeclUtils;
+
+public class ReportServiceImpl extends AbstractCommonService {
+	protected final static Logger logger = LoggerFactory.getLogger(ReportServiceImpl.class);
+	@Override
+	public String reListBeetl(ContextDTO contextDTO, String gridSql, Map<String, Object> param) {
+		List<FilterDTO> listFilter = (List<FilterDTO>) param.get("filters");
+		listFilter.add(new FilterDTO("userId", contextDTO.getUserId()));
+		param.put("filters", listFilter);
+		return super.reListBeetl(contextDTO, gridSql, param);
+	}
+
+	@Override
+	public Class<? extends Model<?>> getModelClass() {
+		return ReportForm.class;
+	}
+
+	@Override
+	public Class<? extends IEnumFormat> getFormatClass() {
+		return null;
+	}
+
+	@Override
+	public String getGridId() {
+		return "ID_GRID_REPORT";
+	}
+
+	@Override
+	public String getTableName() {
+		return "t_crm_report_form";
+	}
+
+	@Override
+	public AbstractCommonService getService() {
+		return this;
+	}
+
+	@Override
+	protected void entityFormat(ContextDTO contextDTO, Map<String, Object> map) {
+		super.entityFormat(contextDTO, map);
+	}
+
+	@Override
+	public FilterItemList buildFilterItem(ContextDTO contextDTO, SimulationHttpServletRequest request) {
+		return null;
+	}
+
+	@Override
+	public String getGridHeadSql() {
+		return "winbons.report.searchReportHeads";
+	}
+
+	@Override
+	public void reBuildGridHeader(ContextDTO contextDTO, UiGridColumnVO[] changColumnToVO) {
+		for (UiGridColumnVO uiGridColumnVO : changColumnToVO) {
+			uiGridColumnVO.setColumnName("a." + uiGridColumnVO.getColumnName());
+		}
+	}
+
+	@Override
+	public String getGridSql() {
+		return "winbons.report.searchReport";
+	}
+
+	@Override
+	public void rebuildCreateSearchView(RequestDTO requestDTO) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void reUpdateCreateSearchView(List<Map<String, Object>> list) {
+		// TODO Auto-generated method stub
+
+	}
+
+	public ResultDTO listDefinedModule(RequestDTO requestDTO) {
+		// 显示当前用户下的自定义的模板
+		ResultDTO resultDTO = new ResultDTO();
+		try {
+			// 获取自定义的模板
+			List<Map<String, Object>> userModuleList = ReportForm.dao.getUserDefinedModules(requestDTO);
+			resultDTO.setData(userModuleList);
+			resultDTO.setSuccess(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	
+	public ResultDTO setFieldWidth(RequestDTO requestDTO) {
+		// 修改单个字段的
+		ResultDTO resultDTO = new ResultDTO();
+		try {
+			ReportForm.dao.setFieldWidth(requestDTO);
+			resultDTO.setSuccess(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	// 查询单个report对象和其牵扯的所有reportFields和reportFilters
+	public ResultDTO queryReportDetail(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		ContextDTO ctd = requestDTO.getContextDTO();
+		try {
+			// 获取自定义的模板
+			Map<String, Object> report = ReportForm.dao.queryReporById(requestDTO);
+			Long form_id = (Long) report.get("id");
+			String module = (String) report.get("module");
+			Map<String, Boolean> privilegeMap = CrmRightServiceImpl.service.getPrivilegeMap(ctd, ctd.getUserId(), "reportManager:customer", "reportManager:opportunity", "reportManager:contract");
+			ReportForm.dao.checkRightByModule(privilegeMap, module);
+			// 初始化所有可用的字段
+			List<Map<String, Object>> availFields = initialAllAvilFields(requestDTO, module);
+
+			// 显示所有可见字段
+			List<Map<String, Object>> displayFields = ReportForm.dao.getDisplayFields(requestDTO, form_id, availFields);
+
+			// 显示所有隐藏字段
+			List<Map<String, Object>> hiddenFields = ReportForm.dao.getHiddenFields(availFields, displayFields);
+
+			// 显示所有约束字段条件
+			List<Map<String, Object>> fieldFilters = ReportForm.dao.getFieldFilters(requestDTO, form_id, availFields);
+
+			Map<String, Object> resultMap = new HashMap<String, Object>();
+			resultMap.put("report", report);
+			resultMap.put("availFields", availFields);
+			resultMap.put("displayFields", displayFields);
+			resultMap.put("fieldFilters", fieldFilters);
+			resultMap.put("hiddenFields", hiddenFields);
+			resultDTO.setData(resultMap);
+			resultDTO.setSuccess(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	// 根据formId查询其牵涉的所有formFieldFliters,不关联defined表
+	public ResultDTO queryFilter(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try {
+			// 获取用户选定模板的id
+			Map<Object, Object> data = requestDTO.getData();
+			Long form_id = (Long) data.get("id");
+
+			// 显示所有约束字段条件
+			List<Map<String, Object>> fieldFilters = ReportForm.dao.getFieldFilters(requestDTO, form_id);
+
+			Map<String, Object> resultMap = new HashMap<String, Object>();
+			resultMap.put("fieldFilters", fieldFilters);
+			resultDTO.setData(resultMap);
+			resultDTO.setSuccess(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	// 删除某个报表，同时包括它对应的字段
+	public ResultDTO deleteReport(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try {
+			ReportForm.dao.deleteReport(requestDTO);
+			resultDTO.setSuccess(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	// 修改report对象
+	public ResultDTO modifyReport(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try {
+			ContextDTO ctd = requestDTO.getContextDTO();
+			Map<String, Boolean> privilegeMap = CrmRightServiceImpl.service.getPrivilegeMap(ctd, ctd.getUserId(), "reportManager:customer", "reportManager:opportunity", "reportManager:contract");
+			ReportForm.dao.modifyReport(requestDTO, privilegeMap);
+			resultDTO.setSuccess(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	// 添加report对象以及其完整字段
+	public ResultDTO save(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try {
+			ContextDTO ctd = requestDTO.getContextDTO();
+			Map<String, Boolean> privilegeMap = CrmRightServiceImpl.service.getPrivilegeMap(ctd, ctd.getUserId(), "reportManager:customer", "reportManager:opportunity", "reportManager:contract");
+			ReportForm.dao.save(requestDTO, privilegeMap);
+			resultDTO.setSuccess(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	// 初始化报表的可选模板
+	public ResultDTO initialModule(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try {
+			resultDTO.setSuccess(true);
+			ContextDTO ctd = requestDTO.getContextDTO();
+			Map<String, Boolean> privilegeMap = CrmRightServiceImpl.service.getPrivilegeMap(ctd, ctd.getUserId(), "reportManager:customer", "reportManager:opportunity", "reportManager:contract");
+			System.out.println(privilegeMap.toString());
+			List<Map<String, Object>> list = ReportForm.dao.initialModule(requestDTO, privilegeMap);
+			resultDTO.setData(list);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	// 根据Module选项初始化report,不入库
+	public ResultDTO initialReportByModule(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try {
+			Map<Object, Object> data = requestDTO.getData();
+			ContextDTO ctd = requestDTO.getContextDTO();
+			String module = (String) data.get("module");
+			Map<String, Boolean> privilegeMap = CrmRightServiceImpl.service.getPrivilegeMap(ctd, ctd.getUserId(), "reportManager:customer", "reportManager:opportunity", "reportManager:contract");
+			ReportForm.dao.checkRightByModule(privilegeMap, module.trim());
+			// 初始化所有可用的字段
+			List<Map<String, Object>> availFields = initialAllAvilFields(requestDTO, module);
+
+			// 初始化含有少量可用的报表模板
+			Map<String, Object> reportFields = ReportForm.dao.initialFields(requestDTO, availFields);
+			resultDTO.setSuccess(true);
+			Map<String, Object> resultMap = new LinkedHashMap<String, Object>();
+			resultMap.put("availFields", availFields);
+			resultMap.put("displayFields", reportFields.get("displayFields"));
+			resultMap.put("hiddenFields", reportFields.get("hiddenFields"));
+			resultDTO.setData(resultMap);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	// 初始化所有可用的字段
+	private List<Map<String, Object>> initialAllAvilFields(RequestDTO requestDTO, String module) {
+		String[] tableNames = ReportModule.getTableNames(module);
+		List<Map<String, Object>> availFields = new ArrayList<Map<String, Object>>();
+		UiSettingServiceImpl us = UiSettingServiceImpl.service;
+		for (String tableName : tableNames) {
+			List<FilterDTO> filters = new ArrayList<FilterDTO>();
+			filters.add(new FilterDTO("table_name", tableName));
+			//filters.add(new FilterDTO("column_field_name", "","<>"));
+			filters.add(new FilterDTO("field_label", "","<>"));
+			requestDTO.putAllFitler(filters);
+			List<Map<String, Object>> list = us.getDefinitionField(requestDTO);
+			// 为查询出来的table_name字段换上统一的别名
+			list = changeOtherTableName(list);
+			Map<String, Object> tableFields = new HashMap<String, Object>();
+			tableFields.put("name", ReportModule.getTableName(tableName));
+			tableFields.put("list", list);
+			availFields.add(tableFields);
+		}
+		return availFields;
+	}
+
+	// 用别名替代真正的系统表名
+	private List<Map<String, Object>> changeOtherTableName(List<Map<String, Object>> list) {
+		List<Map<String, Object>> newList = new ArrayList<Map<String, Object>>();
+		for (Map<String, Object> map : list) {
+			String oriTableName = (String) map.get("table_name");
+			map.put("table_name", ReportModule.getOtherTableName(oriTableName));
+			String column_field_name = (String) map.get("column_field_name");
+			String mapping_field_name = (String)map.get("mapping_field_name");
+			//win_rate做特殊处理
+			if (StrKit.isBlank(column_field_name)) {
+				if ("winrate".equalsIgnoreCase(mapping_field_name)&& "t201".equalsIgnoreCase((String) map.get("table_name"))) {
+					column_field_name = "win_rate";
+				}
+			}
+			map.put("column_field_name", (String) map.get("table_name") + "." + column_field_name);
+			//合同列表里的商机字段做特殊处理
+			map = ReportForm.dao.doSpecialField(map);
+			//对于某些不具有可读性的列，也不要把它们作为筛选条件给前端
+			if(!ReportModule.noneSelectIds.contains((String)map.get("column_field_name"))){
+				newList.add(map);
+			}
+		}
+		return newList;
+	}
+
+
+	// 实际地查询数据
+	public ResultDTO searchData(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try {
+			resultDTO.setSuccess(true);
+			Map<String, Object> resultMap = ReportForm.dao.searchData(requestDTO);
+			resultDTO.setData(resultMap);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	// 实际地查询数据,通过form对象的id
+	public ResultDTO searchDataByFormId(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try {
+			resultDTO.setSuccess(true);
+			Map<String, Object> resultMap = ReportForm.dao.searchDataByFormId(requestDTO);
+			resultDTO.setData(resultMap);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	@SuppressWarnings({ "unchecked", "resource" })
+	public ResultDTO exportExcel(RequestDTO requestDTO) {
+
+		ResultDTO resultDTO = new ResultDTO();
+
+		Map<Object, Object> dataMap = requestDTO.getData();
+		// 组装查询数据
+		Map<Object, Object> page = new HashMap<Object, Object>();
+		page.put("rowStart", "1");
+		page.put("limit", String.valueOf(Integer.MAX_VALUE));
+		dataMap.put("page", page);
+		// 报表ID
+		Long id = (Long) dataMap.get("id");
+
+		if (id == null) {
+			resultDTO.setSuccess(false);
+			resultDTO.setError("导出的报表ID不存在");
+			return resultDTO;
+		}
+
+		String configFilePath = PropKit.get("file_path");
+		if (StringUtils.isBlank(configFilePath)) {
+			resultDTO.setSuccess(false);
+			resultDTO.setError("导出服务器路径为空，请联系管理员！");
+			return resultDTO;
+		} else {
+			configFilePath = configFilePath.endsWith("/") ? configFilePath : configFilePath + "/";
+		}
+
+		Map<String, Object> data = null;
+		try {
+			data = ReportForm.dao.searchDataByFormId(requestDTO);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultDTO.setSuccess(false);
+			resultDTO.setError(e.getMessage() + "查询报表数据失败！");
+			return resultDTO;
+		}
+
+		Map<String, Object> report = (Map<String, Object>) data.get("report");
+		// 报表名字
+		String reportName = report.get("name") == null ? "" : report.get("name").toString();
+
+		// 相对路径
+		String relativeFilePath = getExportPath(requestDTO) + reportName + ".xls";
+		// 绝对路径
+		String absoluteFilePath = configFilePath + relativeFilePath;
+
+		File file = new File(absoluteFilePath);
+		FileOutputStream fos = null;
+		try {
+
+			file.getParentFile().mkdirs();
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+			fos = new FileOutputStream(file);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			resultDTO.setSuccess(false);
+			resultDTO.setError("指定的文件未找到");
+			return resultDTO;
+		} catch (IOException e) {
+			e.printStackTrace();
+			resultDTO.setSuccess(false);
+			resultDTO.setError("创建文件失败");
+			return resultDTO;
+		}
+
+		List<Map<String, Object>> displayFields = (List<Map<String, Object>>) data.get("displayFields");
+		// 对于某些下拉选项对应的值，需要进行修饰
+		displayFields = addOptionItems(displayFields, requestDTO);
+
+		Map<String, Object> object = (Map<String, Object>) data.get("dataMap");
+		List<Map<String, Object>> items = (List<Map<String, Object>>) object.get("items");
+
+		SimpleExeclColumnVO[] simpleExeclColumnVOs = new SimpleExeclColumnVO[displayFields.size()];
+		for (Map<String, Object> tmp : displayFields) {
+			String display_name = tmp.get("display_name") == null ? "" : tmp.get("display_name").toString();
+			SimpleExeclColumnVO columnVO = new SimpleExeclColumnVO();
+			columnVO.setName(display_name);
+			int display_order = Integer.parseInt(tmp.get("display_order").toString());
+			simpleExeclColumnVOs[display_order - 1] = columnVO;
+		}
+
+		SimpleExeclRowVO[] simpleExeclRowVOs = new SimpleExeclRowVO[items.size()];
+		int index = 0;
+		for (Map<String, Object> value : items) {
+			SimpleExeclRowVO columnVO = new SimpleExeclRowVO();
+			String[] values = new String[displayFields.size()];
+			for (Map<String, Object> display : displayFields) {
+				int display_order = Integer.parseInt(display.get("display_order").toString());
+				String column_field_name = display.get("column_field_name").toString().replaceAll("\\.", "_");
+
+				String column_value = value.get(column_field_name) == null ? "" : getOriginValue(value, display);
+
+				// 根据下拉框，日期格式等修改某个单元格的值
+				column_value = getExactValue(display, column_value);
+				values[display_order - 1] = column_value;
+			}
+			columnVO.setValues(values);
+			simpleExeclRowVOs[index++] = columnVO;
+		}
+
+		SimpleExeclTemplateVO vo = new SimpleExeclTemplateVO();
+		vo.setTitleName("sheet1");
+		vo.setSimpleExeclColumnVOs(simpleExeclColumnVOs);
+		vo.setSimpleExeclRowVOs(simpleExeclRowVOs);
+
+		SimpleExeclTemplateVO[] simpleExeclTemplateVOs = new SimpleExeclTemplateVO[1];
+		simpleExeclTemplateVOs[0] = vo;
+
+		SimpleExeclUtils.buildExecl(simpleExeclTemplateVOs, fos);
+
+		resultDTO.setSuccess(true);
+		resultDTO.setData(relativeFilePath);
+		return resultDTO;
+	}
+
+	private String getOriginValue(Map<String, Object> value, Map<String, Object> display) {
+		String column_field_name = display.get("column_field_name").toString().replaceAll("\\.", "_");
+		Object obj = value.get(column_field_name);
+		String originValue = obj.toString();
+		// 对于浮点数，防止科学记数法导出成不可读字符串
+		if (obj instanceof Number) {
+			originValue = new BigDecimal(originValue).toPlainString();
+			logger.info("从报表数据中读出数值： " + originValue);
+		}
+		// 所有者，创建者，联系人，读取关联表的数据
+		if ((!StrKit.isBlank(column_field_name)) && (column_field_name.contains("owner") || column_field_name.contains("created_by") || column_field_name.contains("updated_by"))) {
+			String key = column_field_name.split("_")[0].trim();
+			key = key + "User_display_name";
+			if(null== value.get(key)){
+				originValue = "";
+			}else{
+				originValue = value.get(key).toString();
+			}
+		}
+		if((!StrKit.isBlank(column_field_name))&&("t301_opportunityid".equalsIgnoreCase(column_field_name))){
+			if(null== value.get("t201_opportunityname")){
+				originValue = "";
+			}else{
+				originValue = value.get("t201_opportunityname").toString();
+			}
+		}
+		return originValue;
+	}
+
+	// 解析日期格式
+	private String getExactValue(Map<String, Object> display, String column_value) {
+		Map<String, Object> values = (Map<String, Object>) display.get("values");
+		String fieldTypeEx = display.get("field_type_ex") == null ? "" : String.valueOf(display.get("field_type_ex"));
+		if ((null != values) && (!StrKit.isBlank(column_value))) {
+			column_value = (String) values.get(column_value);
+		} else if ((!StrKit.isBlank(fieldTypeEx)) && (!StrKit.isBlank(column_value))) {
+			String fmt = "";
+			if ("fdt".equalsIgnoreCase(fieldTypeEx) || "fdate".equalsIgnoreCase(fieldTypeEx)) {
+				fmt = "yyyy-MM-dd";
+			} else if ("ftime".equalsIgnoreCase(fieldTypeEx)) {
+				fmt = "yyyy-MM-dd HH:mm:ss";
+			}
+			if (!StrKit.isBlank(fmt)) {
+				String tempStrDate = "";
+				try {
+					Calendar ca = Calendar.getInstance();
+					ca.setTimeInMillis(Long.parseLong(column_value));
+					Date currentTime = ca.getTime();
+					SimpleDateFormat sdf = new SimpleDateFormat(fmt);
+					tempStrDate = sdf.format(currentTime);
+				} catch (Exception e) {
+					return column_value;
+				}
+				return tempStrDate;
+			}
+		}
+		return column_value;
+	}
+
+	private List<Map<String, Object>> addOptionItems(List<Map<String, Object>> displayFields, RequestDTO requestDTO) {
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Map<String, Object> param = new HashMap<String, Object>();
+		param.put("contextDTO", contextDTO);
+		for (Map<String, Object> fieldMap : displayFields) {
+			String fieldTypeEx = (String) fieldMap.get("field_type_ex");
+			if (!StrKit.isBlank(fieldTypeEx)) {
+				if (fieldTypeEx.equals("combobox")) {
+					String comboxid = ToolString.toString(fieldMap.get("comboxid"));
+					if (!ToolString.isEmptyString(comboxid)) {
+						List<Map<String, Object>> findByListId = ListItem.dao.findByListId(contextDTO, Long.parseLong(comboxid));
+						fieldMap.put("values", toValuesMap(findByListId));
+					}
+				} else if (fieldTypeEx.equals("special")) {
+					String fieldTypeValue = ToolString.toString(fieldMap.get("field_type_value"));
+					if (!ToolString.isEmptyString(fieldTypeValue)) {
+						String sqlByBeetl = getSqlByBeetl("winbins.special." + fieldTypeValue, param);
+						List<Map<String, Object>> list = ToolModel.recordListConvert(Db.find(contextDTO, sqlByBeetl));
+						fieldMap.put("values", toValuesMap(list));
+					}
+				}
+			}
+		}
+		return displayFields;
+	}
+
+	private Object toValuesMap(List<Map<String, Object>> list) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		for (Map<String, Object> ele : list) {
+			Object vObject = ele.get("label");
+			if (null == vObject) {
+				vObject = ele.get("lable");
+			}
+			map.put(String.valueOf(ele.get("id")), vObject);
+		}
+		return map;
+	}
+
+	private String getExportPath(RequestDTO requestDTO) {
+		// 租户ID
+		Long dbId = requestDTO.getContextDTO().getDbId();
+		Calendar c = Calendar.getInstance();
+		StringBuffer filePath = new StringBuffer();
+		filePath.append(dbId);
+		filePath.append("/");
+		filePath.append("Report");
+		filePath.append("/");
+		filePath.append(c.get(Calendar.YEAR));
+		filePath.append("/");
+		filePath.append((c.get(Calendar.MONTH) + 1));
+		filePath.append("/");
+		filePath.append(c.get(Calendar.DAY_OF_MONTH));
+		filePath.append("/");
+		return filePath.toString();
+	}
+}

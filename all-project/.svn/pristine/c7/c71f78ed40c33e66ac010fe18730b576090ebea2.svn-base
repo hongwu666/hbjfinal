@@ -1,0 +1,18 @@
+package saas.winbons.framework.tools;
+
+import java.util.List;
+
+import saas.winbons.dubbo.api.FilterDTO;
+
+public abstract class ToolRequestDTO {
+	
+	public static Object getFilterValue(String key,List<FilterDTO> fitlers){
+		for(FilterDTO fitler : fitlers){
+			if(key.equals(fitler.getProperty())){
+				return fitler.getValue();
+			}
+		}
+		return null;
+	}
+
+}

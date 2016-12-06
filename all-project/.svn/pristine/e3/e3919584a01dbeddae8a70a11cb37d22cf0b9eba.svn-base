@@ -1,0 +1,48 @@
+package saas.winbons.data.model.base;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.stereotype.Component;
+
+import saas.crm.dynamic.model.Index;
+import saas.crm.dynamic.model.StreamDynamic;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.nosql.BaseNosqlDao;
+import saas.winbons.framework.utils.CrmContext;
+
+
+@Component
+public class DynamicEventListener implements ApplicationListener<DynamicEvent> {
+	
+	@Autowired
+	private BaseNosqlDao baseNosqlDao;
+	
+
+	@Override
+	public void onApplicationEvent(DynamicEvent event) {
+		try {
+			
+			Map<String, Object> source = (Map<String, Object>) event.getSource();
+			StreamDynamic dynamic = (StreamDynamic) source.get("data");
+			ContextDTO contextDTO = (ContextDTO) source.get("contextDTO");
+			if(null == dynamic.getCreateDate())dynamic.setCreateDate(Calendar.getInstance().getTime());
+			if(null == dynamic.getCreateBy())dynamic.setCreateBy(contextDTO.getUserId());
+			if(null == dynamic.getDbid())dynamic.setDbid(contextDTO.getDbId());
+			baseNosqlDao.save(contextDTO,dynamic);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	
+	private long findAndUpdateIndex(ContextDTO contextDTO) {
+		Index index = baseNosqlDao
+				.updateIncValue(contextDTO,"dbid", Index.DEFAULT_ID, "indexValue", Index.class, Index.DEFAULT_ID);
+		return index.getIndexValue();
+	}
+
+}

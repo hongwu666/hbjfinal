@@ -1,0 +1,34 @@
+package saas.monitor.mvc.security;
+
+import java.util.Map;
+
+import saas.monitor.criteria.CommonCriteria;
+import saas.monitor.mvc.base.BaseService;
+import com.jfinal.aop.Enhancer;
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.TableMapping;
+
+public class UserService extends BaseService {
+	
+	public static final UserService service = Enhancer.enhance(UserService.class);
+
+	@Override
+	protected Class<? extends BaseService> getLogClass() {
+		return UserService.class;
+	}
+	
+	
+	public Page<User> searchUser(CommonCriteria commonCriteria){
+		return User.dao.paginate(commonCriteria.getPage().getRowStart() , commonCriteria.getPage().getLimit(), "select * ",getSqlByBeetl("sql.user.searchUser",commonCriteria.getFilters()));
+	}
+	
+	public Page<Role> searchRole(CommonCriteria commonCriteria){
+		return Role.dao.paginate(commonCriteria.getPage().getRowStart() , commonCriteria.getPage().getLimit(), "select * ",getSqlByBeetl("sql.user.searchRole",commonCriteria.getFilters()));
+		
+	}
+	
+	
+	
+
+	
+}

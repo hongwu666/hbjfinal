@@ -1,0 +1,14 @@
+package saas.winbons.data.model.defined;
+
+
+
+public class DefinedFeildModel extends ColumnDefinedFeild<DefinedFeildModel> {
+
+	private static final long serialVersionUID = -7734719201848205364L;
+	
+	public static final DefinedFeildModel dao = new DefinedFeildModel();
+	
+	
+	
+	
+}

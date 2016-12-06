@@ -1,0 +1,8 @@
+package saas.winbons.dubbo.api.backend;
+
+import saas.winbons.dubbo.api.ApiService;
+
+public interface IBackendService extends ApiService {
+
+
+}

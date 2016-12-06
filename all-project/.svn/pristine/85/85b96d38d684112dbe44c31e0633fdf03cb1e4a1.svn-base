@@ -1,0 +1,410 @@
+package saas.winbons.data.model;
+
+public abstract class UserDefinedFieldValueModel<M extends OperatorModel<M>> extends OperatorModel<M> {
+
+	private static final long serialVersionUID = -6821884341773004141L;
+	
+	public void setTextField01(java.lang.String textField01) {
+		set("text_field01", textField01);
+	}
+
+	public java.lang.String getTextField01() {
+		return get("text_field01");
+	}
+
+	public void setTextField02(java.lang.String textField02) {
+		set("text_field02", textField02);
+	}
+
+	public java.lang.String getTextField02() {
+		return get("text_field02");
+	}
+
+	public void setTextField03(java.lang.String textField03) {
+		set("text_field03", textField03);
+	}
+
+	public java.lang.String getTextField03() {
+		return get("text_field03");
+	}
+
+	public void setTextField04(java.lang.String textField04) {
+		set("text_field04", textField04);
+	}
+
+	public java.lang.String getTextField04() {
+		return get("text_field04");
+	}
+
+	public void setTextField05(java.lang.String textField05) {
+		set("text_field05", textField05);
+	}
+
+	public java.lang.String getTextField05() {
+		return get("text_field05");
+	}
+
+	public void setTextField06(java.lang.String textField06) {
+		set("text_field06", textField06);
+	}
+
+	public java.lang.String getTextField06() {
+		return get("text_field06");
+	}
+
+	public void setTextField07(java.lang.String textField07) {
+		set("text_field07", textField07);
+	}
+
+	public java.lang.String getTextField07() {
+		return get("text_field07");
+	}
+
+	public void setTextField08(java.lang.String textField08) {
+		set("text_field08", textField08);
+	}
+
+	public java.lang.String getTextField08() {
+		return get("text_field08");
+	}
+
+	public void setTextField09(java.lang.String textField09) {
+		set("text_field09", textField09);
+	}
+
+	public java.lang.String getTextField09() {
+		return get("text_field09");
+	}
+
+	public void setTextField10(java.lang.String textField10) {
+		set("text_field10", textField10);
+	}
+
+	public java.lang.String getTextField10() {
+		return get("text_field10");
+	}
+
+	public void setTextField11(java.lang.String textField11) {
+		set("text_field11", textField11);
+	}
+
+	public java.lang.String getTextField11() {
+		return get("text_field11");
+	}
+
+	public void setTextField12(java.lang.String textField12) {
+		set("text_field12", textField12);
+	}
+
+	public java.lang.String getTextField12() {
+		return get("text_field12");
+	}
+
+	public void setTextField13(java.lang.String textField13) {
+		set("text_field13", textField13);
+	}
+
+	public java.lang.String getTextField13() {
+		return get("text_field13");
+	}
+
+	public void setTextField14(java.lang.String textField14) {
+		set("text_field14", textField14);
+	}
+
+	public java.lang.String getTextField14() {
+		return get("text_field14");
+	}
+
+	public void setTextField15(java.lang.String textField15) {
+		set("text_field15", textField15);
+	}
+
+	public java.lang.String getTextField15() {
+		return get("text_field15");
+	}
+
+	public void setTextField16(java.lang.String textField16) {
+		set("text_field16", textField16);
+	}
+
+	public java.lang.String getTextField16() {
+		return get("text_field16");
+	}
+
+	public void setTextField17(java.lang.String textField17) {
+		set("text_field17", textField17);
+	}
+
+	public java.lang.String getTextField17() {
+		return get("text_field17");
+	}
+
+	public void setTextField18(java.lang.String textField18) {
+		set("text_field18", textField18);
+	}
+
+	public java.lang.String getTextField18() {
+		return get("text_field18");
+	}
+
+	public void setTextField19(java.lang.String textField19) {
+		set("text_field19", textField19);
+	}
+
+	public java.lang.String getTextField19() {
+		return get("text_field19");
+	}
+
+	public void setTextField20(java.lang.String textField20) {
+		set("text_field20", textField20);
+	}
+
+	public java.lang.String getTextField20() {
+		return get("text_field20");
+	}
+
+	public void setTextField21(java.lang.String textField21) {
+		set("text_field21", textField21);
+	}
+
+	public java.lang.String getTextField21() {
+		return get("text_field21");
+	}
+
+	public void setTextField22(java.lang.String textField22) {
+		set("text_field22", textField22);
+	}
+
+	public java.lang.String getTextField22() {
+		return get("text_field22");
+	}
+
+	public void setTextField23(java.lang.String textField23) {
+		set("text_field23", textField23);
+	}
+
+	public java.lang.String getTextField23() {
+		return get("text_field23");
+	}
+
+	public void setTextField24(java.lang.String textField24) {
+		set("text_field24", textField24);
+	}
+
+	public java.lang.String getTextField24() {
+		return get("text_field24");
+	}
+
+	public void setTextField25(java.lang.String textField25) {
+		set("text_field25", textField25);
+	}
+
+	public java.lang.String getTextField25() {
+		return get("text_field25");
+	}
+
+	public void setTextField26(java.lang.String textField26) {
+		set("text_field26", textField26);
+	}
+
+	public java.lang.String getTextField26() {
+		return get("text_field26");
+	}
+
+	public void setTextField27(java.lang.String textField27) {
+		set("text_field27", textField27);
+	}
+
+	public java.lang.String getTextField27() {
+		return get("text_field27");
+	}
+
+	public void setTextField28(java.lang.String textField28) {
+		set("text_field28", textField28);
+	}
+
+	public java.lang.String getTextField28() {
+		return get("text_field28");
+	}
+
+	public void setTextField29(java.lang.String textField29) {
+		set("text_field29", textField29);
+	}
+
+	public java.lang.String getTextField29() {
+		return get("text_field29");
+	}
+
+	public void setTextField30(java.lang.String textField30) {
+		set("text_field30", textField30);
+	}
+
+	public java.lang.String getTextField30() {
+		return get("text_field30");
+	}
+
+	public void setNumField01(java.lang.Double numField01) {
+		set("num_field01", numField01);
+	}
+
+	public java.lang.Double getNumField01() {
+		return get("num_field01");
+	}
+
+	public void setNumField02(java.lang.Double numField02) {
+		set("num_field02", numField02);
+	}
+
+	public java.lang.Double getNumField02() {
+		return get("num_field02");
+	}
+
+	public void setNumField03(java.lang.Double numField03) {
+		set("num_field03", numField03);
+	}
+
+	public java.lang.Double getNumField03() {
+		return get("num_field03");
+	}
+
+	public void setNumField04(java.lang.Double numField04) {
+		set("num_field04", numField04);
+	}
+
+	public java.lang.Double getNumField04() {
+		return get("num_field04");
+	}
+
+	public void setNumField05(java.lang.Double numField05) {
+		set("num_field05", numField05);
+	}
+
+	public java.lang.Double getNumField05() {
+		return get("num_field05");
+	}
+
+	public void setNumField06(java.lang.Double numField06) {
+		set("num_field06", numField06);
+	}
+
+	public java.lang.Double getNumField06() {
+		return get("num_field06");
+	}
+
+	public void setNumField07(java.lang.Double numField07) {
+		set("num_field07", numField07);
+	}
+
+	public java.lang.Double getNumField07() {
+		return get("num_field07");
+	}
+
+	public void setNumField08(java.lang.Double numField08) {
+		set("num_field08", numField08);
+	}
+
+	public java.lang.Double getNumField08() {
+		return get("num_field08");
+	}
+
+	public void setNumField09(java.lang.Double numField09) {
+		set("num_field09", numField09);
+	}
+
+	public java.lang.Double getNumField09() {
+		return get("num_field09");
+	}
+
+	public void setNumField10(java.lang.Double numField10) {
+		set("num_field10", numField10);
+	}
+
+	public java.lang.Double getNumField10() {
+		return get("num_field10");
+	}
+
+	public void setDateField01(java.lang.Long dateField01) {
+		set("date_field01", dateField01);
+	}
+
+	public java.lang.Long getDateField01() {
+		return get("date_field01");
+	}
+
+	public void setDateField02(java.lang.Long dateField02) {
+		set("date_field02", dateField02);
+	}
+
+	public java.lang.Long getDateField02() {
+		return get("date_field02");
+	}
+
+	public void setDateField03(java.lang.Long dateField03) {
+		set("date_field03", dateField03);
+	}
+
+	public java.lang.Long getDateField03() {
+		return get("date_field03");
+	}
+
+	public void setDateField04(java.lang.Long dateField04) {
+		set("date_field04", dateField04);
+	}
+
+	public java.lang.Long getDateField04() {
+		return get("date_field04");
+	}
+
+	public void setDateField05(java.lang.Long dateField05) {
+		set("date_field05", dateField05);
+	}
+
+	public java.lang.Long getDateField05() {
+		return get("date_field05");
+	}
+
+	public void setDateField06(java.lang.Long dateField06) {
+		set("date_field06", dateField06);
+	}
+
+	public java.lang.Long getDateField06() {
+		return get("date_field06");
+	}
+
+	public void setDateField07(java.lang.Long dateField07) {
+		set("date_field07", dateField07);
+	}
+
+	public java.lang.Long getDateField07() {
+		return get("date_field07");
+	}
+
+	public void setDateField08(java.lang.Long dateField08) {
+		set("date_field08", dateField08);
+	}
+
+	public java.lang.Long getDateField08() {
+		return get("date_field08");
+	}
+
+	public void setDateField09(java.lang.Long dateField09) {
+		set("date_field09", dateField09);
+	}
+
+	public java.lang.Long getDateField09() {
+		return get("date_field09");
+	}
+
+	public void setDateField10(java.lang.Long dateField10) {
+		set("date_field10", dateField10);
+	}
+
+	public java.lang.Long getDateField10() {
+		return get("date_field10");
+	}
+	
+	
+	
+
+}

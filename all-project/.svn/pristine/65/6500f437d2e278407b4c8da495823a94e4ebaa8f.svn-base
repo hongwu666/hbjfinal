@@ -1,0 +1,40 @@
+package saas.winbons.user.job;
+
+import java.util.List;
+
+import saas.winbons.framework.tools.ToolGson;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+public class PlatFormUserCompanyRepair {
+	
+	public void repairUpgrade(){
+		String sql = "select t_saas_userserasso.* from t_saas_users "
+				+ "INNER JOIN t_saas_company_user ON "
+				+ "t_saas_users.userId = t_saas_company_user.user_id "
+				+ "INNER JOIN t_saas_userserasso on "
+				+ "t_saas_users.userId = t_saas_userserasso.userId "
+				+ "where t_saas_users.companyId is null and t_saas_company_user.company_id = 0";
+		
+		List<Record> find = Db.find(null, sql);
+		for(Record r : find){
+			Long dbid = r.getLong("dbid");
+			Long userId = r.getLong("userId");
+			sql = "select * from t_saas_userserasso where dbid = ? and userId <> ?";
+			List<Record> find2 = Db.find(null, sql,dbid,userId);
+			for(Record r2 : find2){
+				sql = "select * from t_saas_users where userId = ? and companyId is not null";
+				List<Record> find3 = Db.find(null, sql,r2.getLong("userId"));
+				for(Record r3 : find3){
+					Db.update(null, "update t_saas_users set companyId = ? where userId = ? and companyId is null",r3.getLong("companyId"),userId);
+					Db.update(null, "update t_saas_company_user set company_id = ? where user_id = ?",r3.getLong("companyId"),userId);
+					break;
+				}
+				break;
+			}
+			//System.out.println(ToolGson.GsonString(r.getColumns()));
+		}
+	}
+
+}

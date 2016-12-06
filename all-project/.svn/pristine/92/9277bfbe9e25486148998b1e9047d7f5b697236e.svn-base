@@ -1,0 +1,30 @@
+package saas.winbons.data.model.product;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.winbons.data.model.BaseModel;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+
+public class ProductCatalog extends BaseModel<ProductCatalog> {
+
+	private static final long serialVersionUID = 1L;
+	
+	public static final ProductCatalog dao = new ProductCatalog();
+	
+	public List<Map<String,Object>> getProduCataInfo(ContextDTO contextDTO){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contextDTO", contextDTO);
+		String sql = ToolSqlXml.getSql("winbons.product.getProduCataInfo",map);
+		List<Record> find = Db.find(contextDTO, sql);
+		List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find);
+		return recordListConvert;
+	}
+
+}

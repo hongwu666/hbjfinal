@@ -1,0 +1,80 @@
+/** 
+ * Copyright (C) 2010 QIHAN Technology Co.,Ltd
+ * All Rights Reserved.
+ * Development of this software QIHAN Technology Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: Page.java 
+ * @Package crm.command.criteria 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author Mac.Lam
+ * @date 2010-7-5 下午01:53:23 
+ * @version 1.0 
+ */
+
+package saas.winbons.dubbo.api;
+
+import java.io.Serializable;
+
+/**
+ * @ClassName: Page
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author Mac.Lam
+ * @date 2010-7-5 下午01:53:23
+ */
+
+public class PageDto implements Serializable{
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private int rowStart;
+	private int limit = 20;
+
+	/**
+	 * @param rowStart
+	 * @param limit
+	 */
+
+	public PageDto() {
+		super();
+	}
+	
+	public PageDto(int rowStart, int limit) {
+		super();
+		this.rowStart = rowStart;
+		this.limit = limit;
+	}
+
+	/**
+	 * @return the rowStart
+	 */
+
+	public int getRowStart() {
+		if(rowStart == 0)return 1;
+		return rowStart;
+	}
+
+	public void setRowStart(int rowStart) {
+		this.rowStart = rowStart;
+	}
+
+	public void setLimit(int limit) {
+		this.limit = limit;
+	}
+
+	/**
+	 * @return the limit
+	 */
+
+	public int getLimit() {
+
+		return limit;
+	}
+
+	public int getRowEnd() {
+		return rowStart + limit;
+	}
+}

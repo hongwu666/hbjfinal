@@ -1,0 +1,318 @@
+package saas.winbons.customer.job;
+
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.time.DateUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import saas.crm.base.enumtype.NotifyType;
+import saas.framework.mutitenant.TenantConstant;
+import saas.scheduler.dto.SystemMessageDTO;
+import saas.winbons.data.model.calendar.CalendarInfoJob;
+import saas.winbons.data.model.customer.Customer;
+import saas.winbons.data.model.customer.CustomerPool;
+import saas.winbons.data.model.customer.CustomerPoolRefuseModel;
+import saas.winbons.data.model.customer.CustomerPoolRule;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolDate;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolString;
+
+import com.jfinal.ext.plugin.jms.JmsKit;
+import com.jfinal.ext.plugin.quartz.QuartzKit;
+import com.jfinal.kit.PropKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.IAtom;
+import com.jfinal.plugin.activerecord.Record;
+
+
+@Component
+public class CustomerBackToPoolsAlertJob {
+	
+	protected final static Logger logger = LoggerFactory.getLogger(CustomerBackToPoolsAlertJob.class);
+	
+	SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+	
+	long dayMilliseconds = 1000 * 60 * 60 * 24;
+	
+	String[] dbIds = new String[]{"1012456","1010948","1010938","1011597","1006341","1007912","1009265","1006912","1008398","1000141","1008762"};
+	public void execute() {
+		Db.update(null, "update t_crm_customer set lastcontact_date = receive_date where lastcontact_date < receive_date");
+		String sql = TenantConstant.NON_PARSER + "SELECT " + ToolJfinalSql.buildSelectSql(CustomerPool.class, "", "") +" FROM t_crm_cust_public_pool WHERE id > -1";// and dbid in (" + StringUtils.join(dbIds, ",") + ")";
+		List<Record> find = Db.find(null, sql);
+		
+		for(Record r : find){
+			try{
+				long dbId = r.getLong("dbid");
+				long poolId = r.getLong("id");
+				String poolName = r.getStr("name");
+				logger.warn("【客户池回收】检测的租户: " + dbId + ", 检测的客户池: " + poolId);
+				ContextDTO contextDTO = new ContextDTO();
+				contextDTO.setDbId(dbId);
+				
+				List<Record> findRules = Db.find(contextDTO, "select " + ToolJfinalSql.buildSelectSql(CustomerPoolRule.class, "", "") +" from t_crm_cust_public_pool_rules where dbid = ? and pool_id = ? and is_open = ?",dbId,poolId,"Y");
+				if(findRules.size() == 0){
+					logger.warn("租户: " + dbId + ", 客户池:[" + r.getStr("name") + "]不存在规则");
+					continue;
+				}
+				Record findCustomerCount = Db.findFirst(contextDTO, "select count(1) as count from t_crm_customer where dbid = ? and owner_id IS NOT NULL and cust_pool_id = ?",dbId,poolId);
+				if(findCustomerCount.getLong("count") == 0){
+					logger.warn("租户: " + dbId + ", 客户池:[" + r.getStr("name") + "]没有查找到对应客户");
+					continue;
+				}
+				for(Record rule : findRules){
+					searchCustomerBackToPool(contextDTO,rule,dbId,poolId,poolName,true);
+					searchCustomerBackToPool(contextDTO,rule,dbId,poolId,poolName,false);
+				}
+			
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+			
+			
+		}
+		
+		
+	}
+	
+	
+	private void searchCustomerBackToPool(ContextDTO contextDTO,Record rule,long dbId,long poolId,String poolName,boolean isBack){
+
+		try{
+			String subType = rule.getStr("sub_type");//规则项   urr:公开客户后不能领取     ufcr:  未合作客户未跟进后公开    uscr:未合作客户的未签订合同后公开  fcr:合作客户的未跟进后公开  scr合作客户的未再次签订合同后公开
+			int baseType = rule.getInt("base_type");//'规则-大类型 0-领取规则 1-非合作客户规则 2-合作客户规则',
+			int days = rule.getInt("days");//超时天数
+			int notifyDays = null == rule.get("notice_days") ? 1 : rule.getInt("notice_days");	// 提醒天数
+			if(isBack)notifyDays = 0;
+			long nowTimeMillis = System.currentTimeMillis();
+			long alertTimeMillis = nowTimeMillis - ((long)(days - notifyDays) * dayMilliseconds);
+			logger.warn("规则: 超时天数" + days + ",提醒天数: " + notifyDays);
+			if(baseType == 0)return;
+			if(baseType == 1){
+				if(subType.equals("ufcr")){
+					List<Record> findCustomer = Db.find(contextDTO, "select " + ToolJfinalSql.buildSelectSql(Customer.class, "", "") + " from t_crm_customer where  dbid = ? and owner_id IS NOT NULL and cust_pool_id = ? and  c_status in (5010,5012) and IFNULL(IFNULL(lastcontact_date,receive_date),created_date) < ? ",dbId,poolId,alertTimeMillis);//当客户是未合作客户5010和曾合作客户5012时
+					for(Record customer : findCustomer){
+						Long lastcontact_date = toLong(customer.get("lastcontact_date"),customer.get("created_date"));
+						String d = String.valueOf((lastcontact_date + (long) ((long)days * dayMilliseconds) - nowTimeMillis)/(dayMilliseconds));
+						String alertDays = String.valueOf((nowTimeMillis - lastcontact_date)/(dayMilliseconds));
+						sendNotifyMsg(contextDTO,customer,NotifyType.customer_pool,"nofollow",d,alertDays,poolName,isBack,poolId);
+					}
+				}else if(subType.equals("uscr")){
+					List<Record> findCustomer = Db.find(contextDTO, "select " + ToolJfinalSql.buildSelectSql(Customer.class, "", "") + " from t_crm_customer where  dbid = ? and owner_id IS NOT NULL and cust_pool_id = ? and  c_status in (5010,5012) and IFNULL(IFNULL(lastcontract_submitDate,receive_date),created_date) < ?",dbId,poolId,alertTimeMillis);//当客户是未合作客户5010和曾合作客户5012时
+					for(Record customer : findCustomer){
+						Long lastcontact_date = toLong(customer.get("lastcontract_submitDate"),customer.get("created_date"));
+						String d = String.valueOf((lastcontact_date + (long) ((long)days * dayMilliseconds) - nowTimeMillis)/(dayMilliseconds));
+						String alertDays = String.valueOf((nowTimeMillis - lastcontact_date)/(dayMilliseconds));
+						sendNotifyMsg(contextDTO,customer,NotifyType.customer_pool,"overdate",d,alertDays,poolName,isBack,poolId);
+					}
+				}
+			}else if(baseType == 2){
+				if(subType.equals("fcr")){
+					List<Record> findCustomer = Db.find(contextDTO, "select " + ToolJfinalSql.buildSelectSql(Customer.class, "", "") + " from t_crm_customer where  dbid = ? and owner_id IS NOT NULL and cust_pool_id = ? and  c_status in (5011) and IFNULL(IFNULL(lastcontact_date,receive_date),created_date) < ? and IFNULL(lastcontract_endDate,created_date) < ?",dbId,poolId,alertTimeMillis,nowTimeMillis);//当客户是合作客户5011
+					for(Record customer : findCustomer){
+						Long lastcontact_date = toLong(customer.get("lastcontact_date"),customer.get("created_date"));
+						String d = String.valueOf((lastcontact_date + (long) ((long)days * dayMilliseconds) - nowTimeMillis)/(dayMilliseconds));
+						String alertDays = String.valueOf((nowTimeMillis - lastcontact_date)/(dayMilliseconds));
+						sendNotifyMsg(contextDTO,customer,NotifyType.customer_pool,"overnofollow",d,alertDays,poolName,isBack,poolId);
+					}
+				}else if(subType.equals("scr")){
+					List<Record> findCustomer = Db.find(contextDTO, "select " + ToolJfinalSql.buildSelectSql(Customer.class, "", "") + " from t_crm_customer where  dbid = ? and owner_id IS NOT NULL and cust_pool_id = ? and  c_status in (5011) and IFNULL(lastcontract_submitDate,created_date) < ? and IFNULL(lastcontract_endDate,created_date) < ?",dbId,poolId,alertTimeMillis,nowTimeMillis);//当客户是合作客户5011
+					for(Record customer : findCustomer){
+						Long lastcontact_date = toLong(customer.get("lastcontract_submitDate"),customer.get("created_date"));
+						String d = String.valueOf((lastcontact_date + (long) ((long)days * dayMilliseconds) - nowTimeMillis)/(dayMilliseconds));
+						String alertDays = String.valueOf((nowTimeMillis - lastcontact_date)/(dayMilliseconds));
+						sendNotifyMsg(contextDTO,customer,NotifyType.customer_pool,"nocontract",d,alertDays,poolName,isBack,poolId);
+					}
+				}
+				
+				
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	
+	}
+	
+	
+	private void sendNotifyMsg(ContextDTO contextDTO,Record customer,NotifyType notifyType,String follows,String days,String alertDay,String poolName,boolean isBack,long poolId){
+		SystemMessageDTO systemNotifyEvent = new SystemMessageDTO();
+		Map<String,Object> map = new HashMap<String, Object>();
+		String name = customer.getStr("name");
+		Long customerId = customer.getLong("id");
+		map.put("custId", customerId);
+		map.put("custName", name);
+		String msg = "";
+		String msgInfo = "";
+		int d = Integer.parseInt(days);
+		if(d <= 0)days = "1";
+		
+		if("nofollow".equals(follows)){
+			msg = "客户【" + name + "】将在" + days+"天后公开到公海客户池【"+poolName+"】,请及时跟进";
+			msgInfo = "客户将在"+days+"天公开到公海客户池【"+poolName+"】,请及时跟进";
+		}else if("overnofollow".equals(follows)){
+			msg = "合同已过期,客户【" + name + "】" + days+"天公开到公海客户池【"+poolName+"】,请及时跟进";
+			msgInfo = "合同已过期,客户将在"+days+"天公开到公海客户池【"+poolName+"】,请及时跟进";
+		}else if("overdate".equals(follows)){
+			msg = "客户【" + name + "】将在" + days+"天公开到公海客户池【"+poolName+"】,请及时签订合同";
+			msgInfo = "客户将在"+days+"天公开到公海客户池【"+poolName+"】,请及时签订合同";
+		}else if("nocontract".equals(follows)){
+			msg = "合同已过期,客户【" + name + "】" + days+"天公开到公海客户池【"+poolName+"】,请及时通知客户续约";
+			msgInfo = "合同已过期,客户将在"+days+"天公开到公海客户池【"+poolName+"】,请及时通知客户续约";
+		}
+		
+		if(isBack){
+			if("nofollow".equals(follows)){
+				msg = "客户【" + name + "】已被公开到公海客户池【"+poolName+"】,请知悉";
+				msgInfo = "客户已被公开到公海客户池【"+poolName+"】,请知悉";
+			}else if("overnofollow".equals(follows)){
+				msg = "合同已过期,客户【" + name + "】已被公开到公海客户池【"+poolName+"】,请知悉";
+				msgInfo = "合同已过期,客户已被公开到公海客户池【"+poolName+"】,请知悉";
+			}else if("overdate".equals(follows)){
+				msg = "客户【" + name + "】已被公开到公海客户池【"+poolName+"】,请知悉";
+				msgInfo = "客户已被公开到公海客户池【"+poolName+"】,请知悉";
+			}else if("nocontract".equals(follows)){
+				msg = "合同已过期,客户【" + name + "】已被公开到公海客户池【"+poolName+"】,请知悉";
+				msgInfo = "合同已过期,客户已被公开到公海客户池【"+poolName+"】,请知悉";
+			}
+		}
+
+		map.put("msg", msg);
+		map.put("msgInfo", msgInfo);
+		systemNotifyEvent.setContent(ToolGson.GsonString(map));
+		systemNotifyEvent.setType(notifyType.name());
+		Calendar c = Calendar.getInstance();
+		systemNotifyEvent.setDate(c.getTime());
+		systemNotifyEvent.setDbId(contextDTO.getDbId());
+		systemNotifyEvent.setNow(true);
+		
+		List<Record> find = Db.find(contextDTO, "select secure_id from t_crm_cust_share_acl where dbid = ? and cust_id = ?",contextDTO.getDbId(),customer.getLong("id"));
+		Long[] userIds = new Long[find.size()];
+		int i = 0;
+		for(Record r : find){
+			userIds[i++] = r.getLong("secure_id");
+		}
+		systemNotifyEvent.setReceiverIds(userIds);
+		JmsKit.sendQueue(PropKit.use("jms.properties").get("systemnotifyevent.name"), systemNotifyEvent, "a");
+		String str = "";
+		Object object = customer.get("created_date");
+		if(!ToolString.isEmptyString(object)){
+			c.setTimeInMillis(Long.parseLong(object.toString()));
+			str += ",客户创建时间:" + sdf.format(c.getTime());
+		}
+		object = customer.get("receive_date");
+		if(!ToolString.isEmptyString(object)){
+			c.setTimeInMillis(Long.parseLong(object.toString()));
+			str += ",客户领取时间:" + sdf.format(c.getTime());
+		}
+		object = customer.get("lastcontact_date");
+		if(!ToolString.isEmptyString(object)){
+			c.setTimeInMillis(Long.parseLong(object.toString()));
+			str += ",客户最后联系时间:" + sdf.format(c.getTime());
+		}
+		object = customer.get("lastcontract_endDate");
+		if(!ToolString.isEmptyString(object)){
+			c.setTimeInMillis(Long.parseLong(object.toString()));
+			str += ",合同到期时间:" + sdf.format(c.getTime());
+		}
+		object = customer.get("lastcontract_submitDate");
+		if(!ToolString.isEmptyString(object)){
+			c.setTimeInMillis(Long.parseLong(object.toString()));
+			str += ",合同审批通过时间:" + sdf.format(c.getTime());
+		}
+		logger.warn("提前提醒(" + follows +":租户: " + contextDTO.getDbId() + msg + ",custId:" + customer.getLong("id") + str);
+/*		Db.update(null, "insert into temp_customer_pool_rule(dbid,poolId,custId,custName,lastcontract_endDate,lastcontract_submitDate,receive_date,lastcontact_date,created_date) values(?,?,?,?,?,?,?,?,?)",contextDTO.getDbId()
+				,customer.get("cust_pool_id"),customer.get("id"),customer.get("name"),customer.get("lastcontract_endDate"),customer.get("lastcontract_submitDate"),customer.get("receive_date")
+				,customer.get("lastcontact_date"),customer.get("created_date"));*/
+		
+		try{
+			if(isBack){
+				if(Db.tx(new IAtom() {
+					@Override
+					public boolean run() throws SQLException {
+						// 删除关联数据
+						String sql = "UPDATE t_crm_customer SET lastpublic_userId=?,lastpublic_date=?,owner_id=null,receive_date=null,expire_date=null,locked=0 WHERE id=?";
+						Db.update(contextDTO, sql,-1,System.currentTimeMillis(),customerId);
+						
+						sql = "delete from t_crm_cust_share_acl where cust_id = ?";
+						Db.update(contextDTO, sql,customerId);
+						
+								
+						// 删除联系人关联数据
+						sql = "delete from t_crm_contact_share_acl where contact_id in (select id from t_crm_cust_contact where dbid = ? and cust_id = ?) ";
+						Db.update(contextDTO,sql, contextDTO.getDbId(),customerId);
+						//获取对应客户的联系人
+						
+						sql = "select id from t_crm_cust_contact where cust_id = ?";
+						List<Record> find2 = Db.find(contextDTO, sql,customerId);
+						//List<Long> contactIds = new ArrayList<Long>();
+						for(Record r2 : find2){
+							//contactIds.add(r2.getLong("id"));
+							//String contactIdStrs = StringUtils.join(contactIds, ",");
+							Long contactId = r2.getLong("id");
+							sql = "DELETE FROM t_crm_email_group_rel_contact WHERE dbid=? AND contact_id = ?";
+							Db.update(contextDTO,sql, contextDTO.getDbId(),contactId);
+							sql = " UPDATE t_crm_email_info SET contact_box_id=NULL,customer_id=NULL,contact_id=NULL WHERE dbid=? AND contact_id  = ?";
+							Db.update(contextDTO,sql, contextDTO.getDbId(),contactId);
+							
+							sql = " DELETE bru.* FROM t_crm_email_contact_box_rel_user bru"
+									+ " JOIN t_crm_email_contact_box cb ON cb.dbid=bru.dbid AND cb.id=bru.contact_box_id"
+									+ " WHERE cb.dbid=? AND cb.contact_id  = ?";
+							Db.update(null,sql, contextDTO.getDbId(),contactId);
+							
+							sql = "  DELETE FROM t_crm_email_contact_box WHERE dbid=? AND contact_id   = ?";
+							Db.update(contextDTO,sql, contextDTO.getDbId(),contactId);
+						}
+/*						if(contactIds.size() > 0){
+							
+						}*/
+						
+						sql = "select * from t_crm_cust_public_pool_rules where pool_id = ? and sub_type = ?";
+						Record find3 = Db.findFirst(contextDTO, sql,poolId,"urr");
+						if(null != find3){
+							sql = "delete from t_crm_cust_pool_refuse where cust_id = ?";
+							 Db.update(contextDTO, sql,customerId);
+							 CustomerPoolRefuseModel customerPoolRefuseModel = new CustomerPoolRefuseModel();
+							 customerPoolRefuseModel.set("cust_id", customerId);
+							 customerPoolRefuseModel.set("user_id", customer.get("owner_id"));
+							 long currentTimeMillis = System.currentTimeMillis();
+							 customerPoolRefuseModel.set("start_date", currentTimeMillis);
+							 int days = 1;
+							 if(null != find3.get("days")){
+								 days = find3.getInt("days");
+							 }
+							 
+							 customerPoolRefuseModel.set("end_date", currentTimeMillis + days*24*60*60*1000);
+							 customerPoolRefuseModel.save(contextDTO);
+						}
+						return true;
+					}
+				}));
+				
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		
+		
+	}
+	
+	private long toLong(Object o,Object b){
+		if(null == o){
+			if(null == b)return 0;
+			return Long.parseLong(b.toString());
+		}
+		return Long.parseLong(o.toString());
+	}
+
+}

@@ -1,0 +1,25 @@
+package saas.monitor.tools;
+
+import saas.monitor.criteria.FilterVO;
+
+public abstract class ToolRequestDTO {
+	
+	public static Object getFilterValue(String key,FilterVO[] fitlers){
+		for(FilterVO fitler : fitlers){
+			if(key.equals(fitler.getProperty())){
+				return fitler.getValue();
+			}
+		}
+		return null;
+	}
+	
+	public static String[] getFilterValues(String key,FilterVO[] fitlers){
+		for(FilterVO fitler : fitlers){
+			if(key.equals(fitler.getProperty())){
+				return fitler.getValues();
+			}
+		}
+		return new String[0];
+	}
+
+}

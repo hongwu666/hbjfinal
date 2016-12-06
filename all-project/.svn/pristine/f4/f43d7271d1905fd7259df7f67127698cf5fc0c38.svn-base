@@ -1,0 +1,7 @@
+package saas.winbons.dubbo.api.product;
+
+import saas.winbons.dubbo.api.ApiService;
+
+public interface IProductService extends ApiService {
+
+}

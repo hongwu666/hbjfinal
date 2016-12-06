@@ -1,0 +1,64 @@
+package saas.framework.cache;
+
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Ehcache;
+import saas.framework.utils.SecurityUtils;
+
+/**
+ * 
+ * @ClassName: EhcacheClient
+ * @Description: ehcache 初始化
+ * @author yxx
+ * @date 2014年2月28日 上午11:30:26
+ */
+public class EhcacheClient {
+
+	private static EhcacheClient ehcacheClient = new EhcacheClient();
+
+	private CacheManager manager;
+
+	public static final EhcacheClient getInstance() {
+		return ehcacheClient;
+	}
+
+	private EhcacheClient() {
+		try {
+			manager = new CacheManager(
+					EhcacheClient.class
+							.getResourceAsStream("/cache/ehcache.xml"));
+		} catch (Exception ex) {
+			System.out.println(ex);
+		}
+	}
+
+	/**
+	 * get Ehcache defined in the ehcache.xml or define by your code, if the
+	 * cache of this name not exist, throw RuntimeException
+	 * 
+	 * @param cacheName
+	 * @return the cache of this name, if not exist, return the defaultCache
+	 */
+	public Ehcache getCache(String cacheName) {
+		Ehcache cache = manager.getEhcache(cacheName);
+		String key = cacheName;
+		Long tenantId = null;
+		try {
+			tenantId = SecurityUtils.getTenantId();
+		} catch (Exception ex) {
+			System.err.println("not have dbid");
+		}
+		if (tenantId != null && tenantId != -1) {
+			key = key + tenantId;
+		}
+		if (cache == null)
+			synchronized (manager) {
+				cache = manager.getEhcache(key);
+				if (cache == null) {
+					cache = new Cache(key, 1000, false, false, 3600, 3600);
+					manager.addCache(cache);
+				}
+			}
+		return cache;
+	}
+}

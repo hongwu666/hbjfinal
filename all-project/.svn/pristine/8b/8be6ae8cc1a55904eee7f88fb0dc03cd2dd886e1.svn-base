@@ -1,0 +1,235 @@
+package saas.winbons.provider;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.ArrayUtils;
+
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.data.model.SystemProfile;
+import saas.winbons.data.model.contact.CustomerContact;
+import saas.winbons.data.model.customer.Customer;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.api.SortDTO;
+import saas.winbons.dubbo.service.AbstractCommonService;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.execption.ServiceException;
+import saas.winbons.framework.sql.DefinitionType;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.sql.FilterType;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolRequestDTO;
+import saas.winbons.framework.tools.ToolSqlXml;
+import saas.winbons.framework.tools.ToolString;
+
+import com.jfinal.ext.kit.ModelKit;
+import com.jfinal.kit.StrKit;
+import com.jfinal.plugin.activerecord.Model;
+
+public class ContactServiceImpl extends AbstractCommonService {
+
+	@Override
+	public Class<? extends Model<?>> getModelClass() {
+		return CustomerContact.class;
+	}
+
+	@Override
+	public Class<? extends IEnumFormat> getFormatClass() {
+		return null;
+	}
+
+	@Override
+	public String getGridId() {
+		return "ID_GRID_CONTACT";
+	}
+
+	@Override
+	public String getTableName() {
+		return "t_crm_cust_contact";
+	}
+
+	@Override
+	public AbstractCommonService getService() {
+		return this;
+	}
+
+	@Override
+	protected void entityFormat(ContextDTO contextDTO, Map<String, Object> map) {
+		super.entityFormat(contextDTO, map);
+	}
+
+	@Override
+	public FilterItemList buildFilterItem(ContextDTO contextDTO,
+			SimulationHttpServletRequest request) {
+		return null;
+	}
+
+	@Override
+	public String[] getNotDisplayFields(ContextDTO contextDTO,boolean isCreate) {
+		String[] commonHideFields = new String[]{"owner_id", "parent_id", "public_type", "picture_location", "valid",
+				"first_contact", "receive_date", "expire_date","lastcontact_date"};
+		if(!DataConstant.YES_OR_NO_YES.equals(SystemProfile.dao.getSystemProfile(contextDTO,"customerPool", "activated"))){
+			commonHideFields = (String[]) ArrayUtils.addAll(commonHideFields, new String[]{"cust_pool"});
+		}
+		if (isCreate){
+			commonHideFields = (String[]) ArrayUtils.addAll(commonHideFields, new String[]{"created_date", "created_by", "updated_date", "updated_by"});
+		}
+		return commonHideFields;
+	}
+
+	@Override
+	public String getGridHeadSql() {
+		return "winbons.customer.searchCustomerGridColumns";
+	}
+	
+	public ResultDTO newSave(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+		
+	}
+
+	@Override
+	public Map<String, Object> getModel(RequestDTO requestDTO) {
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Map<String, Object> data = super.getModel(requestDTO);
+		return data;
+	}
+
+	@Override
+	public String getGridSql() {
+		return "winbons.contact.searchContact";
+	}
+
+	@Override
+	public void reBuildPageResult(ContextDTO contextDTO,Map<String,Object> result) {
+		
+	}
+
+	@Override
+	public void rebuildCreateSearchView(RequestDTO requestDTO) {
+		
+	}
+	
+	
+
+	
+
+	@Override
+	public void reUpdateCreateSearchView(List<Map<String, Object>> list) {
+		
+	}
+	
+	
+	public ResultDTO createViewByScan(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		resultDTO.setSuccess(true);
+		try{
+			requestDTO.putFitler(new FilterDTO("table_name", getTableName()));
+			requestDTO.putFitler(new FilterDTO("field_type_ex", DefinitionType.Splitline.value,FilterType.NEQ.value));
+			List<Map<String, Object>> definitionField = UiSettingServiceImpl.service.getDefinitionField(requestDTO);
+			for(Map<String, Object> map : definitionField){
+				if(!ToolString.isEmptyString(map.get("column_field_name"))){
+					map.put("column_field_name", "contact." + map.get("column_field_name"));
+				}
+			}
+			
+			Map<String,Object> definitionFields = new HashMap<String,Object>();
+			definitionFields.put("contactDefinitions", definitionField);
+			List<FilterDTO> listFilterDTO = new ArrayList<FilterDTO>();
+			listFilterDTO.add(new FilterDTO("table_name", "t_crm_customer"));
+			listFilterDTO.add(new FilterDTO("field_type_ex", DefinitionType.Splitline.value,FilterType.NEQ.value));
+			listFilterDTO.add(new FilterDTO("is_mandatory", DataConstant.YES_OR_NO_YES));
+			requestDTO.putAllFitler(listFilterDTO);
+			definitionField = UiSettingServiceImpl.service.getDefinitionField(requestDTO);
+			for(Map<String, Object> map : definitionField){
+				if(!ToolString.isEmptyString(map.get("column_field_name"))){
+					map.put("column_field_name", "customer." + map.get("column_field_name"));
+				}
+			}
+			definitionFields.put("customerDefinitions", definitionField);
+			resultDTO.setData(definitionFields);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+		
+	}
+	
+	public ResultDTO saveModelByScan(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		resultDTO.setSuccess(true);
+		try{
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Map<Object, Object> data = requestDTO.getData();
+			Map<String,Object> contactMap = ToolModel.mapToModelMap(data, "contact");
+			Map<String,Object> customerMap = ToolModel.mapToModelMap(data, "customer");
+			
+			Customer customer = new Customer();
+			CustomerContact customerContact = new CustomerContact();
+			customer.putForUpdate(customerMap);
+			customerContact.putForUpdate(contactMap);
+			boolean checkCustomer = true;
+			
+			String addModel = ToolString.toString(data.get("addModel"));// 1:  空白 表示需要验证,   onlyContact 只添加联系人  , all 覆盖客户
+			Map<String,Object> params = new HashMap<String,Object>();
+			params.put("contextDTO", contextDTO);
+			
+			//验证模式
+			if(addModel.equals("")){
+				//Customer c = Customer.dao.f
+				
+				
+				String custName = customer.get("name");
+				params.put("custName", custName);
+				String checkCustomerNaneExits = ToolSqlXml.getSql("winbons.customer.checkCustomerNaneExits",params);
+				if(!ToolString.isEmptyString(checkCustomerNaneExits)){
+					throw new ServiceException("【" + checkCustomerNaneExits + "】已跟进客户【" + custName + "】");
+				}
+			}else if(addModel.equals("onlyContact")){
+				
+			}else if(addModel.equals("all")){
+				
+			}
+			
+			try{
+				//Customer.dao.checkObj(contextDTO, customer);
+			}catch(Exception e){
+				checkCustomer = false;
+				e.printStackTrace();
+				resultDTO.setError(e.getMessage());
+			}
+			if(!checkCustomer){
+				
+			}
+			
+			
+			
+			CustomerContact.dao.saveObjByScan(contextDTO, customerContact, customer,data);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	
+	
+	
+	
+
+}

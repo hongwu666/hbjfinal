@@ -1,0 +1,232 @@
+package saas.monitor.main;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
+import org.beetl.ext.jfinal.BeetlRenderFactory;
+
+import saas.monitor.constantInit.ConstantInit;
+import saas.monitor.handler.GlobalHandler;
+import saas.monitor.mvc.backend.BackendController;
+import saas.monitor.mvc.email.EmailAccountModel;
+import saas.monitor.mvc.email.EmailReceiveLogModel;
+import saas.monitor.mvc.email.EmailSendLogModel;
+import saas.monitor.mvc.index.IndexController;
+import saas.monitor.mvc.security.User;
+import saas.monitor.plugin.SqlXmlPlugin;
+import saas.monitor.tools.ToolBeetl;
+import saas.monitor.tools.ToolSqlXml;
+import saas.monitor.tools.ToolString;
+
+import com.alibaba.druid.filter.stat.StatFilter;
+import com.alibaba.druid.wall.WallConfig;
+import com.alibaba.druid.wall.WallFilter;
+import com.jfinal.config.Constants;
+import com.jfinal.config.Handlers;
+import com.jfinal.config.Interceptors;
+import com.jfinal.config.JFinalConfig;
+import com.jfinal.config.Plugins;
+import com.jfinal.config.Routes;
+import com.jfinal.core.JFinal;
+import com.jfinal.ext.plugin.jms.JmsPlugin;
+import com.jfinal.ext.plugin.quartz.QuartzPlugin;
+import com.jfinal.ext.plugin.shiro.ShiroInterceptor;
+import com.jfinal.ext.plugin.shiro.ShiroPlugin;
+import com.jfinal.kit.PropKit;
+import com.jfinal.plugin.activerecord.ActiveRecordPlugin;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.plugin.druid.DruidPlugin;
+import com.jfinal.plugin.ehcache.EhCachePlugin;
+import com.jfinal.plugin.redis.Redis;
+import com.jfinal.plugin.redis.RedisPlugin;
+import com.jfinal.render.ViewType;
+
+public class MainStartUp extends JFinalConfig {
+	
+	private Routes routes;
+	
+	private static Logger log = Logger.getLogger(MainStartUp.class);
+
+
+	public static void main(String[] args) {
+		JFinal.start("src/main/webapp", 9999, "/", 5);//启动配置项
+	}
+
+	@Override
+	public void configConstant(Constants me) {
+		PropKit.use("a_little_config.txt");
+		me.setDevMode(PropKit.getBoolean("devMode", false));
+		me.setEncoding("utf-8");
+		me.setViewType(ViewType.JSP);
+		me.setMainRenderFactory(new BeetlRenderFactory());
+		ToolBeetl.regiseter();
+		me.setError404View("/404.html");
+		me.setError500View("/500.html");
+		
+		
+		
+	}
+
+	@Override
+	public void configRoute(Routes me) {
+		this.routes = me;
+		me.add("/jf",IndexController.class,"login");
+		me.add("/jf/backend",BackendController.class,"backend");		
+	}
+
+	@Override
+	public void configPlugin(Plugins me) {
+		DruidPlugin druidPlugin = new DruidPlugin(PropKit.get("jdbcUrl"), PropKit.get("user"), PropKit.get("password").trim());
+		druidPlugin.set(5, 5, 5);
+		druidPlugin.addFilter(new StatFilter());
+		WallFilter wall = new WallFilter();
+		wall.setDbType("mysql");
+		WallConfig wallConfig = new WallConfig("META-INF/druid/wall/mysql");
+		wallConfig.setCommentAllow(true);
+		wallConfig.setSelectWhereAlwayTrueCheck(false);
+		wallConfig.setConditionAndAlwayTrueAllow(true);
+		wallConfig.setMultiStatementAllow(true);
+		wallConfig.setNoneBaseStatementAllow(true);
+		wall.setConfig(wallConfig);
+		druidPlugin.addFilter(wall);
+		me.add(druidPlugin);
+		
+		ActiveRecordPlugin activeRecordPlugin = new ActiveRecordPlugin(druidPlugin);
+		activeRecordPlugin.setShowSql(true);
+		me.add(activeRecordPlugin);
+		
+		activeRecordPlugin.addMapping("t_monitor_user","id", User.class);
+		activeRecordPlugin.addMapping("t_monitor_email_account","id", EmailAccountModel.class);
+		activeRecordPlugin.addMapping("t_monitor_email_receive_logs","id", EmailReceiveLogModel.class);
+		activeRecordPlugin.addMapping("t_monitor_email_send_logs","id", EmailSendLogModel.class);
+		
+		
+		RedisPlugin redisPlugin = new RedisPlugin(ConstantInit.RedisPlugin, PropKit.get("redis.ip"),PropKit.getInt("redis.port"));
+		me.add(redisPlugin);
+		
+		
+		DruidPlugin druidPlugin2 = new DruidPlugin(PropKit.get("jdbcUrlSaas"), PropKit.get("userSaas"), PropKit.get("passwordSaas").trim());
+		druidPlugin2.addFilter(new StatFilter());
+		druidPlugin2.addFilter(wall);
+		me.add(druidPlugin2);
+
+		ActiveRecordPlugin activeRecordPlugin2 = new ActiveRecordPlugin("jdbcUrlSaas",druidPlugin2);
+		activeRecordPlugin.setShowSql(true);
+		me.add(activeRecordPlugin2);
+		
+		EhCachePlugin ehCachePlugin = new EhCachePlugin();
+		me.add(ehCachePlugin);
+		
+		log.info("SqlXmlPlugin 解析并缓存 xml sql");
+		SqlXmlPlugin sqlXmlPlugin = new SqlXmlPlugin();
+		me.add(sqlXmlPlugin);
+		
+		ShiroPlugin shiroPlugin = new ShiroPlugin(routes);
+		shiroPlugin.setLoginUrl("/jf/");
+		shiroPlugin.setSuccessUrl("/jf/backend");
+		shiroPlugin.setUnauthorizedUrl("/jf/unauthorized");
+		me.add(shiroPlugin);
+		
+		
+		
+		QuartzPlugin quartzPlugin = new QuartzPlugin("jobs.properties","quartz.properties");
+		me.add(quartzPlugin);
+		
+		JmsPlugin jmsPlugin = new JmsPlugin("jms.properties");
+		me.add(jmsPlugin);
+		
+	}
+
+	@Override
+	public void configInterceptor(Interceptors me) {
+		me.add(new ShiroInterceptor());
+	}
+
+	@Override
+	public void configHandler(Handlers me) {
+		me.add(new GlobalHandler());
+	}
+
+	@Override
+	public void afterJFinalStart() {
+		//EmailReceivedJmsDTO emailReceivedJmsDTO = new EmailReceivedJmsDTO(10000L,10000L,TaskSource.SYSTEM);
+		//JmsKit.sendQueue(PropKit.use("jms.properties").get("QUEUE_EMAIL_RECEIVE_TASK.name"), emailReceivedJmsDTO, "a");
+		
+/*		List<Record> find = Db.find("select * from t_monitor_email_account order by lastUpdateDate asc");
+		for(Record r : find){
+			Long dbid = r.getLong("dbid");
+			Long userId = r.getLong("userId");
+			Long emailAccountId = r.getLong("emailAccountId");
+			String queueKey = ConstantInit.BuildReceiveEmailJob + dbid + ConstantInit.UNDERLINE_STRING + userId + ConstantInit.UNDERLINE_STRING + emailAccountId;
+			Redis.use(ConstantInit.RedisPlugin).del(queueKey);
+		}
+		log.info("清除redis缓存");*/
+		/*log.info("获取有效的邮箱");
+		String sql = "select dbid,id,user_id,email_account from t_crm_email_account where pop3_enabled = 'Y' and pop3_available = 'Y'";
+		List<Record> find = Db.use("jdbcUrlSaas").find(sql);
+		log.info("邮箱数:" + find.size());
+		List<String> ids = new ArrayList<String>();
+		for(Record f : find){
+			sql = "select id from t_monitor_email_account where dbid = ? and emailAccountId = ?";
+			Record findFirst = Db.findFirst(sql,f.getLong("dbid"),f.getLong("id"));
+			if(null == findFirst){
+				EmailAccountModel emailAccountModel = new EmailAccountModel();
+				emailAccountModel.set("dbid", f.getLong("dbid"));
+				emailAccountModel.set("userId", f.getLong("user_id"));
+				emailAccountModel.set("emailAccountId", f.getLong("id"));
+				emailAccountModel.set("emailAccountCode", f.getStr("email_account"));
+				emailAccountModel.set("lastUpdateDate", System.currentTimeMillis());
+				emailAccountModel.save();
+				ids.add(ToolString.toString(emailAccountModel.get("id")));
+			}else{
+				ids.add(ToolString.toString(findFirst.get("id")));
+			}
+		}
+		log.info("清楚多余的邮箱");
+		Db.update("delete from t_monitor_email_account where id not in (" + StringUtils.join(ids,",") + ")");
+		super.afterJFinalStart();*/
+		
+		try{
+			//JMXServiceURL url = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://192.168.2.242:11099/jmxrmi");
+			//JMXConnector connector = JMXConnectorFactory.connect(url, null);
+		    //connector.connect();
+		    //MBeanServerConnection connection = connector.getMBeanServerConnection();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		
+		
+		/*try{
+			log.info("获取有效的邮箱");
+			String sql = ToolSqlXml.getSql("sql.receipt.buildReceiveEmailJob");
+			List<Record> find = Db.use("jdbcUrlSaas").find(sql);
+			log.info("邮箱数:" + find.size());
+			List<String> ids = new ArrayList<String>();
+			for(Record f : find){
+				sql = "select id from t_monitor_email_account where dbid = ? and emailAccountId = ?";
+				Record findFirst = Db.findFirst(sql,f.getLong("dbid"),f.getLong("id"));
+				if(null == findFirst){
+					EmailAccountModel emailAccountModel = new EmailAccountModel();
+					emailAccountModel.set("dbid", f.getLong("dbid"));
+					emailAccountModel.set("userId", f.getLong("user_id"));
+					emailAccountModel.set("emailAccountId", f.getLong("id"));
+					emailAccountModel.set("emailAccountCode", f.getStr("email_account"));
+					emailAccountModel.set("lastUpdateDate", System.currentTimeMillis());
+					emailAccountModel.save();
+					ids.add(ToolString.toString(emailAccountModel.get("id")));
+				}else{
+					ids.add(ToolString.toString(findFirst.get("id")));
+				}
+			}
+			log.info("清楚多余的邮箱");
+			Db.update("delete from t_monitor_email_account where id not in (" + StringUtils.join(ids,",") + ")");
+		}catch(Exception e){
+			log.error("自动清理邮箱出错",e);
+		}*/
+
+	}
+}
+

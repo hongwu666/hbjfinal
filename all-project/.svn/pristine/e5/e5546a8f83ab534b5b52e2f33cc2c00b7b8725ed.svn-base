@@ -1,0 +1,48 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: ResourceContainer.java 
+ * @Package saas.framework.cache 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2015年2月10日 下午5:05:08 
+ * @version 1.0 
+ */
+
+package saas.framework.cache;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+
+/**
+ * @ClassName: ResourceContainer
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2015年2月10日 下午5:05:08
+ */
+public class ResourceContainer implements IResourceContainer, BeanPostProcessor {
+
+	private final List<IResourceRelease> releases = new ArrayList<IResourceRelease>();
+
+	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+		return bean;
+	}
+
+	public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+		if (bean instanceof IResourceRelease) {
+			releases.add((IResourceRelease) bean);
+		}
+		return bean;
+	}
+
+	public List<IResourceRelease> getALL() {
+		return releases;
+	}
+}

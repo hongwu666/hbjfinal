@@ -1,0 +1,13 @@
+package saas.winbons.data.model.customer;
+
+import org.springframework.context.ApplicationEvent;
+
+public class CustomerDynamicEvent extends ApplicationEvent {
+
+	private static final long serialVersionUID = -8655547433504704457L;
+
+	public CustomerDynamicEvent(Object source) {
+		super(source);
+	}
+
+}

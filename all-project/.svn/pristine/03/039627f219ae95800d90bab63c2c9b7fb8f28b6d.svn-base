@@ -1,0 +1,27 @@
+package saas.monitor.job;
+
+import org.apache.log4j.Logger;
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+
+import com.jfinal.plugin.activerecord.Db;
+
+public class RemoveReceiveLogJob implements Job {
+	
+	private static Logger log = Logger.getLogger(RemoveReceiveLogJob.class);
+
+	@Override
+	public void execute(JobExecutionContext context)
+			throws JobExecutionException {
+		try{
+			log.info("删除昨天的收信日志");
+			long dateTime = System.currentTimeMillis();
+			Db.update("delete from t_monitor_email_receive_logs where createDate < ?",dateTime - 1000 * 60 * 60 * 1);
+		}catch(Exception e){
+			log.error("删除昨天的收信日志",e);
+		}
+		
+	}
+
+}

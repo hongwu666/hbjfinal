@@ -1,0 +1,7 @@
+package saas.winbons.base.manager.impl;
+
+import saas.winbons.base.manager.IBaseManager;
+
+public class BaseMananger implements IBaseManager {
+
+}

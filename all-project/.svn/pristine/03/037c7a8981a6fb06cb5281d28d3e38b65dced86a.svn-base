@@ -1,0 +1,84 @@
+package saas.winbons.data.model;
+
+import javax.sql.DataSource;
+
+import saas.winbons.data.model.leads.ColumnLeads;
+import saas.winbons.data.model.leads.Leads;
+
+import com.alibaba.druid.filter.stat.StatFilter;
+import com.alibaba.druid.wall.WallConfig;
+import com.alibaba.druid.wall.WallFilter;
+import com.jfinal.ext.plugin.tablebind.AutoTableBindPlugin;
+import com.jfinal.kit.PathKit;
+import com.jfinal.kit.Prop;
+import com.jfinal.kit.PropKit;
+import com.jfinal.plugin.activerecord.dialect.MysqlDialect;
+import com.jfinal.plugin.activerecord.generator.Generator;
+import com.jfinal.plugin.druid.DruidPlugin;
+
+public class GeneratorModel {
+
+	public static DataSource getDataSource() {
+		Prop p = PropKit.use("a_little_config.txt");
+		
+		DruidPlugin druidPlugin = new DruidPlugin(PropKit.get("jdbcUrl"), PropKit.get("user"), PropKit.get("password").trim());
+		
+		druidPlugin.addFilter(new StatFilter());
+		WallFilter wall = new WallFilter();
+		wall.setDbType("mysql");
+		WallConfig wallConfig = new WallConfig("META-INF/druid/wall/mysql");
+		wallConfig.setCommentAllow(true);
+		wallConfig.setMultiStatementAllow(true);
+		wallConfig.setNoneBaseStatementAllow(true);
+		wall.setConfig(wallConfig);
+		druidPlugin.addFilter(wall);
+		druidPlugin.start();
+		
+		
+		AutoTableBindPlugin autoTableBindPlugin = new AutoTableBindPlugin(druidPlugin);
+		autoTableBindPlugin.addExcludeClasses(BaseModel.class);
+		autoTableBindPlugin.addExcludeClasses(AbstractTenantModel.class);
+		autoTableBindPlugin.addExcludeClasses(OperatorModel.class);
+		autoTableBindPlugin.addExcludeClasses(UserDefinedFieldValueModel.class);
+		autoTableBindPlugin.addExcludeClasses(ColumnLeads.class);
+		autoTableBindPlugin.addExcludeClasses(Leads.class);
+		
+		autoTableBindPlugin.start();
+		
+		return druidPlugin.getDataSource();
+	}
+
+	public static void main(String[] args) {
+		/*getDataSource();
+		for (TestModel testModel : TestModel.dao.find("select * from icc_user_reg_temp")) {
+			System.out.println(testModel.getStr("generateSalt"));
+		}*/
+		
+		
+		
+		// base model 所使用的包名
+		// base model 所使用的包名
+		String baseModelPackageName = "saas.crm.data.model";
+		// base model 文件保存路径
+		String baseModelOutputDir = "E:/Java/jfinal/GeneratorModel";
+		
+		// model 所使用的包名 (MappingKit 默认使用的包名)
+		String modelPackageName = "saas.crm.data.model";
+		// model 文件保存路径 (MappingKit 与 DataDictionary 文件默认保存路径)
+		String modelOutputDir = baseModelOutputDir;
+		
+		// 创建生成器
+		Generator gernerator = new Generator(getDataSource(), baseModelPackageName, baseModelOutputDir, modelPackageName, modelOutputDir);
+		// 设置数据库方言
+		gernerator.setDialect(new MysqlDialect());
+		// 设置是否在 Model 中生成 dao 对象
+		gernerator.setGenerateDaoInModel(true);
+		// 设置是否生成字典文件
+		gernerator.setGenerateDataDictionary(false);
+		// 设置需要被移除的表名前缀用于生成modelName。例如表名 "osc_user"，移除前缀 "osc_"后生成的model名为 "User"而非 OscUser
+		gernerator.setRemovedTableNamePrefixes("t_crm_");
+		// 生成
+		gernerator.generate();
+	}
+
+}

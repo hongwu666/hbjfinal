@@ -1,0 +1,68 @@
+/** 
+ * Copyright (C) 2010 QIHAN Technology Co.,Ltd
+ * All Rights Reserved.
+ * Development of this software QIHAN Technology Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: FieldType.java 
+ * @Package crm.data.model.defined.field
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author Vineet.Lin
+ * @date 2013-4-24 下午6:26:16
+ * @version 1.0 
+ */
+
+package saas.winbons.enumtype;
+
+import saas.winbons.framework.tools.ToolString;
+
+/**
+ * @ClassName: FieldType
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author Vineet.Lin
+ * @date 2013-4-24 下午6:26:16
+ */
+public enum FieldType implements BaseEnum<String>, JmesaMapEnum {
+	text("1", "field.type.text.name"), 
+	number("2", "field.type.number.name"), 
+	datetime("3", "field.type.datetime.name"), 
+	date("4", "field.type.date.name"), 
+	time("5", "field.type.time.name"), 
+	list("6", "field.type.list.name"), //
+	memo("7", "field.type.memo.name"), 
+	increment("8", "field.type.autoinc.name"), 
+	multiple_select("9", "field.type.mullist.name"), //
+	combobox("11", "field.type.combobox.name");
+
+	private String dbValue;
+	private String messageKey;
+
+	private FieldType(String dbValue, String messageKey) {
+		this.dbValue = dbValue;
+		this.messageKey = messageKey;
+	}
+	
+	public static FieldType getById(String id){
+		if(ToolString.isEmptyString(id)){
+			return null;
+		}
+		for(FieldType type: FieldType.values()){
+			if(type.getDbValue().equals(id)){
+				return type;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public String getDbValue() {
+		return dbValue;
+	}
+
+	@Override
+	public String getMessageKey() {
+		return messageKey;
+	}
+
+}

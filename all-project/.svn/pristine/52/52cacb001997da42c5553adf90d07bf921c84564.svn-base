@@ -1,0 +1,29 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: FilterItemListBuilder.java 
+ * @Package saas.framework.sql 
+ * @author star.ye 
+ * @date 2014年7月12日 上午11:10:19 
+ * @version 1.0 
+ */
+
+package saas.winbons.framework.sql;
+
+/**
+ * @ClassName: FilterItemListBuilder
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年7月12日 上午11:10:19
+ */
+
+public abstract class FilterItemListBuilder {
+
+	public static FilterItemList createFilterItems() {
+		return new FilterItemListImpl();
+	}
+}

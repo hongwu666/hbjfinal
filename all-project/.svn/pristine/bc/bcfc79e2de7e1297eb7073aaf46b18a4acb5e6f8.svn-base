@@ -1,0 +1,38 @@
+package saas.crm.market.enumtype;
+
+import saas.winbons.enumtype.BaseEnum;
+import saas.winbons.enumtype.JmesaMapEnum;
+
+
+public enum FollowStatusEnum implements BaseEnum<Long>, JmesaMapEnum{
+	
+	UNTREATED(0L, "未处理"),
+	LINKED(1L, "已联系"),
+	CLOSE(2L, "关闭");
+	
+	private final Long name;
+	private final String value;
+	
+	private FollowStatusEnum(Long name, String value){
+		this.name = name;
+		this.value = value;
+	}
+	
+	public static String findValue(Long name){
+		for(FollowStatusEnum ce : FollowStatusEnum.values()){
+			if(ce.name.equals(name)){
+				return ce.value;
+			}
+		}
+		return "";
+	}
+
+	public Long getDbValue() {
+		return name;
+	}
+
+	public String getMessageKey() {
+		return value;
+	}
+	
+}

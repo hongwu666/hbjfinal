@@ -1,0 +1,328 @@
+/*
+ * XMLUtilities.java
+ *
+ */
+package saas.monitor.tools;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.io.Writer;
+import java.util.Iterator;
+import java.util.List;
+
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
+import org.dom4j.Node;
+import org.dom4j.XPath;
+import org.dom4j.io.OutputFormat;
+import org.dom4j.io.SAXReader;
+import org.dom4j.io.XMLWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
+
+
+/**
+ * XMLUtilities is a convenient class for handling common XML processing.
+ */
+public final class XMLUtils {
+	
+	private static Logger logger = LoggerFactory.getLogger(XMLUtils.class);
+
+	/** Creates a new instance of XMLUtilities. */
+	private XMLUtils() {
+	}
+
+	/**
+	 * Returns a DOM Document which represents the given XML String. The XML
+	 * encoding should be UTF8.
+	 * 
+	 * @param xml
+	 *            The XML for contrusting the DOM Document.
+	 * @throws XMLException
+	 *             When the XML is malformed or invalid.
+	 * @return The DOM object which represents the given XML String.
+	 */
+	public static Document getDOM(String xml) throws XMLException {
+		if (xml == null)
+			xml = "";
+		
+		StringReader sr = new StringReader(removeDocumentType(xml));
+		return getDOM(sr,null);
+	}
+	
+	/**
+	 * Get the XML DOM Object from content reading from given reader.  And validate the XML using given XSD.
+	 * @param xml - The reader containing the XML document to be parsed.
+	 * @param xsdResoucePath - The resource URL String of the XSD to verify the given XML.
+	 * @return The DOM object which represents the given XML String.
+	 * @throws XMLException
+	 */
+	public static Document getDOM(Reader xml, String xsdResoucePath) throws XMLException {
+		try {
+			SAXReader reader = new SAXReader();
+			if (xsdResoucePath!=null) {
+				reader.setFeature("http://xml.org/sax/features/validation", true);
+				reader.setFeature("http://apache.org/xml/features/validation/schema",true);
+				reader.setFeature("http://apache.org/xml/features/validation/schema-full-checking",true);
+				reader.setProperty("http://apache.org/xml/properties/schema/external-noNamespaceSchemaLocation",xsdResoucePath);
+			}
+			return reader.read(xml);
+		
+		} catch (DocumentException de) {
+			logger.error("XML Parsing error: " + de.toString() + "\n"
+					+ xml + "\n");
+			throw new XMLException("Error in creating DOM from the specified XML", de);
+
+		} catch (SAXException se) {
+			logger.error("XML Parsing error: " + se.toString() + "\n"
+					+ xml + "\n");
+			throw new XMLException("Error in creating DOM from the specified XML", se);
+		}
+	}
+	
+	
+	public static void printXml(Document document, Writer writer) 
+		throws XMLException
+	{
+		OutputFormat format = OutputFormat.createPrettyPrint();
+		XMLWriter xwriter;
+		try {
+			xwriter = new XMLWriter(writer, format);
+			xwriter.write(document);
+		} catch (UnsupportedEncodingException ue) {
+			throw new XMLException("Error in printing DOM from the specified XML", ue);
+		} catch (IOException ie) {
+			throw new XMLException("Error in printing DOM from the specified XML", ie);
+		}
+		
+	}
+	
+	public static void printXml(Document document) 
+		throws XMLException
+	{
+		// Pretty print the document to System.out
+		OutputFormat format = OutputFormat.createPrettyPrint();
+		XMLWriter writer;
+		try {
+			writer = new XMLWriter(System.out, format);
+			writer.write(document);
+		} catch (UnsupportedEncodingException ue) {
+			throw new XMLException("Error in printing DOM from the specified XML", ue);
+		} catch (IOException ie) {
+			throw new XMLException("Error in printing DOM from the specified XML", ie);
+		}
+	}
+	
+
+	/**
+	 * Gets the XML from a DOM Document.
+	 * 
+	 * @param dom
+	 *            The DOM Document to be transformed.
+	 * @throws XMLException
+	 *             When error occurred in transforming the DOM Document to XML.
+	 * @return The XML which represents the DOM Document.
+	 */
+	public static String getXML(Document dom) throws XMLException {
+		if (dom == null)
+			return null;
+
+		String xml = null;
+
+		try {
+
+			StringWriter sw = new StringWriter();
+
+			// Compact format to System.out
+			OutputFormat format = OutputFormat.createCompactFormat();
+			XMLWriter writer = new XMLWriter(sw, format);
+			writer.write(dom);
+			xml = sw.toString();
+			sw.close();
+			return xml;
+		} catch (IOException ie) {
+			logger.error("XML IO error: " + ie.toString() + "\n" + xml
+					+ "\n");
+
+			throw new XMLException("Error in creating XML from the specified DOM", ie);
+		}
+
+	}
+
+	/**
+	 * Gets the XML from a DOM Document.
+	 * 
+	 * @param dom
+	 *            The DOM Document to be transformed.
+	 * @throws XMLException
+	 *             When error occurred in transforming the DOM Document to XML.
+	 * @return The XML which represents the DOM Document.
+	 */
+	public static List getElementsByXPath(Document doc, String xPath)
+			throws XMLException {
+
+		if (xPath == null)
+			return null;
+
+		// Perform XPath searching
+		XPath xpathSelector = DocumentHelper.createXPath(xPath);
+		List elements = xpathSelector.selectNodes(doc);
+
+		return elements;
+
+	}
+
+	/**
+	 * Gets the XML from a DOM Document.
+	 * 
+	 * @param dom
+	 *            The DOM Document to be transformed.
+	 * @throws XMLException
+	 *             When error occurred in transforming the DOM Document to XML.
+	 * @return The XML which represents the DOM Document.
+	 */
+	public static List getElementsByXPath(String xml, String xPath)
+			throws XMLException {
+
+		if (xml == null || xPath == null)
+			return null;
+
+		return getElementsByXPath(getDOM(xml), xPath);
+
+	}
+
+	public static String getElementByXPath(String xml, String xPath)
+			throws XMLException {
+		
+		return getElementByXPath(getDOM(xml), xPath);
+	}
+
+	public static String getElementByXPath(Document doc, String xPath)
+			throws XMLException {
+
+		if (doc == null || xPath == null)
+			return null;
+		
+		// Perform XPath searching
+		XPath xpathSelector = DocumentHelper.createXPath(xPath);
+		Node node = xpathSelector.selectSingleNode(doc);
+
+		return node.getText();
+	}
+
+	/**
+	 * Creates an empty DOM Document.
+	 * 
+	 * @throws XMLException
+	 *             When unable to create a new instance of DOM Document from the
+	 *             underlying factory.
+	 * @return An empty DOM Document.
+	 */
+	public static Document createDocument() {
+		return DocumentHelper.createDocument();
+	}
+
+	/**
+	 * Removes the DOCTYPE tag from the given XML.
+	 * 
+	 * @param xml
+	 *            The XML to be modified.
+	 * @return The XMl with the DOCTYPE tag removed.
+	 */
+	public static String removeDocumentType(String xml) {
+
+		if (xml != null) {
+			int doctypeIndex = xml.indexOf("<!DOCTYPE");
+			int doctypeEndIndex = xml.indexOf(">", doctypeIndex);
+			if (doctypeIndex != -1 && doctypeEndIndex != -1) {
+				xml = xml.substring(0, doctypeIndex)
+						+ xml.substring(doctypeEndIndex + 1);
+			}
+		}
+		return xml;
+	}
+	
+	/**
+	 * Test Driver.
+	 * 
+	 * @param args
+	 *            The arguments.
+	 */
+	public static void main(String[] args) {
+		try {
+
+			Document document = DocumentHelper.createDocument();
+			document.setXMLEncoding("UTF-8");
+			document.addDocType("ROOT", "SYSTEM", "SG3080PO.dtd");
+
+			Element root = document.addElement("ROOT");
+
+			Element header = root.addElement("HEADER");
+			Element out_uid = header.addElement("OUT-UID").addText("DEREK");
+			Element out_tranid = header.addElement("OUT-TRANID")
+					.addText("SAMP");
+			Element out_userid = header.addElement("OUT-USERID").addText(
+					"DEREK");
+			Element out_termid = header.addElement("OUT-TERMID").addText("TO");
+			Element out_locid = header.addElement("OUT-LOCID").addText("TP");
+			Element out_personts = header.addElement("OUT-PERSONTS").addText(
+					"DEREK");
+			Element out_returncd = header.addElement("OUT-RETURNCD").addText(
+					"0000");
+			Element out_returndesc = header.addElement("OUT-RETURNDESC")
+					.addText("ERROR");
+
+			Element appdata = root.addElement("APPDATA");
+			Element out_appdatarow = appdata.addElement("OUT-APPDATAROW");
+			Element out_prnfr = out_appdatarow.addElement("OUT-PRNFR").addText(
+					"64000007");
+			Element out_prnto = out_appdatarow.addElement("OUT-PRNTO").addText(
+					"56287123");
+			Element out_recseq = out_appdatarow.addElement("OUT-RECSEQ")
+					.addText("00");
+			Element out_merg_result = out_appdatarow.addElement(
+					"OUT-MERG-RESULT").addText("0");
+			Element out_merg_reqind = out_appdatarow.addElement(
+					"OUT-MERG-REQIND").addText("S");
+			Element out_merg_icno = out_appdatarow.addElement("OUT-MERG-ICNO")
+					.addText("A123456");
+
+			// Pretty print the document to System.out
+			OutputFormat format = OutputFormat.createPrettyPrint();
+			XMLWriter writer = new XMLWriter(System.out, format);
+			writer.write(document);
+
+			System.out.println(getXML(document));
+
+			writer.write(XMLUtils.getDOM(getXML(document)));
+			
+			List tranIDs = getElementsByXPath(document,
+					"//ROOT/HEADER/OUT-TRANID");
+			System.out.println("This XML has " + tranIDs.size()
+					+ " transaction ID");
+
+			Iterator i = tranIDs.iterator();
+			while (i.hasNext()) {
+				Element servlet = (Element) i.next();
+				System.out.print("\t" + servlet.getTextTrim());
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	public static org.w3c.dom.Document getW3CDocument(Reader xml, String xsd) throws XMLException, DocumentException{
+		Document doc = XMLUtils.getDOM(xml, null);
+		return toW3CDocument(doc);
+	}
+	public static org.w3c.dom.Document toW3CDocument(org.dom4j.Document d4doc) throws DocumentException{   
+        org.dom4j.io.DOMWriter d4Writer = new org.dom4j.io.DOMWriter();   
+        return d4Writer.write(d4doc);   
+    } 	
+}

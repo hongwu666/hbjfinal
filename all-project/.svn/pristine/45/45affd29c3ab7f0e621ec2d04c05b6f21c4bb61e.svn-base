@@ -1,0 +1,15 @@
+package saas.crm.dynamic.manager;
+
+import java.util.List;
+
+import saas.crm.dynamic.model.AbstractDynamic;
+import saas.winbons.dubbo.api.ContextDTO;
+
+public interface IDynamicManager {
+	
+	public List<Long>  getSendDynamicIdList(ContextDTO contextDTO,Long[] module,int day);
+	
+	@Deprecated
+	public String addDynamic(ContextDTO contextDTO,AbstractDynamic streamDynamic);
+
+}

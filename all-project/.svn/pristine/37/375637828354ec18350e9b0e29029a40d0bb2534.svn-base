@@ -1,0 +1,72 @@
+package saas.winbons.data.model.calendar;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.quartz.Job;
+import org.quartz.JobDataMap;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import saas.crm.base.enumtype.NotifyType;
+import saas.crm.base.event.SystemNotifyEvent;
+import saas.scheduler.dto.SystemMessageDTO;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolSqlXml;
+
+import com.jfinal.ext.plugin.jms.JmsKit;
+import com.jfinal.kit.PropKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+public class CalendarInfoJob implements Job {
+	
+	protected final Logger LOG = LoggerFactory.getLogger(CalendarInfoJob.class);
+
+	@Override
+	public void execute(JobExecutionContext context) throws JobExecutionException {
+		JobDataMap mergedJobDataMap = context.getMergedJobDataMap();
+		Long id = mergedJobDataMap.getLong("id");
+		Long userId = mergedJobDataMap.getLong("userId");
+		Long dbId = mergedJobDataMap.getLong("dbId");
+		
+		ContextDTO contextDTO = new ContextDTO(dbId, userId, true, false, userId);
+		SystemMessageDTO systemNotifyEvent = new SystemMessageDTO();
+		List<FilterDTO> fitler = new ArrayList<FilterDTO>();
+		Map<String,Object> param = new HashMap<String, Object>();
+		fitler.add(new FilterDTO("a.valid", "Y"));
+		fitler.add(new FilterDTO("a.id", id));
+		param.put("columns", ToolJfinalSql.buildSelectSql(CalendarInfo.class, "a",""));
+		param.put("calendarColumns", ToolJfinalSql.buildSelectSql(CalendarInfo.class, "",""));
+		param.put("contextDTO", contextDTO);
+		param.put("filters", fitler);
+		String sqlByBeetl = ToolSqlXml.getSql("winbins.calendar.search", param);
+		List<Record> find = Db.find(contextDTO, sqlByBeetl);
+		if(find.size() > 0){
+			Record record = find.get(0);
+			systemNotifyEvent.setContent(ToolGson.GsonString(record.getColumns()));
+			systemNotifyEvent.setDataId(id);
+			Calendar c = Calendar.getInstance();
+			systemNotifyEvent.setDate(c.getTime());
+			systemNotifyEvent.setDbId(dbId);
+			systemNotifyEvent.setNow(true);
+			systemNotifyEvent.setReceiverIds(new Long[]{userId});
+			systemNotifyEvent.setType(NotifyType.calendar.name());
+			JmsKit.sendQueue(PropKit.use("jms.properties").get("systemnotifyevent.name"), systemNotifyEvent, "a");
+			LOG.info("推送一条信息");
+		}
+		
+		
+		
+		
+	}
+
+}

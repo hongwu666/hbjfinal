@@ -1,0 +1,63 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: ICommonDyManager.java 
+ * @Package saas.crm.dynamic.manager 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年8月11日 下午5:31:19 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.manager;
+
+import java.util.List;
+
+import saas.crm.dynamic.model.Location;
+import saas.crm.dynamic.model.StreamDynamic;
+import saas.winbons.dubbo.api.ContextDTO;
+
+/**
+ * @ClassName: ICommonDyManager
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年8月11日 下午5:31:19
+ */
+
+public interface ICommonDyManager {
+
+	long findAndUpdateIndex(ContextDTO contextDTO);
+
+	/**
+	 * 
+	 * @Title: intrestDy
+	 * @Description: 收藏动态
+	 * @param @param userId
+	 * @param @param dyId 设定文件
+	 * @return void 返回类型
+	 * @throws
+	 * @date 2014年8月12日 下午2:13:24
+	 */
+	String intrestDy(ContextDTO contextDTO,Long userId, String dyId);
+
+	/**
+	 * 
+	 * @Title: delInestret
+	 * @Description: 取消收藏
+	 * @param @param id 设定文件
+	 * @return void 返回类型
+	 * @throws
+	 * @date 2014年8月12日 下午4:02:30
+	 */
+	void delInestret(ContextDTO contextDTO,Long userId,String id);
+
+	List<StreamDynamic> findUserInterst(ContextDTO contextDTO,Long userId, Long index);
+	
+	Integer findUserInstret(ContextDTO contextDTO,Long userId, String dynamicId);
+	
+	String findByAddress(ContextDTO contextDTO,String adderss);
+}

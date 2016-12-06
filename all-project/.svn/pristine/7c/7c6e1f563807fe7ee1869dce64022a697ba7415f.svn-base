@@ -1,0 +1,19 @@
+################################
+#          server info         #
+################################
+# jms\u670D\u52A1\u5668\u5730\u5740
+serverUrl=tcp://192.168.2.242:61610
+username=admin
+password=admin
+################################
+#          queue info          #
+################################
+# \u53D1\u9001\u7684\u961F\u5217\u540D\u5B57\uFF0C\u7528\u201C\uFF0C\u201D\u53F7\u5206\u9694
+sendQueues=crm.email.account.received.log.new
+QUEUE_EMAIL_RECEIVE_TASK.name=crm.email.account.received.log.new
+
+
+
+receiveQueues=crm.email.account.result.log.new
+queue.crm.email.account.result.log.new.a=10
+queue.crm.email.account.result.log.new.a.resolver=saas.monitor.mq.EmailAccountLogMq

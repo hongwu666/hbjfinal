@@ -1,0 +1,88 @@
+package saas.monitor.tools;
+
+import java.io.IOException;
+import java.io.OutputStream;
+
+import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.util.CellRangeAddress;
+
+import saas.monitor.mvc.index.SimpleExeclColumnVO;
+import saas.monitor.mvc.index.SimpleExeclRowVO;
+import saas.monitor.mvc.index.SimpleExeclTemplateVO;
+
+public class SimpleExeclUtils {
+	
+	private static int widthFix = 256;
+	
+	public static void buildExecl(SimpleExeclTemplateVO[] simpleExeclTemplateVOs,OutputStream fos){
+		
+		HSSFWorkbook wb = new HSSFWorkbook();  
+		HSSFCellStyle borderStyle = (HSSFCellStyle) wb.createCellStyle();
+		borderStyle.setBorderBottom((short) 1);
+		borderStyle.setBorderTop((short) 1);
+		borderStyle.setBorderLeft((short) 1);
+		borderStyle.setBorderRight((short) 1);
+		
+		for(SimpleExeclTemplateVO simpleExeclTemplateVO : simpleExeclTemplateVOs){
+			HSSFSheet sheet = wb.createSheet(simpleExeclTemplateVO.getTitleName());
+			sheet.setAutobreaks(true);
+			sheet.setDefaultColumnWidth(16);
+			int rowNum = 0 ;
+			int columnNum = 0; 
+			if(null != simpleExeclTemplateVO.getSimpleExeclColumnVOs() && simpleExeclTemplateVO.getSimpleExeclColumnVOs().length > 0){
+				HSSFRow createRow = sheet.createRow(rowNum);
+				for(SimpleExeclColumnVO simpleExeclColumnVO : simpleExeclTemplateVO.getSimpleExeclColumnVOs()){
+					HSSFCell createCell = createRow.createCell(columnNum);
+					createCell.setCellValue(simpleExeclColumnVO.getName());
+					if(simpleExeclColumnVO.getWidth() > 0)sheet.setColumnWidth(columnNum, simpleExeclColumnVO.getWidth() * widthFix);
+					columnNum++;
+				}
+				rowNum++;
+			}
+			if(null != simpleExeclTemplateVO.getSimpleExeclRowVOs()){
+				for(SimpleExeclRowVO simpleExeclRowVO : simpleExeclTemplateVO.getSimpleExeclRowVOs()){
+					HSSFRow createRow = sheet.createRow(rowNum);
+					if(null != simpleExeclRowVO.getValues()){
+						columnNum = 0;
+						for(String value : simpleExeclRowVO.getValues()){
+							HSSFCell createCell = createRow.createCell(columnNum);
+							columnNum++;
+							if(NumberUtils.isNumber(value)){
+								try{
+									createCell.setCellValue(Double.parseDouble(value));
+									createCell.setCellType(Cell.CELL_TYPE_NUMERIC);
+								}catch(Exception e){
+									e.printStackTrace();
+									createCell.setCellValue(value);
+								}
+							}else{
+								createCell.setCellValue(value);
+							}
+						}
+					}
+					rowNum++;
+				}
+				
+			}
+			if(rowNum != 0 && columnNum != 0){//TODO liusg rownum columnNum都为0时表示后台没有设置导出格式，excle表不做任何样式修改
+				POIExcelUtil.setRegionStyle(sheet, new CellRangeAddress(0, rowNum -1 < 0 ? 0 : rowNum -1, 0, columnNum - 1 < 0 ? 0 : columnNum - 1 ), borderStyle);
+			}
+		}
+		
+		try {
+
+			wb.write(fos);
+			fos.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+
+}

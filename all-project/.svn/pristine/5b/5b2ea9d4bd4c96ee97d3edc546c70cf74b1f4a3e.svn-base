@@ -1,0 +1,12 @@
+package saas.winbons.data.model.customer;
+
+import saas.winbons.data.model.BaseModel;
+
+public class CustomerShareAclModel extends BaseModel<CustomerShareAclModel> {
+
+	private static final long serialVersionUID = -3486479184111723043L;
+	
+	public static final CustomerShareAclModel dao = new CustomerShareAclModel();
+	
+
+}

@@ -1,0 +1,12 @@
+package saas.winbons.enumtype;
+
+/**
+ * @ClassName: BaseEnum
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author Mac.Lam
+ * @date 2010-8-11 下午02:45:40
+ */
+
+public interface BaseEnum<T> {
+	T getDbValue();
+}

@@ -1,0 +1,29 @@
+/**
+ * 
+ */
+package saas.framework.nosql.annotation;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
+ * 
+ * @ClassName: FileStoreDocument
+ * @Description: 文件类型
+ * @author star.ye
+ * @date 2014年7月8日 下午3:29:37
+ */
+@Inherited
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.TYPE })
+public @interface FileStoreDocument {
+	/**
+	 * Optionally provides the bucket where this document should go to
+	 * 
+	 * @return the name of the bucket
+	 */
+	public String bucket() default "";
+}

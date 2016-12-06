@@ -1,0 +1,30 @@
+package saas.winbons.format;
+
+import java.util.Map;
+
+import com.jfinal.plugin.activerecord.Model;
+
+import saas.winbons.framework.tools.ToolString;
+
+public class StringFormtCallback implements ICallbackFormat {
+
+	@Override
+	public Object callback(Map<String, Object> map, String name, String dbName) {
+		Object object = map.get(dbName);
+		String value = ToolString.toString(object);
+		map.put(name, value);
+		return value;
+	}
+
+	@Override
+	public Object build(Model model,String attr,Object value){
+		model.set(attr, value);
+		return value;
+	}
+	
+	@Override
+	public String getType() {
+		return "string";
+	}
+
+}

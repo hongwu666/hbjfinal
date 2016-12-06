@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 菜单sql -->
+<sql-statement namespace="winbons.customer">
+
+	<!-- 查询根菜单 -->
+	<sql id="getAllSimpleInfo">
+		<![CDATA[ 
+		select b.id, b.name,b.code,COUNT(a.user_id) as count 
+		FROM (select id,name,code,created_date,dbid from t_crm_department where dbid = ${contextDTO.dbId} ) b 
+		LEFT JOIN (select department_id,user_id,is_deleted,dbid from t_crm_user where dbid = ${contextDTO.dbId} ) a on b.id =a.department_id and b.dbid = a.dbid
+		where a.is_deleted <> 'Y' 
+		group by b.id 
+		order by b.created_date 
+    	]]>
+	</sql>
+
+
+	<sql id="findCustPools">
+		<![CDATA[ 
+		select id,name from t_crm_cust_public_pool p where p.dbId = ${contextDTO.dbId} 
+		<%
+		if(!contextDTO.admin){
+		    %>
+		and (p.created_by = ${contextDTO.userId} or p.id in 
+		 (select distinct r.cust_pool_id from t_crm_cust_public_pool_share_acl r where r.secure_id = 
+		${contextDTO.userId} and r.dbid = ${contextDTO.dbId}))
+		<%
+		}
+		%>
+    	]]>
+	</sql>
+
+	
+	<sql id="searchCustomerByAnalysis">
+	<![CDATA[ 
+		from t_crm_customer a 
+		left join t_crm_department b on a.dept_id = b.id and a.dbid = b.dbid  AND b.dbid = ${contextDTO.dbId} 
+		left join t_crm_cust_public_pool c on c.id = a.cust_pool_id and a.dbid = c.dbid AND c.dbid = ${contextDTO.dbId} 
+		left join t_crm_list_item d on d.id = a.source and a.dbid = d.dbid and d.dbid = ${contextDTO.dbId} 
+		left join t_crm_list_item e on e.id = a.type and a.dbid = e.dbid and e.dbid = ${contextDTO.dbId} 
+		left join t_crm_list_item f on f.id = a.industry and a.dbid = f.dbid and f.dbid = ${contextDTO.dbId} 
+		left join t_crm_list_item g on g.id = a.rating and a.dbid = g.dbid and g.dbid = ${contextDTO.dbId} 
+		left join t_crm_list_item h on h.id = a.business_type and a.dbid = h.dbid and h.dbid = ${contextDTO.dbId} 
+		left join t_crm_list_item i on i.id = a.fstatus and a.dbid = i.dbid and i.dbid = ${contextDTO.dbId} 
+		left join t_crm_list_item j on j.id = a.c_status and a.dbid = j.dbid and j.dbid = ${contextDTO.dbId} 
+			<% if(!isEmpty(listDefineColumn)){ %>
+        		<% 
+				for(defineColumn in listDefineColumn){%>
+					left join t_crm_list_item list_${defineColumn.id} on list_${defineColumn.id}.id = a.${defineColumn.columnsName} and a.dbid = list_${defineColumn.id}.dbid  and list_${defineColumn.id}.dbid = ${contextDTO.dbId} 
+				<% } %>
+        	<% } %>
+        		
+		
+		where a.dbid = ${contextDTO.dbId} and a.owner_id is not null 
+		<%
+			commonSql("winbons.common.params",filters!,sorts!);
+		%> 
+	]]>
+	</sql>
+	
+	
+	<sql id="searchCustomerGridColumns">
+	<![CDATA[ 
+		select ${columns} 
+	]]>
+	</sql>
+	
+	
+	<sql id="searchCustomer">
+	<![CDATA[ 
+		from t_crm_customer a 
+		
+		<% if(!isEmpty(data.tagId)){%>
+			left join t_crm_biz_rel_tag t on a.id = t.itemid and a.dbid = t.dbid and module = 'Customer' and t.dbid = ${contextDTO.dbId} 
+		<% } %>
+		
+		<% if(!isEmpty(data.contactFilterDTO)){%>
+		left join (
+		select distinct cust_id from t_crm_cust_contact contact where dbid =  ${contextDTO.dbId} 
+		<%
+		commonSql("winbons.common.params",data.contactFilterDTO!);
+		%> 
+		) contact on a.id = contact.cust_id and a.dbid = contact.dbid 
+		<% } %>
+		where a.dbid = ${contextDTO.dbId} 
+		<% data = setFn(data,"a","tableAliases"); %>
+		and ${callTemplateFn("winbons.customer.getCustomerExistsSqlByType2",contextDTO,data)}
+		<% if(!isEmpty(data.tagId)){%>
+			and t.tagid = ${data.tagId} 
+		<% } %>
+		<% if(!isEmpty(data.notContact)){
+			data = setFn(data,contextDTO.userId + "","queryOwnerIds");
+			callTemplateFn("winbons.customer.lastContactCustomer",contextDTO,data);
+		}
+		%>
+		and owner_id is not null 
+		<%
+			commonSql("winbons.common.params",filters!,sorts!);
+		%> 
+		
+		
+	
+	]]>
+	</sql>
+	
+	<sql id="lastContactCustomer">
+	<![CDATA[ 
+		<%
+			var created_date = reflectFn("java.lang.System","currentTimeMillis");
+			created_date = created_date - notContact * 1000 * 60 * 60 * 24;
+		%>
+		and created_date <= ${created_date} 
+		and a.id not in (select customer_Id from t_crm_email_info where dbid=${contextDTO.dbId} and customer_Id is not null and email_folder_id<>9 GROUP BY customer_id HAVING max(sent_date)>${created_date}) 
+		<% if(!isEmpty(dynamicCustomerIds)){%>
+			and a.id not in (${dynamicCustomerIds}) 
+		<% } %>
+		
+		
+	
+	]]>
+	</sql>
+	
+	<!-- 优化客户查询-->
+	<sql id="getCustomerExistsSqlByType2">
+	<![CDATA[ 
+		EXISTS (
+		select 1 from 
+		t_crm_cust_share_acl acl where acl.dbid = ${contextDTO.dbId} 
+		<% 
+		switch(selectType!){
+			case 1:
+			print(' AND acl.isowner="N" and acl.secure_id =' +  contextDTO.userId);
+			break;
+			case 2:
+			print(' AND acl.isowner="Y" and acl.secure_id =' +  contextDTO.userId);
+			break;
+			default :
+			if(!isEmpty(queryOwnerIds)){
+			%>
+				AND acl.secure_id in ${inParse(strutil.split(queryOwnerIds,","))}
+			<%		
+			}else{
+				var queryOwnerIds = contextDTO.userId + "";
+				if(contextDTO.admin){
+					var sql = callTemplateFn("winbons.department.getBeManagerUserIdsByManagerId",contextDTO,{userId:contextDTO.userId},true);
+					var result = sqlFn(contextDTO,"list",sql);
+					if(!isEmpty(result)){
+						for(res in result){
+							queryOwnerIds = queryOwnerIds + "," + res.user_id;
+						}
+					}
+				}else{
+					queryOwnerIds = callTemplateFn("winbons.department.getManagerUserIdByAcl",contextDTO,{userId:contextDTO.userId,aclName:"Customer:query"},true);
+				}
+			%>
+				AND acl.secure_id in ${inParse(strutil.split(queryOwnerIds,","))}
+			<%	
+			}
+			%>
+			
+			<%
+			break;
+		}
+		%>
+		 AND ${tableAliases}.dbid = acl.dbid
+	     AND ${tableAliases}.id = acl.cust_id
+		)
+		
+		
+	]]>
+	</sql>
+
+
+	<!-- 废弃的-->
+	<sql id="getCustomerExistsSqlByType">
+	<![CDATA[ 
+		select acl.cust_id,acl.dbid from t_crm_cust_share_acl acl where 
+		acl.dbid = ${contextDTO.dbId} 
+		<% 
+		switch(selectType!){
+			case 1:
+			print(' AND acl.isowner="N" and acl.secure_id =' +  contextDTO.userId);
+			break;
+			case 2:
+			print(' AND acl.isowner="Y" and acl.secure_id =' +  contextDTO.userId);
+			break;
+			default :
+			if(!isEmpty(queryOwnerIds)){
+			%>
+				AND acl.secure_id in ${inParse(strutil.split(queryOwnerIds,","))}
+			<%		
+			}else{
+				var queryOwnerIds = contextDTO.userId + "";
+				if(contextDTO.admin){
+					var sql = callTemplateFn("winbons.department.getBeManagerUserIdsByManagerId",contextDTO,{userId:contextDTO.userId},true);
+					var result = sqlFn(contextDTO,"list",sql);
+					if(!isEmpty(result)){
+						for(res in result){
+							queryOwnerIds = queryOwnerIds + "," + res.user_id;
+						}
+					}
+				}else{
+					queryOwnerIds = callTemplateFn("winbons.department.getManagerUserIdByAcl",contextDTO,{userId:contextDTO.userId,aclName:"Customer:query"},true);
+				}
+			%>
+				AND acl.secure_id in ${inParse(strutil.split(queryOwnerIds,","))} group by acl.cust_id
+			<%	
+			}
+			%>
+			
+			<%
+			break;
+		}
+		%>
+		
+		
+	]]>
+	</sql>
+
+	
+	<sql id="checkOwnerCustomerNumber">
+	<![CDATA[
+	  <%
+	  	 var result = sqlFn(contextDTO,"one","select dbid,secure_id,max_num,calltime from t_crm_cust_owner_acl where dbid = ? and secure_id = ?",contextDTO.dbId,userId);
+	  	  if(!isEmpty(result) && !isEmpty(result.max_num)){ 
+	  	  		var result2 = sqlFn(contextDTO,"one","select count(1) as count from t_crm_customer where dbid = ? and owner_id = ? and c_status = 5010",contextDTO.dbId,userId);
+	  	  		var i = 0;
+	  	  		if(!isEmpty(result)){
+	  	  			i = 1;
+	  	  		}
+	  	  		print(result.max_num - result2.count + i);
+	  	  }else{
+	  	  	  	print(10000);
+	  	  }
+
+	  %> 
+	
+	]]>
+	</sql>
+	
+	<!-- 验证当前是用户是否 -->
+	<sql id="checkPoolAcl">
+	<![CDATA[
+		<%
+			if(contextDTO.admin){
+				print(1);
+			}else{
+				var result = sqlFn(contextDTO,"one","select id from t_crm_cust_public_pool where dbid = ? and  id = ? and created_by = ?",contextDTO.dbId,cust_pool_id,contextDTO.currentOwnerId);
+				 if(isEmpty(result)){ 
+				 	var result2 = sqlFn(contextDTO,"one","select id from t_crm_cust_public_pool_share_acl where dbid = ? and  cust_pool_id = ? and secure_id = ?",contextDTO.dbId,cust_pool_id,contextDTO.currentOwnerId);
+				 	if(isEmpty(result2)){ 
+				 		print(-1);
+				 	}else{
+						print(1);				 	
+				 	}
+				 }else{
+				 	print(1);
+				 }
+			}
+		
+		%>
+	
+	]]>
+	</sql>
+	
+	<!-- 新建客户验证自定义属性 -->
+	<sql id="checkDefinedColumn">
+	<![CDATA[
+		<%
+		var value = "1";
+		var label = "";
+		var result = sqlFn(contextDTO,"list","select column_field_name,is_mandatory,checkRepeat,field_label from t_crm_definition_field where dbid = ? and is_delete = ? and isdisable = ? and table_name = ?",contextDTO.dbId,'N','N','t_crm_customer');
+		if(!isEmpty(result)){ 
+			for(entry in result){
+				if(value == "1"){
+					if(entry.is_mandatory == 'Y' && !isEmpty(entry.column_field_name)){
+						if(isEmpty(data[entry.column_field_name])){
+							value = "-1";
+							label = entry.field_label;
+						}
+					}
+				}
+				if(value == "1"){
+					if(entry.checkRepeat == 'Y' && !isEmpty(entry.column_field_name)){
+						if(!isEmpty(data[entry.column_field_name])){
+							var result2;
+							if(isEmpty(id)){
+								result2 = sqlFn(contextDTO,"one","SELECT u.display_name  from t_crm_customer c left JOIN t_crm_user u ON c.dbid=u.dbid and c.owner_id = u.user_id  where c.dbid = ? and c." + entry.column_field_name + "=?",contextDTO.dbId,data[entry.column_field_name]);
+							}else{
+								result2 = sqlFn(contextDTO,"one","select u.display_name  from t_crm_customer c left JOIN t_crm_user u ON c.dbid=u.dbid and c.owner_id = u.user_id  where c.dbid = ? and c." + entry.column_field_name + "=? and c.id <> ?",contextDTO.dbId,data[entry.column_field_name],id);
+							}
+							if(!isEmpty(result2)){
+								value = "-2";				
+								label = entry.field_label + "," + result2.display_name;
+							}
+						}else{
+						}			
+					}
+				}
+			}
+		}
+		print(value + "," + label);
+		%>
+	
+	]]>
+	</sql>
+	
+		<!-- 新建客户验证自定义属性 -->
+	<sql id="findCustPoolRulesByPoolId">
+	<![CDATA[
+		select ${columns} from t_crm_cust_public_pool_rules where dbid = ${contextDTO.dbId} and pool_id = ${poolId} 
+	]]>
+	</sql>
+	
+	<!-- 验证客户名称是否存在一 -->
+	<sql id="checkCustomerNaneExits">
+	<![CDATA[
+	<%
+	var result = "";
+	if(isEmpty(id)){
+		result = sqlFn(contextDTO,"one","SELECT u.display_name FROM t_crm_customer c left JOIN t_crm_user u ON c.dbid=u.dbid and c.owner_id = u.user_id WHERE c.dbid=? and c.name = ? ",contextDTO.dbId,custName);
+	}else{
+		result = sqlFn(contextDTO,"one","SELECT u.display_name FROM t_crm_customer c left JOIN t_crm_user u ON c.dbid=u.dbid and c.owner_id = u.user_id WHERE c.dbid=? and c.name = ? and c.id <> ?",contextDTO.dbId,custName,id);
+	}
+		if(!isEmpty(result)){ 
+			print(result.display_name);
+		}else{
+			print("");
+		}
+	%>
+	]]>
+	</sql>
+	
+	<!-- 验证客户名称是否存在一 -->
+	<sql id="checkCustomerExits">
+	<![CDATA[
+	<%
+	var result = sqlFn(contextDTO,"one","select count(1) as count from t_crm_customer where dbid = ? and id = ?",contextDTO.dbId,id);
+	print(result.count);
+	%>
+	]]>
+	</sql>
+	
+	<sql id="deleteCustomerValidate">
+	<![CDATA[
+		<%
+		var value = "1";
+		var label = "";
+		var result;
+		if(data.c_status == "5011"){
+			value = "2";
+			label = data.name + "是合作客户不允许删除";
+		}
+		if(value == "1"){
+			result = sqlFn(contextDTO,"one","select count(1) as count from t_crm_sales_opportunity where dbid = ? and cust_id=?",contextDTO.dbId,data.id);
+			if(result.count > 0){
+				value = "2";
+				label = "客户【" + data.name + "】已被商机引用，不允许删除";
+			}
+		}
+		if(value == "1"){
+			result = sqlFn(contextDTO,"one","select count(1) as count from t_crm_contract where dbid = ? and customerid=?",contextDTO.dbId,data.id);
+			if(result.count > 0){
+				value = "2";
+				label = "客户【" + data.name + "】已被合同引用，不允许删除";
+			}
+		}
+		print(value + "," + label);
+		%>
+	]]>
+	</sql>
+	
+	 <sql id="moveCustomerValidate">
+	<![CDATA[
+		<%
+		var label = "";
+		var result;
+		if(contextDTO.currentOwnerId == userId){
+			label = "不能将客户转移给本人!";
+			print(label);
+			return;
+		}
+		
+		var notCooperation = 0;
+		result = sqlFn(contextDTO,"one","select count(1) as count from t_crm_customer where dbid=? and id in " + inParse(custIds,true) + " and c_status = '5010'",contextDTO.dbId);
+		notCooperation = result.count;
+		if(notCooperation > 0){
+			var num = parseInt(callTemplateFn("winbons.customer.checkOwnerCustomerNumber",contextDTO,{userId:userId},true));
+			if (num < 1) {
+				label = "转移的目标用户可负责的客户数已达上限，无法转移";
+				print(label);
+				return;
+			}else if(num < notCooperation){
+				label = "最多可转移" + num + "个未合作客户，请重新选择";
+				print(label);
+				return;
+			}
+		}
+		print(label);
+		%>
+	
+	]]>
+	</sql>
+	
+	<sql id="checkOwner">
+	<![CDATA[
+		<%
+		var result = sqlFn(contextDTO,"one","select id,code,owner_id,name,cust_pool_id from t_crm_customer where dbid=? and id = ?",contextDTO.dbId,custId);
+		if(isEmpty(result)){
+		 	print("0");
+			return;
+		}
+		
+		if(result.cust_pool_id > -1 && result.owner_id == null){
+			print("0");
+			return;
+		}
+		
+		if(onlyOwnerOperate! == true){
+			var ownerId = sqlFn(contextDTO,"one","select secure_id from t_crm_cust_share_acl where cust_id=? and isowner='Y'",contextDTO.dbId,custId);
+			if(!isEmpty(ownerId)){
+				if(contextDTO.currentOwnerId == ownerId){
+					print("0");
+					return;
+				}else{
+					print("1," + result.name!);
+					return;
+				}
+			}
+		}else{
+			var listOwnerIds = sqlFn(contextDTO,"list","select secure_id from t_crm_cust_share_acl where dbid=? and  cust_id=? and (isowner='Y' or ismiddle = 'Y')",contextDTO.dbId,custId);
+			if(!isEmpty(listOwnerIds)){
+				if(array.contain(listOwnerIds,{secure_id:contextDTO.currentOwnerId}) == true){
+					print("0");
+					return;
+				}else{
+					print("1," + result.name!);
+					return;
+				}
+			}else{
+				print("1," + result.name!);
+				return;
+			}
+		
+		}
+		
+		
+		%>
+	]]>
+	</sql>
+	
+	
+	<sql id="checkCustomerHandler">
+	<![CDATA[
+		<%
+			
+			var listOwnerIds = sqlFn(contextDTO,"list","select secure_id from t_crm_cust_share_acl where dbid=? and cust_id=? and  (isowner='Y' or ismiddle = 'Y')",contextDTO.dbId,custId);
+			if(!isEmpty(listOwnerIds)){
+			for(userId in userIds){
+				if(array.contain(listOwnerIds,{secure_id:userId}) == true){
+					print("0");
+					return;
+				}
+			} 
+			}else{
+				print("1");
+				return;
+			}
+					
+		%>
+	]]>
+	</sql>
+	
+</sql-statement>

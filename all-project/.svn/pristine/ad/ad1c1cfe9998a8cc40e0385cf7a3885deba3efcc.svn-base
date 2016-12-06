@@ -1,0 +1,11 @@
+package saas.winbons.data.model.customer;
+
+import saas.winbons.data.model.BaseModel;
+
+public class CustomerPoolRefuseModel extends BaseModel<CustomerPoolRefuseModel> {
+
+	private static final long serialVersionUID = 1L;
+	
+	public static final CustomerPoolRefuseModel dao = new CustomerPoolRefuseModel();
+
+}

@@ -1,0 +1,70 @@
+package saas.winbons.email.job;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.jfinal.kit.PropKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.framework.nosql.FileSystemEngine;
+import saas.framework.nosql.domain.AttachmentObject;
+import saas.winbons.customer.job.CustomerLastDateRepair;
+import saas.winbons.framework.service.ServiceLocator;
+import saas.winbons.framework.tools.ToolFile;
+import saas.winbons.framework.tools.ToolString;
+
+public class EmailExport {
+	
+	protected final static Logger logger = LoggerFactory.getLogger(EmailExport.class);
+	
+	
+	public void repairUpgrade(){
+		
+		String sql = String.format("select t_crm_email_receive_log.*,t_crm_email_info_basic.email_subject from t_crm_email_receive_log "
+				+ " LEFT JOIN t_crm_email_info_basic on t_crm_email_receive_log.dbid = t_crm_email_info_basic.dbid and t_crm_email_receive_log.email_id = t_crm_email_info_basic.email_id "
+				+ " where t_crm_email_receive_log.dbid = %s and t_crm_email_receive_log.user_id = %s ",PropKit.use("other.txt").get("emailExport.dbid"),PropKit.use("other.txt").get("emailExport.userId"));
+		/*String sql = "select * from temp_crm_email_export";*/
+		FileSystemEngine fileSystemService = (FileSystemEngine) ServiceLocator.getService("fileSysEngine");
+		int i = 0;
+		List<Record> find = Db.find(null, sql);
+		String filePath = "/root/export";
+		int count = find.size();
+		for(Record r : find){
+			/*String email_subject = ToolString.toString(r.get("id"));
+			if(!ToolString.isEmptyString(r.get("email_subject"))){
+				email_subject = r.get("email_subject");
+			}
+			Db.use("jdbcUrlSaas").update("insert into temp_crm_email_export(email_subject,data_id) values(?,?)",email_subject, r.get("data_id"));*/
+			
+			AttachmentObject dbFile = fileSystemService.getFileById(AttachmentObject.class, r.get("data_id"));
+			InputStream ins = null;
+			try {
+				logger.warn(i++ + "/" + count);
+				if (null != dbFile) {
+					ins = dbFile.getData();
+					String email_subject = ToolString.toString(r.get("id"));
+					if(!ToolString.isEmptyString(r.get("email_subject"))){
+						//email_subject = r.get("email_subject");
+					}
+					try {
+						ToolFile.writeFile(ins, filePath, email_subject + ".eml", true);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}else{
+					logger.error("文件不存在:" + ToolString.toString(r.get("id")));
+				}
+			} finally {
+				if (null != ins) {
+					ins = null;
+				}
+			}
+		}
+	}
+
+}

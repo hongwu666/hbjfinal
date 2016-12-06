@@ -1,0 +1,42 @@
+package saas.winbons.framework.dto;
+
+
+public class SimpleExeclColumnVO implements java.io.Serializable{
+	
+	private static final long serialVersionUID = 5917170342713625679L;
+	
+	
+	public SimpleExeclColumnVO(){};
+	
+	
+	
+	public SimpleExeclColumnVO(String name) {
+		super();
+		this.name = name;
+	}
+
+
+
+	public SimpleExeclColumnVO(int width, String name) {
+		super();
+		this.width = width;
+		this.name = name;
+	}
+	private int width;
+	private String name;
+	public int getWidth() {
+		return width;
+	}
+	public void setWidth(int width) {
+		this.width = width;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	
+	
+	
+}

@@ -1,0 +1,118 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: Content.java 
+ * @Package saas.crm.dynamic.model 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年7月17日 上午9:12:22 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.model;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.alibaba.fastjson.annotation.JSONField;
+
+/**
+ * @ClassName: Content
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年7月17日 上午9:12:22
+ */
+
+public class Content implements Serializable{
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4088754804898930862L;
+
+	private String content;
+
+	private String topic;
+
+	private File file;
+
+	private List<File> fileList;
+
+	/**
+	 * @return the fileList
+	 */
+
+	public List<File> getFileList() {
+		if (fileList == null || fileList.size() == 0) {
+			if (file != null) {
+				if (fileList == null) {
+					fileList = new ArrayList<File>();
+				}
+				fileList.add(file);
+			}
+		}
+		return fileList;
+	}
+
+	/**
+	 * @param fileList
+	 *            the fileList to set
+	 */
+
+	public void setFileList(List<File> fileList) {
+
+		this.fileList = fileList;
+	}
+
+	public String getTopic() {
+
+		return topic;
+	}
+
+	public void setTopic(String topic) {
+
+		this.topic = topic;
+	}
+
+	public String getContent() {
+
+		return content;
+	}
+
+	public void setContent(String content) {
+
+		this.content = content;
+	}
+
+	public Content(String content) {
+		this.content = content;
+	}
+
+	/**
+	 * @return the file
+	 */
+	@JSONField(serialize = false)
+	public File getFile() {
+
+		return file;
+	}
+
+	public void setFile(File file) {
+
+		this.file = file;
+	}
+
+	public Content(String content, File file) {
+		this.content = content;
+		this.file = file;
+	}
+
+	public Content() {
+
+	}
+}

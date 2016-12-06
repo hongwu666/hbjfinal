@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--  
+	菜单sql
+-->
+<sql-statement namespace="winbins.calendar">
+	
+	<sql id="search">
+	<![CDATA[ 
+		select ${columns},b.name as itemName from 
+		(select ${calendarColumns} from t_crm_calendar_info where dbid = ${contextDTO.dbId}  and valid = 'Y') a 
+		left join (
+		select id,code,name from t_crm_customer where dbid = ${contextDTO.dbId} 
+		) b on a.itemId = b.id 
+		 where 1 = 1 
+			<%
+			commonSql("winbons.common.params",filters!,sorts!);
+			%>
+	]]>
+	</sql>
+	
+	<sql id="searchByMobile">
+	<![CDATA[ 
+		 select startTime as startTimeFm,count(1) as countFm from t_crm_calendar_info a where dbid = ${contextDTO.dbId}  and valid = 'Y'   
+		<%
+			commonSql("winbons.common.params",filters!,sorts!);
+			%> 
+			  GROUP BY FROM_UNIXTIME(startTime/1000,'%Y-%m-%d') 
+	]]>
+	</sql>
+	
+
+</sql-statement>

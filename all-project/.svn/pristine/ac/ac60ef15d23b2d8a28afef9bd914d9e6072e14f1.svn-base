@@ -1,0 +1,34 @@
+package saas.monitor.interceptor;
+
+import saas.monitor.mvc.base.BaseController;
+
+/**
+ * 图片裁剪
+
+ */
+public class ImageController extends BaseController {
+
+	public int type;
+	public String imageName;
+	public String imagePath;
+	
+	public int x1;	// 
+	public int y1;	// 
+	public int x2;	// 
+	public int y2;	// 
+	public int w;	// 
+	public int h;	// 
+	
+	public void index() {
+		String result = ImageService.service.cut(type, imageName, imagePath, x1, y1, w, h);
+		renderText(result);
+	}
+
+	@Override
+	protected Class<? extends BaseController> getLogClass() {
+		return ImageController.class;
+	}
+	
+}
+
+

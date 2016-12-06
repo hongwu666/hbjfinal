@@ -1,0 +1,63 @@
+package saas.framework.cache.redis;
+
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Ehcache;
+import redis.clients.jedis.Jedis;
+import saas.framework.cache.EhCacheVO;
+import saas.framework.cache.ICacheListener;
+import saas.framework.cache.JedisCallback;
+import saas.framework.cache.RedisCmdHelper;
+
+public class RedisCacheListener implements ICacheListener {
+
+	private final RedisCmdHelper redisCmdHelper;
+
+	private CacheManager cacheManager;
+
+	private final static String MESSAGE_CHANNEL = "ALL_CACHE_MESSAGE_CHANNEL";
+
+	public void setCacheManager(CacheManager cacheManager) {
+		this.cacheManager = cacheManager;
+	}
+
+	public RedisCacheListener(RedisCmdHelper redisCmdHelper) {
+		super();
+		this.redisCmdHelper = redisCmdHelper;
+		initListener();
+	}
+
+	public void update(final EhCacheVO ehCacheVO) {
+		redisCmdHelper.executeCallBack(new JedisCallback() {
+			public Object executCmd(Jedis jedis) {
+				String jsonStr = com.alibaba.fastjson.JSON.toJSONString(ehCacheVO);
+				return jedis.publish(MESSAGE_CHANNEL, jsonStr);
+			}
+		});
+	}
+
+	public void initListener() {/*
+		Thread t = new Thread(new Runnable() {
+			public void run() {
+				redisCmdHelper.executeCallBack(new JedisCallback() {
+					public Object executCmd(Jedis jedis) {
+						jedis.subscribe(new JedisPubsubAdapter() {
+							public void onMessage(String channel, String message) {
+								EhCacheVO ehCacheVO = com.alibaba.fastjson.JSON.parseObject(message, EhCacheVO.class);
+								if (ehCacheVO.getUuid().equals(EhCacheVO.UUID)) {
+									return;
+								}
+								Ehcache ehcache = cacheManager.getEhcache(FINAL_CACHE_KEY);
+								if (ehcache != null) {
+									ehcache.remove(ehCacheVO.getKey());
+								}
+							}
+						}, MESSAGE_CHANNEL);
+						return null;
+					}
+				});
+			}
+		}, "cache_listener_thread");
+		t.setDaemon(true);
+		t.start();
+	*/}
+}

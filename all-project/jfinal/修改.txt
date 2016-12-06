@@ -1,0 +1,10 @@
+1:修改了  com.jfinal.plugin.activerecord包
+Db.java
+DbPro.java
+Model.java
+CPI.java
+增加了
+WinbonsSqlAnnotation.java
+
+
+引入了saas-dubbo-api包

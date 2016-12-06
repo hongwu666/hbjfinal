@@ -1,0 +1,125 @@
+package saas.winbons.format;
+
+import java.util.Map;
+
+import com.jfinal.plugin.activerecord.Model;
+
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.data.constant.DataConstant.EnumFieldType;
+import saas.winbons.framework.tools.ToolString;
+
+public class EnumFormatTool {
+
+	private static BooleanFormtCallback booleanFormtCallback = new BooleanFormtCallback();
+	private static DateTimeFormtCallback dateTimeFormtCallback = new DateTimeFormtCallback();
+	private static TimeFormtCallback timeFormtCallback = new TimeFormtCallback();
+	private static DateFormtCallback dateFormtCallback = new DateFormtCallback();
+	private static DoubleFormtCallback doubleFormtCallback = new DoubleFormtCallback();
+	private static StringFormtCallback stringFormtCallback = new StringFormtCallback();
+
+	// 之前开发的版本
+	public static void dealFormat(Class<? extends IEnumFormat> enumFormat, Map<String, Object> map) {
+		IEnumFormat[] enumConstants = enumFormat.getEnumConstants();
+		for (IEnumFormat option : enumConstants) {
+			if (!ToolString.isEmptyString(map.get(option.toString()))) {
+				continue;
+			}
+			switch (option.getCallbackFormatType()) {
+			case DataConstant.EnumFormatCallBack.String:
+				stringFormtCallback.callback(map, option.toString(), option.getColumnName());
+				break;
+			case DataConstant.EnumFormatCallBack.DateTime:
+				dateTimeFormtCallback.callback(map, option.toString(), option.getColumnName());
+				break;
+			case DataConstant.EnumFormatCallBack.Boolean:
+				booleanFormtCallback.callback(map, option.toString(), option.getColumnName());
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	public static void dealFormat2(Class<? extends IEnumFormat> enumFormat, Map<String, Object> map) {
+		IEnumFormat[] enumConstants = enumFormat.getEnumConstants();
+		for (IEnumFormat option : enumConstants) {
+			switch (option.getCallbackFormatType()) {
+			case DataConstant.EnumFormatCallBack.String:
+				stringFormtCallback.callback(map, option.toString(), option.getColumnName());
+				break;
+			case DataConstant.EnumFormatCallBack.DateTime:
+				dateTimeFormtCallback.callback(map, option.toString(), option.getColumnName());
+				break;
+			case DataConstant.EnumFormatCallBack.Boolean:
+				booleanFormtCallback.callback(map, option.toString(), option.getColumnName());
+				break;
+			case DataConstant.EnumFormatCallBack.Date:
+				dateFormtCallback.callback(map, option.toString(), option.getColumnName());
+				break;
+			case DataConstant.EnumFormatCallBack.Double:
+				doubleFormtCallback.callback(map, option.toString(), option.getColumnName());
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	public static void dealNewFormat(Map<String, Object> map, String columnName, String mappingName, String type) {
+		try {
+			if (type.equals(EnumFieldType.DateTime)) {
+				dateTimeFormtCallback.callback(map, mappingName.toString(), columnName);
+			} else if (type.equals(EnumFieldType.Date)) {
+				dateFormtCallback.callback(map, mappingName.toString(), columnName);
+			} else if (type.equals(EnumFieldType.Time)) {
+				timeFormtCallback.callback(map, mappingName.toString(), columnName);
+			} else if (type.equals(EnumFieldType.Boolean)) {
+				booleanFormtCallback.callback(map, mappingName.toString(), columnName);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	public static void buildModel(Class<? extends IEnumFormat> enumFormat, Model model, String key, Object value) {
+		IEnumFormat[] enumConstants = enumFormat.getEnumConstants();
+		for (IEnumFormat option : enumConstants) {
+			if (option.toString().equals(key)) {
+				model.set(option.getColumnName(), value);
+				break;
+			}
+		}
+	}
+
+	public static void buildModel(Class<? extends IEnumFormat> enumFormat, Model model, Map<String, Object> map) {
+		IEnumFormat[] enumConstants = enumFormat.getEnumConstants();
+		boolean contains = false;
+		for (Map.Entry<String, Object> entry : map.entrySet()) {
+			for (IEnumFormat option : enumConstants) {
+				if (entry.getKey().equals(option.toString())) {
+					switch (option.getCallbackFormatType()) {
+					case DataConstant.EnumFormatCallBack.String:
+						stringFormtCallback.build(model, option.getColumnName(), map.get(entry.getKey()));
+						break;
+					case DataConstant.EnumFormatCallBack.DateTime:
+						dateTimeFormtCallback.build(model, option.getColumnName(), map.get(entry.getKey()));
+						break;
+					case DataConstant.EnumFormatCallBack.Boolean:
+						booleanFormtCallback.build(model, option.getColumnName(), map.get(entry.getKey()));
+						break;
+					default:
+						break;
+					}
+					contains = true;
+					break;
+				}
+			}
+			if (!contains) {
+				model.set(entry.getKey(), map.get(entry.getKey()));
+			}
+			contains = false;
+		}
+	}
+
+}

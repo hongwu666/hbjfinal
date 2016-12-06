@@ -1,0 +1,104 @@
+package saas.monitor.beetl.func;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.beetl.core.Context;
+import org.beetl.core.Function;
+
+import saas.monitor.criteria.FilterVO;
+import saas.monitor.criteria.SortVO;
+import saas.monitor.tools.ToolSqlXml;
+
+public class CommonSql implements Function {
+
+	@Override
+	public Object call(Object[] paras, Context ctx) {
+		Object o = paras[0];
+		if (o != null) {
+			try {
+				Object map = paras[1];
+				Object includeName = null;
+				if(paras.length >= 4){
+					includeName = paras[3];
+				}
+
+				String sql = "";
+				Map<String, Object> param = new HashMap<String, Object>();
+				
+				if(null != map){
+					if(null != includeName){
+						String includeNameString = includeName.toString();
+						List<FilterVO> tempFitler = new ArrayList<FilterVO>();
+						if(includeNameString.startsWith("!")){
+							String substring = includeNameString.substring(1);
+							List<FilterVO> fitler = (List<FilterVO>)map;
+							for(FilterVO FilterVO : fitler){
+								if(!FilterVO.getProperty().startsWith(substring)){
+									tempFitler.add(FilterVO);
+								}
+							}
+						}else{
+							String substring = includeNameString.toString();
+							List<FilterVO> fitler = (List<FilterVO>)map;
+							for(FilterVO FilterVO : fitler){
+								if(FilterVO.getProperty().startsWith(substring)){
+									tempFitler.add(FilterVO);
+								}
+							}
+						}
+						param.put("filters", tempFitler);
+					}else{
+						param.put("filters", map);
+					}
+				}
+				if(paras.length > 2){
+					Object sorts = paras[2];
+					if(null != sorts){
+						if(null != includeName){
+
+							String includeNameString = includeName.toString();
+							List<SortVO> tempFitler = new ArrayList<SortVO>();
+							if(includeNameString.startsWith("!")){
+								String substring = includeNameString.substring(1);
+								List<SortVO> fitler = (List<SortVO>)sorts;
+								for(SortVO FilterVO : fitler){
+									if(!FilterVO.getProperty().startsWith(substring)){
+										tempFitler.add(FilterVO);
+									}
+								}
+							}else{
+								String substring = includeNameString.substring(1);
+								List<SortVO> fitler = (List<SortVO>)sorts;
+								for(SortVO FilterVO : fitler){
+									if(FilterVO.getProperty().startsWith(substring)){
+										tempFitler.add(FilterVO);
+									}
+								}
+							}
+							param.put("filters", tempFitler);
+						
+						}else{
+							param.put("sorts", sorts);
+						}
+
+						
+					}
+				}
+				if(param.size() > 0){
+					sql = ToolSqlXml.getSql(o.toString(),param);
+				}else{
+					sql = ToolSqlXml.getSql(o.toString());
+				}
+				ctx.byteWriter.writeString(sql);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return "";
+	}
+
+}

@@ -1,0 +1,9 @@
+package saas.winbons.data.model.report;
+
+import saas.winbons.data.model.BaseModel;
+
+public class ReportFormFilter extends BaseModel<ReportFormFilter> {
+
+	private static final long serialVersionUID = 2254716114806723675L;
+
+}

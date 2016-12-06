@@ -1,0 +1,14 @@
+package saas.winbons.enumtype;
+
+/**
+ * @ClassName: JmesaMapEnum
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author Mac.Lam
+ * @date Nov 23, 2010 8:16:24 PM
+ */
+
+public interface JmesaMapEnum{
+
+	String getMessageKey();
+}
+

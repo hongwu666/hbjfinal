@@ -1,0 +1,177 @@
+package saas.winbons.run;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+
+import saas.crm.dynamic.ItemTypeValueEnum;
+import saas.crm.dynamic.model.StreamDynamic;
+import saas.winbons.data.model.customer.Customer;
+import saas.winbons.data.model.customer.CustomerDynamicEvent;
+import saas.winbons.data.model.customer.CustomerLoactionEvent;
+import saas.winbons.dubbo.api.ApiService;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.api.SortDTO;
+import saas.winbons.dynamic.ItemTypeEnum;
+import saas.winbons.framework.nosql.CustomMongoTemplate;
+import saas.winbons.framework.service.ServiceLocator;
+import saas.winbons.framework.tools.ToolEvent;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolSqlXml;
+import saas.winbons.jfinal.JfinalCoreInit;
+import saas.winbons.provider.CrmRightServiceImpl;
+
+public class StartUp {
+	
+	private static volatile boolean running = true;
+	
+	private static ContextDTO contextDTO = new ContextDTO();
+	
+	public static void main(String[] args) throws IOException, InterruptedException {
+		ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring/*.xml");
+		ServiceLocator.setApplicationContext(applicationContext);
+		applicationContext.start();
+		new JfinalCoreInit();
+		contextDTO.setDbId(12053364L);
+		contextDTO.setUserId(100000099203L);
+		contextDTO.setAdmin(false);
+		contextDTO.setCurrentOwnerId(100000099203L);
+		contextDTO.setMobileRequest(false);
+		contextDTO.setServiceType(7);
+		
+		
+		//ToolEvent.multicastEvent(new CustomerDynamicEvent(""));
+		//mongdbTest();
+		//demo("winbons.customer.lastContactCustomer");
+		//getManagerUserIdByAcl();
+		//getCustomerExistsSqlByType();
+		//newListView();
+		testAcl();
+		//newCreateSearchView();
+		//newMove();
+		//Reflect call = Reflect.on("org.apache.commons.lang3.StringUtils").call("join",new String[]{"aa","vv","dd"},",");
+		//System.out.println(call.get());
+		//ReflectFn reflectFn = new ReflectFn();
+		//System.out.println(reflectFn.call(new Object[]{"org.apache.commons.lang3.StringUtils","join",new String[]{"aa","vv","dd"},","},null));
+		
+		
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				synchronized (StartUp.class) {
+					running = false;
+					StartUp.class.notify();
+				}
+			}
+		});
+		synchronized (StartUp.class) {
+			while (running) {
+				try {
+					StartUp.class.wait();
+				} catch (Throwable e) {
+				}
+			}
+		}
+	}
+	
+	private static void newListView(){
+		
+		
+		ApiService service = (ApiService)ServiceLocator.getService("customerService");
+		RequestDTO requestDto = new RequestDTO(contextDTO,"newListView");
+		requestDto.put("selectType", 0);
+		requestDto.put("queryOwnerIds", "");
+		requestDto.put("tagId", "");
+		requestDto.put("poolId", "");
+		requestDto.put("notContact", 7);
+		requestDto.putFitler(new FilterDTO("contact.name", "aaa", "like"));
+		requestDto.putFitler(new FilterDTO("name", "aaa", "like"));
+		requestDto.putFitler(new FilterDTO("fax", "aaa", "like"));
+		System.out.println(ToolGson.GsonString(requestDto));
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+	
+	private static void newMove(){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contextDTO", contextDTO);
+		map.put("userId", 100000088418L);
+		map.put("custId", 120584508008L);
+		map.put("custIds", new Long[]{120584508008L,120584508008L});
+		System.out.println(ToolSqlXml.getSql("winbons.customer.moveCustomerValidate",map));
+	}
+	
+	private static void newCreateSearchView(){
+		ApiService service = (ApiService)ServiceLocator.getService("customerService");
+		RequestDTO requestDto = new RequestDTO(contextDTO,"newCreateSearchView");
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+	
+	private static void reflectFn(){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contextDTO", contextDTO);
+		map.put("userId", 100000088418L);
+		System.out.println(ToolSqlXml.getSql("winbons.department.getManagerUnitRight",map));
+	}
+	
+	private static void getCustomerExistsSqlByType(){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contextDTO", contextDTO);
+		map.put("userId", 100000044882L);
+		map.put("selectType", 0);
+		map.put("queryOwnerIds", "");
+		
+		System.out.println(ToolSqlXml.getSql("winbons.customer.getCustomerExistsSqlByType",map));
+	}
+	
+	private static void searchCustomer(){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contextDTO", contextDTO);
+		Map<String, Object> data = new HashMap<String,Object>();
+		data.put("selectType", 0);
+		data.put("queryOwnerIds", "");
+		map.put("data", data);
+		map.put("filters", new ArrayList<FilterDTO>());
+		map.put("sorts", new ArrayList<SortDTO>());
+		System.out.println(ToolSqlXml.getSql("winbons.customer.searchCustomer",map));
+	}
+	
+	private static void getManagerUserIdByAcl(){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contextDTO", contextDTO);
+		map.put("userId",contextDTO.getUserId());
+		System.out.println(ToolSqlXml.getSql("winbons.department.getManagerUserIdByAcl",map));
+	}
+	
+	private static void demo(String key){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contextDTO", contextDTO);
+		map.put("userId",contextDTO.getUserId());
+		map.put("notContact",7);
+		
+		System.out.println(ToolSqlXml.getSql(key,map));
+	}
+	
+	
+	private static void testAcl(){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contextDTO", contextDTO);
+		map.put("userId", 100000099203L);
+		
+		Map<String, Boolean> privilegeMap = CrmRightServiceImpl.service.getPrivilegeMap(contextDTO, 100000099203L, "reportManager:customer","reportManager:opportunity","reportManager:abcd");
+		System.out.println(ToolGson.GsonString(privilegeMap));
+		
+	}
+
+}

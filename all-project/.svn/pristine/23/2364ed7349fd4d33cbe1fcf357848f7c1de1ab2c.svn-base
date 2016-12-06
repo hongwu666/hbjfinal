@@ -1,0 +1,113 @@
+package saas.winbons.market.contant;
+
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.enumtype.BaseEnum;
+import saas.winbons.format.IEnumFormat;
+
+public enum LeadsColumnConvertor implements BaseEnum<String>,IEnumFormat {
+	compName("comp_name",DataConstant.EnumFormatCallBack.String),
+	ownerId("owner_id",DataConstant.EnumFormatCallBack.String),
+	name("name",DataConstant.EnumFormatCallBack.String),
+	compTel("comp_tel",DataConstant.EnumFormatCallBack.String),
+	mobile("mobile",DataConstant.EnumFormatCallBack.String),
+	compFax("comp_fax",DataConstant.EnumFormatCallBack.String),
+	status("status",DataConstant.EnumFormatCallBack.String),
+	source("source",DataConstant.EnumFormatCallBack.String),
+	dept("dept",DataConstant.EnumFormatCallBack.String),
+	gender("gender",DataConstant.EnumFormatCallBack.String),
+	job("job",DataConstant.EnumFormatCallBack.String),
+	country("country",DataConstant.EnumFormatCallBack.String),
+	province("province",DataConstant.EnumFormatCallBack.String),
+	city("city",DataConstant.EnumFormatCallBack.String),
+	address("address",DataConstant.EnumFormatCallBack.String),
+	tel("tel",DataConstant.EnumFormatCallBack.String),
+	website("website",DataConstant.EnumFormatCallBack.String),
+	weibo("weibo",DataConstant.EnumFormatCallBack.String),
+	wechat("wechat",DataConstant.EnumFormatCallBack.String),
+	zip("zip",DataConstant.EnumFormatCallBack.String),
+	email("email",DataConstant.EnumFormatCallBack.String),
+	qq("qq",DataConstant.EnumFormatCallBack.String),
+	tag("tag",DataConstant.EnumFormatCallBack.String),
+	weixin("weixin",DataConstant.EnumFormatCallBack.String),
+	createdDate("created_date",DataConstant.EnumFormatCallBack.DateTime),
+	createdBy("created_by",DataConstant.EnumFormatCallBack.String),
+	updatedDate("updated_date",DataConstant.EnumFormatCallBack.DateTime),
+	updatedBy("updated_by",DataConstant.EnumFormatCallBack.String);
+	/*textField01("text_field01"),
+	textField02("text_field02"),
+	textField03("text_field03"),
+	textField04("text_field04"),
+	textField05("text_field05"),
+	textField06("text_field06"),
+	textField07("text_field07"),
+	textField08("text_field08"),
+	textField09("text_field09"),
+	textField10("text_field10"),
+	textField11("text_field11"),
+	textField12("text_field12"),
+	textField13("text_field13"),
+	textField14("text_field14"),
+	textField15("text_field15"),
+	textField16("text_field16"),
+	textField17("text_field17"),
+	textField18("text_field18"),
+	textField19("text_field19"),
+	textField20("text_field20"),
+	textField21("text_field21"),
+	textField22("text_field22"),
+	textField23("text_field23"),
+	textField24("text_field24"),
+	textField25("text_field25"),
+	textField26("text_field26"),
+	textField27("text_field27"),
+	textField28("text_field28"),
+	textField29("text_field29"),
+	textField30("text_field30"),
+	numField01("num_field01"),
+	numField02("num_field02"),
+	numField03("num_field03"),
+	numField04("num_field04"),
+	numField05("num_field05"),
+	numField06("num_field06"),
+	numField07("num_field07"),
+	numField08("num_field08"),
+	numField09("num_field09"),
+	numField10("num_field10"),
+	dateField01("date_field01"),
+	dateField02("date_field02"),
+	dateField03("date_field03"),
+	dateField04("date_field04"),
+	dateField05("date_field05"),
+	dateField06("date_field06"),
+	dateField07("date_field07"),
+	dateField08("date_field08"),
+	dateField09("date_field09"),
+	dateField10("date_field10")
+	;*/
+	
+	
+	
+	private LeadsColumnConvertor(String dbValue,int formatType){
+		this.formatType = formatType;
+		this.dbValue = dbValue;
+	}
+	
+	private String dbValue;
+	private int formatType;
+
+	@Override
+	public String getDbValue() {
+		return dbValue;
+	}
+
+	@Override
+	public String getColumnName() {
+		return dbValue;
+	}
+
+	@Override
+	public int getCallbackFormatType() {
+		return formatType;
+	}
+	
+}

@@ -1,0 +1,55 @@
+package saas.winbons.data.model.defined;
+
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.format.IEnumFormat;
+
+
+public enum DefinedFeildModelConvert implements saas.winbons.enumtype.BaseEnum<String>,IEnumFormat {
+	
+	checkRepeat("checkRepeat",DataConstant.EnumFormatCallBack.Boolean),
+	is_number("is_number",DataConstant.EnumFormatCallBack.Boolean),
+	is_filter("is_filter",DataConstant.EnumFormatCallBack.Boolean),
+	isdisable("isdisable",DataConstant.EnumFormatCallBack.Boolean),
+	is_deleteable("is_deleteable",DataConstant.EnumFormatCallBack.Boolean),
+	is_updateable("is_updateable",DataConstant.EnumFormatCallBack.Boolean),
+	is_define("is_define",DataConstant.EnumFormatCallBack.Boolean),
+	is_common("is_common",DataConstant.EnumFormatCallBack.Boolean),
+	is_delete("is_delete",DataConstant.EnumFormatCallBack.Boolean),
+	is_unique("is_unique",DataConstant.EnumFormatCallBack.Boolean),
+	is_mandatory("is_mandatory",DataConstant.EnumFormatCallBack.Boolean),
+	has_default_value("has_default_value",DataConstant.EnumFormatCallBack.Boolean)
+	;
+	private int type;
+	private String dbValue;
+	
+	private DefinedFeildModelConvert(String dbValue,int type){
+		this.dbValue = dbValue;
+		this.type = type;
+		
+	}
+	
+	
+	
+	@Override
+	public String getDbValue() {
+		return dbValue;
+	}
+
+
+
+	@Override
+	public String getColumnName() {
+		return dbValue;
+	}
+
+
+
+	@Override
+	public int getCallbackFormatType() {
+		return type;
+	}
+	
+	
+	
+
+}

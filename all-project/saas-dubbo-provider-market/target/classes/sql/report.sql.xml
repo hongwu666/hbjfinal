@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--  
+	报表相关sql
+-->
+<sql-statement namespace="winbons.report">
+
+	<sql id="searchReportHeads">
+	<![CDATA[
+		select ${columns}
+	]]>
+	</sql>
+	
+	<sql id="searchReport">
+		<![CDATA[
+			from t_crm_report_form a  where 1=1 
+			<% 
+			commonSql("winbons.common.params",filters!,sorts!);
+			%>	 
+	]]>
+	</sql>
+	
+	<sql id="searchCustomer">
+	<![CDATA[
+		from t_crm_customer t101
+		LEFT JOIN t_crm_user t101User ON t101.owner_id = t101User.user_id AND t101.dbid = t101User.dbid 
+		where t101.dbId = ${contextDTO.dbId}  AND t101.owner_id IS NOT NULL 
+		<% data = setFn(data,"t101","tableAliases"); %>
+		and ${callTemplateFn("winbons.customer.getCustomerExistsSqlByType2",contextDTO,data)}
+		<% 
+			commonSql("winbons.common.params",filters!,sorts!);
+		%>	
+	]]>
+	</sql>
+	
+	
+	
+		<sql id="searchCustomerLinker">
+	<![CDATA[
+	    from t_crm_cust_contact t102
+		  left join  t_crm_customer t101  on t101.dbid = t102.dbid and t101.id = t102.cust_id 
+		  LEFT JOIN t_crm_user t101User ON t101.owner_id = t101User.user_id AND t101.dbid = t101User.dbid 
+		  LEFT JOIN t_crm_user t102User ON t102.ownerId = t102User.user_id AND t102.dbid = t102User.dbid  
+		where t102.dbid = ${contextDTO.dbId}  AND t101.owner_id IS NOT NULL 
+		<% data = setFn(data,"t101","tableAliases"); %>
+		and ${callTemplateFn("winbons.customer.getCustomerExistsSqlByType2",contextDTO,data)}
+		<% 
+			commonSql("winbons.common.params",filters!,sorts!);
+		%>	
+	]]>
+	</sql>
+	
+	
+	
+
+	<sql id="getReportInfo">
+		<![CDATA[ 
+		  from t_crm_report_form  where 1=1
+		<% 
+		commonSql("winbons.common.params",filters!,sorts!);
+		%>
+    	]]>
+	</sql>
+	
+	
+	
+	<sql id="getReportFields">
+		<![CDATA[ 
+		   from
+		t_crm_report_form_field t1
+		left JOIN t_crm_definition_field t2 ON t1.defined_id = t2.id
+		AND t1.dbid = t2.dbid
+		WHERE t1.dbid = ${contextDTO.dbId}
+		<% 
+		commonSql("winbons.common.params",filters!,sorts!);
+		%>
+    	]]>
+	</sql>
+	
+	<sql id="getReportFilters">
+		<![CDATA[ 
+		   from
+		t_crm_report_form_filter t1
+		left JOIN t_crm_definition_field t2 ON t1.defined_id = t2.id
+		AND t1.dbid = t2.dbid
+		WHERE t1.dbid = ${contextDTO.dbId}
+		<% 
+		commonSql("winbons.common.params",filters!,sorts!);
+		%>
+    	]]>
+	</sql>
+	
+	
+	<sql id="deleteFieldsByFormId">
+		<![CDATA[ 
+		delete from t_crm_report_form_field where form_id=${id} and dbId = ${contextDTO.dbId} 
+    	]]>
+	</sql>
+	
+	<sql id="deleteFiltersByFormId">
+		<![CDATA[ 
+		delete from t_crm_report_form_filter where form_id=${id} and dbId = ${contextDTO.dbId} 
+    	]]>
+	</sql>
+	
+	<sql id="setFieldWidth">
+		<![CDATA[ 
+		UPDATE t_crm_report_form_field SET width=${width} WHERE dbid = ${contextDTO.dbId} AND id=${id}
+    	]]>
+	</sql>
+</sql-statement>

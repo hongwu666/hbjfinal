@@ -1,0 +1,126 @@
+/** 
+ * Copyright (C) 2013 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: EhCacheImpl.java 
+ * @Package saas.cache.impl 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author yxx 
+ * @date 2014年2月24日 下午4:40:24 
+ * @version 1.0 
+ */
+
+package saas.framework.cache.impl;
+
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import net.sf.ehcache.Ehcache;
+import net.sf.ehcache.Element;
+import saas.framework.cache.CacheWithLoader;
+import saas.framework.cache.DataLoader;
+import saas.framework.cache.EhcacheClient;
+
+/**
+ * @ClassName: EhCacheImpl
+ * @Description: 高速缓存
+ * @author yxx
+ * @date 2014年2月24日 下午4:40:24
+ */
+public class EhCacheImpl<K, V> extends CacheWithLoader<K, V> {
+	
+	private static EhcacheClient ehcacheClient = EhcacheClient.getInstance();
+	
+	/**
+	 * 
+	 * 
+	 * @param cacheLoader
+	 */
+	private Lock lock = new ReentrantLock();
+
+	private Lock cacheLock = new ReentrantLock();
+
+	private Ehcache ehcache;
+
+	public EhCacheImpl(String cacheName) {
+		this(null, cacheName);
+	}
+
+	public EhCacheImpl(DataLoader<K, V> cacheLoader, String cacheName) {
+		super(cacheLoader, cacheName);
+	}
+
+	private Ehcache getCache() {
+		if (ehcache != null) {
+			return ehcache;
+		}
+		try {
+			cacheLock.lock();
+			if (ehcache == null) {
+				ehcache = ehcacheClient.getCache(cacheName);
+			}
+			return ehcache;
+		} finally {
+			cacheLock.unlock();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public V get(K key) {
+		Element element = getCache().get(key);
+		if (element != null)
+			return (V) element.getValue();
+		else {
+			if (cacheLoader != null) {
+				lock.lock();
+				try {
+					element = getCache().get(key);
+					if (element == null) {
+						V value = cacheLoader.load(key);
+						if (value != null) {
+							put(key, value);
+						}
+						return value;
+					} else {
+						return (V) element.getValue();
+					}
+				} finally {
+					lock.unlock();
+				}
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public V put(K key, V value) {
+		getCache().put(new Element(key, value));
+		return get(key);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public V remove(K key) {
+		Element element = getCache().get(key);
+		if (element != null) {
+			getCache().remove(key);
+			return (V) element.getValue();
+		}
+		return null;
+
+	}
+
+	@Override
+	public int size() {
+		return getCache().getSize();
+	}
+
+	@Override
+	public void clear() {
+		getCache().removeAll();
+	}
+}

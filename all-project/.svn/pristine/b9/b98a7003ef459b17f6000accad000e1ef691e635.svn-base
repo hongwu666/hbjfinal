@@ -1,0 +1,212 @@
+/**
+ * All rights reserved by DigitNexus Technology INC.
+ */
+package saas.winbons.framework.nosql;
+
+import java.util.List;
+
+import org.springframework.data.mongodb.MongoDbFactory;
+import org.springframework.data.mongodb.core.DocumentCallbackHandler;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.convert.MongoConverter;
+import org.springframework.data.mongodb.core.mapreduce.GroupBy;
+import org.springframework.data.mongodb.core.mapreduce.GroupByResults;
+import org.springframework.data.mongodb.core.mapreduce.MapReduceOptions;
+import org.springframework.data.mongodb.core.mapreduce.MapReduceResults;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+
+import saas.winbons.dubbo.api.ContextDTO;
+
+import com.mongodb.WriteResult;
+/**
+ * Custom MongoTemplate with multi-tenant support
+ * 
+ * @author Tivon Li(tkli@digitnexus.com)
+ * @Date 2013-05-14
+ * @since 3.1
+ */
+public class CustomMongoTemplate extends MongoTemplate {
+
+	public CustomMongoTemplate(MongoDbFactory mongoDbFactory, MongoConverter mongoConverter) {
+		super(mongoDbFactory, mongoConverter);
+	}
+
+	public long count(ContextDTO contextDTO,Query query, Class<?> entityClass) {
+		return super.count(decorateQuery(contextDTO,query), entityClass);
+	}
+	
+	public long countWithOutDbid(ContextDTO contextDTO,Query query, Class<?> entityClass) {
+		return super.count(decorateQueryWithOutDbid(contextDTO,query), entityClass);
+	}
+
+	public void executeQuery(ContextDTO contextDTO,Query query, String collectionName, DocumentCallbackHandler dch) {
+		super.executeQuery(decorateQuery(contextDTO,query), collectionName, dch);
+	}
+
+	public <T> List<T> findAll(ContextDTO contextDTO,Class<T> entityClass) {
+		return super.find(getQuery(contextDTO), entityClass);
+	}
+
+	public <T> T findAndModify(ContextDTO contextDTO,Query query, Update update, Class<T> entityClass) {
+		return super.findAndModify(decorateQuery(contextDTO,query), update, entityClass);
+	}
+
+	public <T> T findAndModify(ContextDTO contextDTO,Query query, Update update, FindAndModifyOptions options, Class<T> entityClass) {
+		return super.findAndModify(decorateQuery(contextDTO,query), update, options, entityClass);
+	}
+
+	public <T> T findAndRemove(ContextDTO contextDTO,Query query, Class<T> entityClass) {
+		return super.findAndRemove(decorateQuery(contextDTO,query), entityClass);
+	}
+
+	public <T> List<T> find(ContextDTO contextDTO,Query query, Class<T> entityClass) {
+		return super.find(decorateQuery(contextDTO,query), entityClass);
+	}
+	
+	public <T> List<T> findWithOutDbid(ContextDTO contextDTO,Query query, Class<T> entityClass) {
+		return super.find(decorateQueryWithOutDbid(contextDTO,query), entityClass);
+	}
+
+	public <T> T findOne(ContextDTO contextDTO,Query query, Class<T> entityClass) {
+		return super.findOne(decorateQuery(contextDTO,query), entityClass);
+	}
+
+	public <T> GroupByResults<T> group(ContextDTO contextDTO,Criteria criteria, String inputCollectionName, GroupBy groupBy,
+			Class<T> entityClass) {
+		return super.group(decorateCriteria(contextDTO,criteria), inputCollectionName, groupBy, entityClass);
+	}
+
+	public <T> GroupByResults<T> group(ContextDTO contextDTO,String inputCollectionName, GroupBy groupBy, Class<T> entityClass) {
+		return super.group(getCriteria(contextDTO), inputCollectionName, groupBy, entityClass);
+	}
+
+	public <T> MapReduceResults<T> mapReduce(ContextDTO contextDTO,Query query, String inputCollectionName, String mapFunction,
+			String reduceFunction, Class<T> entityClass) {
+		return super.mapReduce(decorateQuery(contextDTO,query), inputCollectionName, mapFunction, reduceFunction, entityClass);
+	}
+
+	public <T> MapReduceResults<T> mapReduce(ContextDTO contextDTO,Query query, String inputCollectionName, String mapFunction,
+			String reduceFunction, MapReduceOptions mapReduceOptions, Class<T> entityClass) {
+		return super.mapReduce(decorateQuery(contextDTO,query), inputCollectionName, mapFunction, reduceFunction,
+				mapReduceOptions, entityClass);
+	}
+
+	public <T> MapReduceResults<T> mapReduce(ContextDTO contextDTO,String inputCollectionName, String mapFunction, String reduceFunction,
+			Class<T> entityClass) {
+		return super.mapReduce(getQuery(contextDTO), inputCollectionName, mapFunction, reduceFunction, entityClass);
+	}
+
+	public <T> MapReduceResults<T> mapReduce(ContextDTO contextDTO,String inputCollectionName, String mapFunction, String reduceFunction,
+			MapReduceOptions mapReduceOptions, Class<T> entityClass) {
+		return super.mapReduce(getQuery(contextDTO), inputCollectionName, mapFunction, reduceFunction, mapReduceOptions,
+				entityClass);
+	}
+
+	public com.mongodb.WriteResult updateFirst(ContextDTO contextDTO,Query query, Update update, Class<?> entityClass) {
+		return super.updateFirst(decorateQuery(contextDTO,query), update, entityClass);
+	}
+
+	public com.mongodb.WriteResult updateMulti(ContextDTO contextDTO,Query query, Update update, Class<?> entityClass) {
+		return super.updateMulti(decorateQuery(contextDTO,query), update, entityClass);
+	}
+
+	public com.mongodb.WriteResult upsert(ContextDTO contextDTO,Query query, Update update, Class<?> entityClass) {
+		return super.upsert(decorateQuery(contextDTO,query), update, entityClass);
+	}
+
+	protected Query getQuery(ContextDTO contextDTO) {
+		Query query = new Query();
+		return decorateQuery(contextDTO,query);
+	}
+
+	protected Query decorateQuery(ContextDTO contextDTO,Query query) {
+		if (contextDTO.getDbId() != null) {
+			if (query == null) {
+				query = new Query();
+			}
+			if (!query.getQueryObject().containsField("dbid")) {
+				query.addCriteria(Criteria.where("dbid").is(contextDTO.getDbId()));
+			}
+		}
+		return query;
+	}
+
+	protected Query decorateQueryWithOutDbid(ContextDTO contextDTO,Query query) {
+		if (contextDTO.getDbId() != null) {
+			if (query == null) {
+				query = new Query();
+			}
+		}
+		return query;
+	}
+	
+	protected Criteria getCriteria(ContextDTO contextDTO) {
+		Criteria criteria = new Criteria();
+		return decorateCriteria(contextDTO,criteria);
+	}
+
+	protected Criteria decorateCriteria(ContextDTO contextDTO,Criteria criteria) {
+		if (contextDTO.getDbId() != null) {
+			if (!criteria.getCriteriaObject().containsField("dbid")) {
+				criteria.andOperator(Criteria.where("dbid").is(contextDTO.getDbId()));
+			}
+		}
+		return criteria;
+	}
+
+	public WriteResult remove(ContextDTO contextDTO,Query query, Class<?> entityClass) {
+		return super.remove(decorateQuery(contextDTO,query), entityClass);
+	}
+
+	public WriteResult upsert(ContextDTO contextDTO,Query query, Update update, String collectionName) {
+
+		return super.upsert(decorateQuery(contextDTO,query), update, collectionName);
+
+	}
+
+	public WriteResult upsert(ContextDTO contextDTO,Query query, Update update, Class<?> entityClass, String collectionName) {
+		return super.upsert(decorateQuery(contextDTO,query), update, entityClass, collectionName);
+
+	}
+
+	public WriteResult updateFirst(ContextDTO contextDTO,Query query, Update update, String collectionName) {
+
+		return super.updateFirst(decorateQuery(contextDTO,query), update, collectionName);
+
+	}
+
+	public WriteResult updateFirst(ContextDTO contextDTO,Query query, Update update, Class<?> entityClass, String collectionName) {
+
+		return super.updateFirst(decorateQuery(contextDTO,query), update, entityClass, collectionName);
+
+	}
+
+	public WriteResult updateMulti(ContextDTO contextDTO,Query query, Update update, String collectionName) {
+
+		return super.updateMulti(decorateQuery(contextDTO,query), update, collectionName);
+
+	}
+
+	public WriteResult updateMulti(ContextDTO contextDTO,Query query, Update update, Class<?> entityClass, String collectionName) {
+		return super.updateMulti(decorateQuery(contextDTO,query), update, entityClass, collectionName);
+
+	}
+	
+	public long countNoDecorate(Query query, Class<?> entityClass) {
+		return super.count(query, entityClass);
+	}
+	
+	public <T> List<T> findNoDecorate(Query query, Class<T> entityClass) {
+		return super.find(query, entityClass);
+	}
+
+	public void save(ContextDTO contextDTO,Object objectToSave) {
+		super.save(objectToSave);
+	}
+
+	
+	
+}

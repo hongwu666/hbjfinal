@@ -1,0 +1,13 @@
+package saas.framework.cache.redis;
+
+
+public interface ISerializer {
+
+	public byte[] serializeFrom(IRedisCaheItem obj);
+
+	public IRedisCaheItem deserializeInto(byte[] data);
+	
+	public byte[] serializeKey(Object obj);
+	
+	public Object deSerializeKey(byte[] data);
+}

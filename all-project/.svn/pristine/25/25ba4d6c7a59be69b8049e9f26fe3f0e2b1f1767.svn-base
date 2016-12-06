@@ -1,0 +1,230 @@
+package saas.winbons.market.contant;
+/**
+ * 映射线索的mapping字段对应哪个数据库的字段
+ */
+public class LeaderMappingFile {
+
+	public static String getMappingFiled(String name){
+		String column=null;
+		
+		if("compName".equals(name)){
+			column="leads.comp_name";
+		}else if("ownerId".equals(name)){
+			column = "leads.owner_id";
+		}
+		else if("name".equals(name)){
+			column="leads.name";
+		}
+		else if("compTel".equals(name)){
+			column="leads.comp_tel";
+		}
+		else if("mobile".equals(name)){
+			column="leads.mobile";
+		}
+		else if("compFax".equals(name)){
+			column="leads.comp_fax";
+		}
+		else if("status".equals(name)){
+			column="leads.status";
+		}
+		else if("source".equals(name) || "sourceName".equals(name)){
+			column="leads.source";
+		}
+		else if("dept".equals(name)||"deptName".equals(name)){
+			column="leads.dept";
+		}
+		else if("gender".equals(name)){
+			column="leads.gender";
+		}
+		else if("job".equals(name)){
+			column="leads.job";
+		}
+		else if("country".equals(name)){
+			column="leads.country";
+		}
+		else if("province".equals(name)){
+			column="leads.province";
+		}
+		else if("city".equals(name)){
+			column="leads.city";
+		}
+		else if("address".equals(name)){
+			column="leads.address";
+		}
+		else if("tel".equals(name)){
+			column="leads.tel";
+		}
+		else if("website".equals(name)){
+			column="leads.website";
+		}
+		else if("weibo".equals(name)){
+			column="leads.weibo";
+		}
+		else if("wechat".equals(name)){
+			column="leads.wechat";
+		}
+		else if("zip".equals(name)){
+			column="leads.zip";
+		}
+		else if("email".equals(name)){
+			column="leads.email";
+		}
+		else if("qq".equals(name)){
+			column="leads.qq";
+		}
+		else if("tag".equals(name)){
+			column="leads.tag";
+		}
+		else if("weixin".equals(name)){
+			column="leads.weixin";
+		}
+		else if("createdDate".equals(name)){
+			column="leads.created_date";
+		}
+		else if("createdBy".equals(name)){
+			column="leads.created_by";
+		}
+		else if("updatedDate".equals(name)){
+			column="leads.updated_date";
+		}
+		else if("updatedBy".equals(name)){
+			column="leads.updated_by";
+		}else if("statusName".equals(name)){
+			column="leads.status";
+		}
+		//自定义字段
+		else if("textField01".equals(name)){
+			column = "leads.text_field01";
+		}
+		else if("textField02".equals(name)){
+			column = "leads.text_field02";
+		}else if("textField03".equals(name)){
+			column = "leads.text_field03";
+		}else if("textField04".equals(name)){
+			column = "leads.text_field04";
+		}else if("textField05".equals(name)){
+			column = "leads.text_field05";
+		}else if("textField06".equals(name)){
+			column = "leads.text_field06";
+		}else if("textField07".equals(name)){
+			column = "leads.text_field07";
+		}else if("textField08".equals(name)){
+			column = "leads.text_field08";
+		}else if("textField09".equals(name)){
+			column = "leads.text_field09";
+		}else if("textField10".equals(name)){
+			column = "leads.text_field010";
+		}
+		else if("textField11".equals(name)){
+			column = "leads.text_field11";
+		}else if("textField12".equals(name)){
+			column = "leads.text_field12";
+		}else if("textField13".equals(name)){
+			column = "leads.text_field13";
+		}else if("textField14".equals(name)){
+			column = "leads.text_field14";
+		}else if("textField15".equals(name)){
+			column = "leads.text_field15";
+		}else if("textField16".equals(name)){
+			column = "leads.text_field16";
+		}else if("textField17".equals(name)){
+			column = "leads.text_field17";
+		}else if("textField18".equals(name)){
+			column = "leads.text_field18";
+		}else if("textField19".equals(name)){
+			column = "leads.text_field19";
+		}else if("textField20".equals(name)){
+			column = "leads.text_field20";
+		}
+		else if("textField21".equals(name)){
+			column = "leads.text_field21";
+		}
+		else if("textField22".equals(name)){
+			column = "leads.text_field22";
+		}else if("textField23".equals(name)){
+			column = "leads.text_field23";
+		}else if("textField24".equals(name)){
+			column = "leads.text_field24";
+		}else if("textField25".equals(name)){
+			column = "leads.text_field25";
+		}else if("textField26".equals(name)){
+			column = "leads.text_field26";
+		}else if("textField27".equals(name)){
+			column = "leads.text_field27";
+		}else if("textField28".equals(name)){
+			column = "leads.text_field28";
+		}
+		else if("textField29".equals(name)){
+			column = "leads.text_field29";
+		}
+		else if("textField30".equals(name)){
+			column = "leads.text_field30";
+		}
+		else if("numField01".equals(name)){
+			column = "leads.num_field01";
+		}
+		else if("numField02".equals(name)){
+			column = "leads.num_field02";
+		}
+		else if("numField03".equals(name)){
+			column = "leads.num_field03";
+		}
+		else if("numField04".equals(name)){
+			column = "leads.num_field04";
+		}
+		else if("numField05".equals(name)){
+			column = "leads.num_field05";
+		}
+		else if("numField06".equals(name)){
+			column = "leads.num_field06";
+		}
+		else if("numField07".equals(name)){
+			column = "leads.num_field07";
+		}
+		else if("numField08".equals(name)){
+			column = "leads.num_field08";
+		}
+		else if("numField09".equals(name)){
+			column = "leads.num_field09";
+		}
+		else if("numField10".equals(name)){
+			column = "leads.num_field10";
+		}
+		else if("dateField01".equals(name)){
+			column = "leads.date_field01";
+		}
+		else if("dateField02".equals(name)){
+			column = "leads.date_field02";
+		}
+		else if("dateField03".equals(name)){
+			column = "leads.date_field03";
+		}
+		else if("dateField04".equals(name)){
+			column = "leads.date_field04";
+		}
+		else if("dateField05".equals(name)){
+			column = "leads.date_field05";
+		}
+		else if("dateField06".equals(name)){
+			column = "leads.date_field06";
+		}
+		else if("dateField07".equals(name)){
+			column = "leads.date_field07";
+		}
+		else if("dateField08".equals(name)){
+			column = "leads.date_field08";
+		}
+		else if("dateField09".equals(name)){
+			column = "leads.date_field09";
+		}
+		else if("dateField10".equals(name)){
+			column = "leads.date_field10";
+		}
+		
+		else{
+			column="leads."+name;
+		}
+		
+		return column;
+	}
+}

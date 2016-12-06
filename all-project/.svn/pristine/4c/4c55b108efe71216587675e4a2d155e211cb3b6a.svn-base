@@ -1,0 +1,31 @@
+package saas.winbons.framework.tools;
+
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.event.ApplicationEventMulticaster;
+
+import saas.data.api.IPlatFormService;
+import saas.winbons.framework.service.ServiceLocator;
+
+public abstract class ToolSpring {
+	
+	private static ApplicationEventMulticaster applicationEventMulticaster;  
+	
+	public static void multicastEvent(ApplicationEvent event){
+		if(null == applicationEventMulticaster){
+			applicationEventMulticaster = (ApplicationEventMulticaster) ServiceLocator.getService("applicationEventMulticaster");
+		}
+		applicationEventMulticaster.multicastEvent(event);
+	}
+	
+	private static  IPlatFormService platFormService;;
+	
+	
+	public static IPlatFormService getPlatFormService(){
+		if(null == platFormService){
+			platFormService = (IPlatFormService) ServiceLocator.getService("platFormService");
+		}
+		return platFormService;
+	}
+	
+
+}

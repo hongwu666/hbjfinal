@@ -1,0 +1,156 @@
+/**
+ * 
+ */
+package saas.winbons.framework.nosql;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.data.mongodb.core.mapreduce.GroupByResults;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.mongodb.core.query.Update.Position;
+
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.sql.FilterItemList;
+
+/**
+ * 
+ * @ClassName: BaseNosqlDao
+ * @Description: mongodb数据交互dao
+ * @author star.ye
+ * @date 2014年7月10日 下午3:18:47
+ */
+public interface BaseNosqlDao {
+
+	String INC_PRE = "INC";
+
+	String DEC_PRE = "DEC";
+
+	public <T> T findAndUpdateById(ContextDTO contextDTO,String selectKey, Update update, Class<T> entityClass);
+
+	/**
+	 * Gets the entity identified by the id passed
+	 * 
+	 * @param entityClass
+	 *            the type of the object to be fetched
+	 * @param id
+	 *            the id of the entity
+	 * @return the object identified by id, null if no object found
+	 */
+	public <T> T get(Class<T> entityClass, Object id);
+
+	/**
+	 * Gets all the objects from the collection for the entity
+	 * 
+	 * @param entityClass
+	 * @return
+	 */
+	public <T> List<T> getAll(ContextDTO contextDTO,Class<T> entityClass);
+
+	/**
+	 * Saves an object to the nosql store. Populates the passed object with a
+	 * generated id if possible
+	 * 
+	 * @param entity
+	 *            entity to be saved
+	 */
+	public void save(ContextDTO contextDTO,Object entity);
+
+	/**
+	 * Deletes an entity from the nosql data store
+	 * 
+	 * @param entity
+	 *            the entity to be deleted
+	 */
+	public void delete(ContextDTO contextDTO,Object entity);
+
+	/**
+	 * Drops a collection for the entity class passed
+	 * 
+	 * @param entityClass
+	 *            for which the collection has to be dropped
+	 */
+	public <T> void dropCollection(ContextDTO contextDTO,Class<T> entityClass);
+
+	public <T> T findAndDelete(ContextDTO contextDTO,String selectKey, Object selectVal, Class<T> entityClass);
+
+	public <T> void deleteByFilter(ContextDTO contextDTO,FilterItemList filterItemList, Class<T> entityClass);
+
+	public <T> T findAndUpdate(ContextDTO contextDTO,String selectKey, Object selectVal, String updateKey, Object updateValue, Class<T> entityClass);
+
+	public <T> T findAndUpdate(ContextDTO contextDTO,String selectKey, Update update, Class<T> entityClass);
+
+	public <T> void pullArrayByKey(ContextDTO contextDTO,String id, String property, String pullProperty, Object value, Class<T> entityClass);
+
+	public <T> void updateArrayByKey(ContextDTO contextDTO,String id, String property, Object value, Class<T> entityClass);
+
+	public <T> T updateArrayByKey(ContextDTO contextDTO,String id, String property, Object value, Map<String, Object> updateValue, Class<T> entityClass);
+
+	public <T> T pullArrayByKey(ContextDTO contextDTO,String id, String property, Map<String, Object> updateValue, String pullProperty, Object value, Class<T> entityClass);
+
+	/**
+	 * 
+	 * @Title: pullArrayByKey
+	 * @Description: 弹出或则去掉最后一个值
+	 * @param @param id
+	 * @param @param property
+	 * @param @param updateValue
+	 * @param @param pullProperty
+	 * @param @param entityClass
+	 * @param @param position 设定文件
+	 * @return void 返回类型
+	 * @throws
+	 * @date 2014年8月8日 上午11:45:49
+	 */
+	public <T> T pullArrayByKey(ContextDTO contextDTO,String id, String property, Map<String, Object> updateValue, String pullProperty, Class<T> entityClass, Position position);
+
+	/**
+	 * 
+	 * @Title: batchSave
+	 * @Description: 批量保存数据
+	 * @param @param objectsToSave 设定文件
+	 * @return void 返回类型
+	 * @throws
+	 * @date 2014年7月10日 下午3:19:24
+	 */
+	public <T> void batchSave(ContextDTO contextDTO,Collection<T> objectsToSave);
+
+	public <T> List<T> findByQuery(ContextDTO contextDTO,FilterItemList filterItemList, Class<T> entityClass);
+
+	public <T> Long countByQuery(ContextDTO contextDTO,FilterItemList filterItemList, Class<T> entityClass);
+
+	public <T> List<T> findByQuery(ContextDTO contextDTO,Class<T> entityClass, Query query);
+
+	public <T> T findByOne(ContextDTO contextDTO,Class<T> entityClass, FilterItemList filterItemList);
+
+	public <T> void popData(ContextDTO contextDTO,Class<T> entityClass, String key, String propName, Position position);
+
+	/**
+	 * 
+	 * @Title: 更新多个值
+	 * @param @param selectKey
+	 * @param @param selectVal
+	 * @param @param updateValue
+	 * @param @param entityClass 设定文件
+	 * @return void 返回类型
+	 * @throws
+	 * @date 2014年7月18日 下午5:15:34
+	 */
+	public <T> T updateValue(ContextDTO contextDTO,String selectKey, Object selectVal, Map<String, Object> updateValue, Class<T> entityClass);
+
+	public <T> void updateValue(ContextDTO contextDTO,String selectKey, Object selectVal, Map<String, Object> updateValue, Class<T> entityClass, long dbid);
+
+	public <T> List<T> findByQuery(ContextDTO contextDTO,FilterItemList filterItemList, String collectionName, Class<T> entityClass);
+
+	public <T> T getMaxValue(ContextDTO contextDTO,Class<T> entityClass, String property);
+
+	public <T> T getMaxValue(ContextDTO contextDTO,Class<T> entityClass, String property, Long dbid);
+
+	public <T> T updateIncValue(ContextDTO contextDTO,String selectKey, Object selectVal, String propName, Class<T> entityClass, long dbid);
+
+	public <T> void updateMuti(ContextDTO contextDTO,FilterItemList filterItemList, Map<String, Object> upData, Class<T> entityClass);
+
+	public <T> GroupByResults<T> groupByQuery(ContextDTO contextDTO,FilterItemList filterItemList, String inputCollectionName, Class<T> entityClass, String... keys);
+}

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--  
+	菜单sql
+-->
+<sql-statement namespace="winbons.department">
+
+
+	<sql id="getDepartsByCode">
+	<![CDATA[ 
+		SELECT  b.id,b.name,b.code from  t_crm_department b 
+		where b.code like '${code}%' 
+	]]>
+	</sql>
+	
+	<sql id="getManagedDeparts">
+	<![CDATA[ 
+		SELECT  b.id,b.code from t_crm_department_manager a 
+		inner JOIN t_crm_department b on a.department_id = b.id 
+		where a.manager_id=${userId}  order by b.created_date  
+	]]>
+	</sql>
+	
+	<!-- 根据部门id集合筛选出其中管理的根节点部门 -->
+	<sql id="getFirstDepartByDepartIds">
+		<![CDATA[ 
+			select t.id from t_crm_department t where t.id in (${inParse(departIds)}) 
+			and id not in(select distinct b.id from t_crm_department a 
+			inner join t_crm_department b on a.dbid=b.dbid and a.dbid=${contextDTO.dbId} and b.code like concat('%',a.code,'_%') 
+			where a.dbid=${contextDTO.dbId} and a.id in (${inParse(departIds)}) and a.dbid=${contextDTO.dbId}  and a.code not like concat('%',a.code,'_%'))
+		]]>
+	</sql>
+	
+	<sql id="getAllSimpleInfo">
+		<![CDATA[ 
+		select b.id, b.name,b.code,COUNT(a.user_id) as count 
+		FROM (select id,name,code,created_date from t_crm_department where dbid = ${contextDTO.dbId} ) b 
+		LEFT JOIN (select department_id,user_id,is_deleted from t_crm_user where dbid = ${contextDTO.dbId} ) a on b.id =a.department_id 
+		where a.is_deleted <> 'Y' 
+		group by b.id 
+		order by b.created_date 
+    	]]>
+	</sql>
+	
+	
+	<sql id="getDepartUsersByManagerId">
+		<![CDATA[ 
+		<%
+			var sql = callTemplateFn("winbons.department.getManagedDeparts",contextDTO,{userId:userId},true);
+			var departs = sqlFn(contextDTO,"list",sql);
+			var departIds = [];
+			if(!isEmpty(departs)){
+				for(entry in departs){
+					sql = callTemplateFn("winbons.department.getDepartsByCode",contextDTO,{code:entry.code});
+					var dps = sqlFn(contextDTO,"list",sql);
+					if(!isEmpty(dps)){
+						for(dp in dps){
+							
+						}
+					}
+					
+				}
+			}
+			
+		%>
+		
+		]]>
+	</sql>
+	
+	<sql id="getDeparts">
+	<![CDATA[ 
+		select id,parent_id,name from t_crm_department where 1 = 1 
+		<%
+			commonSql("winbons.common.params",filters!,sorts!);
+		%>
+	
+	]]>
+	</sql>
+	
+	<sql id="getDeptPosition">
+	<![CDATA[ 
+		select id,pos_code,pos_name from t_crm_dept_position where 1 = 1 
+		<%
+			commonSql("winbons.common.params",filters!,sorts!);
+		%>
+	
+	]]>
+	</sql>
+	
+	<sql id="getDepartUsers">
+	<![CDATA[ 
+		select distinct user_id from t_crm_user where  1 = 1  
+	]]>
+	</sql>
+	
+	<sql id="getBeManagerUserIdsByManagerId">
+		/*noformat*/select user_id from t_crm_user where dbid=${contextDTO.dbId} and is_deleted = 'N'
+		and department_id in 
+		(select xx.id from (select id,code from t_crm_department where dbid = ${contextDTO.dbId} ) xx inner JOIN 
+				(
+				select d1.id,d1.code from t_crm_department d1
+				INNER JOIN 
+				(select department_id from t_crm_department_manager where dbid = ${contextDTO.dbId} and manager_id = ${userId}) d2
+				on d1.id = d2.department_id and d1.dbid = ${contextDTO.dbId}) dpx 
+				on LEFT(xx.code,LENGTH(dpx.code)) = dpx.code)
+	</sql>
+	
+	
+	<sql id="getManagerUnitRight">
+	<![CDATA[ 
+		<%
+			var listRoleIds = sqlFn(contextDTO,"list","select role_id from t_crm_user_rel_role where  user_id=?",userId);
+			var roleStr = "-10000";
+			if(!isEmpty(listRoleIds)){
+				var roleIds = [];
+				for(entry in listRoleIds){
+					array.add(roleIds,entry.role_id);
+				}
+				roleStr = reflectFn("org.apache.commons.lang3.StringUtils","join",roleIds,",");
+			}
+		%>
+			select CONCAT(b.module,':',b.object) as aclName from 
+			(SELECT c.module,c.object from s_bs_right_new c 
+			LEFT JOIN t_bs_acl_right_new a on a.module = c.module 
+			LEFT JOIN s_bs_module_right_new x on a.module=x.module 
+			LEFT JOIN s_bs_manager_right d on a.module = d.module 
+			where a.dbid=${contextDTO.dbId} and a.secure_id in(${roleStr}) and a.secure_type='G' and x.servicetype &${contextDTO.serviceType}>0 and c.objectaccess>0 and a.objectaccess&c.objectaccess >0 
+			union 
+			SELECT c.module,c.object from s_bs_right_new c 
+			LEFT JOIN t_bs_acl_right_new a on a.module = c.module 
+			LEFT JOIN s_bs_module_right_new x on a.module=x.module 
+			LEFT JOIN s_bs_manager_right d on a.module = d.module 
+			where a.dbid=${contextDTO.dbId} and a.secure_id = ${userId} and a.secure_type='M' and x.servicetype &${contextDTO.serviceType}>0 and c.objectaccess>0 and a.objectaccess&c.objectaccess >0) b
+		]]>
+	</sql>
+	
+	<sql id="getManagerUserIdByAcl">
+	<![CDATA[ 
+		<%
+			var sql = callTemplateFn("winbons.department.getManagerUnitRight",contextDTO,{userId:userId},true);
+			var acls = sqlFn(contextDTO,"list",sql);
+			var existAcl = false;
+			if(!isEmpty(acls)){
+				for(entry in acls){
+					if(entry.aclName == aclName){
+						existAcl = true;
+						break;
+					}
+				}
+			};
+			var queryOwnerIds = userId + "";
+			if(existAcl){
+				sql = callTemplateFn("winbons.department.getBeManagerUserIdsByManagerId",contextDTO,{userId:userId},true);
+				var result = sqlFn(contextDTO,"list",sql);
+				if(!isEmpty(result)){
+					for(res in result){
+						queryOwnerIds = queryOwnerIds + "," + res.user_id;
+					}
+				}
+				
+				
+			}
+			print(queryOwnerIds);
+		%>
+	]]>
+	</sql>
+	
+	
+	<sql id="getUserAcl">
+	<![CDATA[ 
+	<%
+		if(contextDTO.admin){
+		%>
+		select DISTINCT CONCAT(c.module,':',c.object) 
+		from s_bs_module_right_new x 
+		LEFT JOIN s_bs_right_new c on x.module=c.module
+		where x.servicetype &${contextDTO.serviceType}>0
+		and x.objectaccess > 0 
+		order by c.fsort 
+		<%
+	}else{
+		%>
+		
+		SELECT
+		CONCAT(c.module, ':', c.object)
+	FROM
+		t_crm_user_rel_role a
+	LEFT JOIN t_bs_acl_right_new b ON a.dbid = b.dbid
+	AND a.role_id = b.secure_id
+	LEFT JOIN s_bs_module_right_new x ON b.module = x.module
+	LEFT JOIN s_bs_right_new c ON b.module = c.module
+	WHERE
+		a.user_id = ${userId}
+	AND b.secure_type = 'R'
+	AND a.dbid = ${contextDTO.dbId} 
+	AND x.servicetype &${contextDTO.serviceType}> 0
+	AND b.objectaccess & c.objectaccess > 0
+	UNION
+		SELECT
+			CONCAT(c.module, ':', c.object)
+		FROM
+			t_bs_acl_right_new a
+		LEFT JOIN s_bs_module_right_new x ON a.module = x.module
+		LEFT JOIN s_bs_right_new c ON a.module = c.module
+		WHERE
+			a.secure_id = ${userId}
+		AND a.secure_type = 'U'
+		AND a.dbid = ${contextDTO.dbId} 
+		AND x.servicetype &${contextDTO.serviceType}> 0
+		AND a.objectaccess & c.objectaccess > 0
+	<%}%>
+	]]>
+	</sql>
+	
+	
+	
+
+</sql-statement>

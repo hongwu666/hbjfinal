@@ -1,0 +1,81 @@
+package saas.winbons.dubbo.web.dto;
+
+import java.io.Serializable;
+
+public class PageResult implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	private int currentPage = 1;
+
+	private long totalCount;
+
+	private int limit = 20;
+
+	private Object columnModel;
+	
+	private Object items;
+
+	public Object getItems() {
+	
+		return items;
+	}
+
+	public void setItems(Object items) {
+	
+		this.items = items;
+	}
+
+	public PageResult(int currentPage, long totalCount, int limit, Object data) {
+		this.currentPage = currentPage;
+		this.totalCount = totalCount;
+		this.limit = limit;
+		this.items=data;
+	}
+
+	public PageResult(int currentPage, int limit) {
+		this.currentPage = currentPage;
+		this.limit = limit;
+	}
+	
+	public Object getColumnModel() {
+		return columnModel;
+	}
+
+	public void setColumnModel(Object columnModel) {
+		this.columnModel = columnModel;
+	}
+
+	public int getCurrentPage() {
+		return currentPage;
+	}
+
+	public void setCurrentPage(int currentPage) {
+		this.currentPage = currentPage;
+	}
+
+	public long getTotalPages() {
+		if (limit == 0) {
+			limit = 20;
+		}
+		return (totalCount - 1) / limit + 1;
+	}
+
+	public long getTotalCount() {
+		return totalCount;
+	}
+
+	public void setTotalCount(long totalCount) {
+		this.totalCount = totalCount;
+	}
+
+	public int getLimit() {
+		return limit;
+	}
+
+	public void setLimit(int limit) {
+		this.limit = limit;
+	}
+}

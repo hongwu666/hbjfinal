@@ -1,0 +1,43 @@
+package saas.winbons.run;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.beetl.core.BeetlKit;
+
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.framework.tools.ToolFile;
+
+public class TestBeetl {
+
+	public static void main(String[] args) {
+		List<FilterDTO> filters = new ArrayList<FilterDTO>();
+		filters.add(new FilterDTO("aa", "1"));
+		filters.add(new FilterDTO("bb", "","is null"));
+		filters.add(new FilterDTO("cc", "","is not null"));
+		filters.add(new FilterDTO("dd", "2","<>"));
+		filters.add(new FilterDTO("ee", "2",">"));
+		filters.add(new FilterDTO("ff", "2",">="));
+		filters.add(new FilterDTO("gg", "2","<"));
+		filters.add(new FilterDTO("hh", "2","<="));
+		filters.add(new FilterDTO("ii", "2","like"));
+		
+		Map<String, Object> param = new HashMap<String, Object>();
+		param.put("filters", filters);
+		param.put("tableName", "tableNameX");
+		String readFile;
+		try {
+			readFile = ToolFile.readFile(new File("D:\\chromeDownload_4\\aa.txt"));
+			String render = BeetlKit.render(readFile, param);
+			System.out.println(render);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+}

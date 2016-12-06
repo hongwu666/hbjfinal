@@ -1,0 +1,58 @@
+package saas.winbons.data.model.customer;
+
+import java.util.Map;
+
+import org.springframework.context.ApplicationListener;
+import org.springframework.stereotype.Component;
+
+import saas.crm.customer.module.CustomerLocation;
+import saas.crm.customer.module.Location;
+import saas.crm.web.utils.CrmAMapSearchUtils;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.nosql.BaseNosqlDaoImpl;
+import saas.winbons.framework.tools.ToolString;
+
+@Component
+public class CustomerLocationEventListener implements ApplicationListener<CustomerLoactionEvent> {
+
+	@Override
+	public void onApplicationEvent(CustomerLoactionEvent event) {
+		try{
+			Map<String,Object> source = (Map<String,Object>)event.getSource();
+			Map<String,Object> map = (Map<String, Object>) source.get("data");
+			ContextDTO contextDTO = (ContextDTO) source.get("contextDTO");
+			if(!ToolString.isEmptyString(map.get("attr"))){
+				if(!ToolString.isEmptyString(map.get("lat")) && !ToolString.isEmptyString(map.get("lng"))){
+					Location loc = new Location();
+					loc.setLat(Double.parseDouble(map.get("lat").toString()));
+					loc.setLng(Double.parseDouble(map.get("lng").toString()));
+					CustomerLocation cl = new CustomerLocation(Long.parseLong(map.get("id").toString()), Long.parseLong(contextDTO.getDbId().toString()), loc);
+					cl.setCountry(ToolString.toString(map.get("tcountry")));
+					cl.setProvince(ToolString.toString(map.get("tprovince")));
+					cl.setCity(ToolString.toString(map.get("tcity")));
+					cl.setArea(ToolString.toString(map.get("tarea")));
+					cl.setStreet(ToolString.toString(map.get("tstreet")));
+					cl.setAddress(ToolString.toString(map.get("addr")));
+					BaseNosqlDaoImpl.getInstance().save(contextDTO, cl);
+				}else{
+					
+					CustomerLocation cl = CrmAMapSearchUtils.parseCustomerLocationFromAddr(map.get("attr").toString(), ToolString.toString(map.get("tcity")));
+					Customer c = Customer.dao.findById(contextDTO, contextDTO.getDbId(),map.get("id"));
+					if(null != c && null != cl){
+						Location loc = cl.getLoc();
+						if(null != loc){
+							c.set("lat", loc.getLat());
+							c.set("lng", loc.getLng());
+							c.update(contextDTO);
+						}
+					}
+					
+				}
+			}
+			
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+
+}

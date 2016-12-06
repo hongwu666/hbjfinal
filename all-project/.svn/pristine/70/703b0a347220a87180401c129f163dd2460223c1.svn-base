@@ -1,0 +1,9 @@
+package saas.winbons.data.model.defined;
+
+public class DefinedGridColumn extends ColumnDefinedGridColumn<DefinedGridColumn>{
+
+	private static final long serialVersionUID = 5297611053586169064L;
+	
+	public static final DefinedGridColumn dao = new DefinedGridColumn();
+
+}

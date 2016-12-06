@@ -1,0 +1,7 @@
+package saas.winbons.dubbo.api;
+
+public interface ApiService {
+	
+	ResultDTO executeDto(RequestDTO requestDto);
+
+}

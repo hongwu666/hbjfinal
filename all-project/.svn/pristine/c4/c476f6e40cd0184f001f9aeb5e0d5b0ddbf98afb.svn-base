@@ -1,0 +1,1088 @@
+package saas.winbons.framework.tools;
+
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.text.StrBuilder;
+import org.apache.log4j.Logger;
+
+import saas.winbons.framework.utils.EncodeUtils;
+
+import com.google.common.escape.Escaper;
+
+/**
+ * 字符串处理常用方法
+ */
+public abstract class ToolString {
+
+	@SuppressWarnings("unused")
+	private static Logger log = Logger.getLogger(ToolString.class);
+
+	/**
+	 * 常用正则表达式：匹配非负整数（正整数 + 0）
+	 */
+	public final static String regExp_integer_1 = "^\\d+$";
+	
+	/**
+	 * 常用正则表达式：匹配正整数
+	 */
+	public final static String regExp_integer_2 = "^[0-9]*[1-9][0-9]*$";
+	
+	/**
+	 * 常用正则表达式：匹配非正整数（负整数  + 0）
+	 */
+	public final static String regExp_integer_3 = "^((-\\d+) ?(0+))$";
+	
+	/**
+	 * 常用正则表达式：匹配负整数
+	 */
+	public final static String regExp_integer_4 = "^-[0-9]*[1-9][0-9]*$";
+	
+	/**
+	 * 常用正则表达式：匹配整数
+	 */
+	public final static String regExp_integer_5 = "^-?\\d+$";
+
+	/**
+	 * 常用正则表达式：匹配非负浮点数（正浮点数 + 0）
+	 */
+	public final static String regExp_float_1 = "^\\d+(\\.\\d+)?$";
+	
+	/**
+	 * 常用正则表达式：匹配正浮点数
+	 */
+	public final static String regExp_float_2 = "^(([0-9]+\\.[0-9]*[1-9][0-9]*) ?([0-9]*[1-9][0-9]*\\.[0-9]+) ?([0-9]*[1-9][0-9]*))$"; 
+	
+	/**
+	 * 常用正则表达式：匹配非正浮点数（负浮点数 + 0）
+	 */
+	public final static String regExp_float_3 = "^((-\\d+(\\.\\d+)?) ?(0+(\\.0+)?))$";
+	
+	/**
+	 * 常用正则表达式：匹配负浮点数
+	 */
+	public final static String regExp_float_4 = "^(-(([0-9]+\\.[0-9]*[1-9][0-9]*) ?([0-9]*[1-9][0-9]*\\.[0-9]+) ?([0-9]*[1-9][0-9]*)))$";
+	
+	/**
+	 * 常用正则表达式：匹配浮点数
+	 */
+	public final static String regExp_float_5 = "^(-?\\d+)(\\.\\d+)?$";
+
+	/**
+	 * 常用正则表达式：匹配由26个英文字母组成的字符串
+	 */
+	public final static String regExp_letter_1 = "^[A-Za-z]+$";
+	
+	/**
+	 * 常用正则表达式：匹配由26个英文字母的大写组成的字符串
+	 */
+	public final static String regExp_letter_2 = "^[A-Z]+$";
+	
+	/**
+	 * 常用正则表达式：匹配由26个英文字母的小写组成的字符串
+	 */
+	public final static String regExp_letter_3 = "^[a-z]+$";
+	
+	/**
+	 * 常用正则表达式：匹配由数字和26个英文字母组成的字符串
+	 */
+	public final static String regExp_letter_4 = "^[A-Za-z0-9]+$";
+	
+	/**
+	 * 常用正则表达式：匹配由数字、26个英文字母或者下划线组成的字符串
+	 */
+	public final static String regExp_letter_5 = "^\\w+$";
+
+	/**
+	 * 常用正则表达式：匹配email地址
+	 */
+	public final static String regExp_email = "^[\\w-]+(\\.[\\w-]+)*@[\\w-]+(\\.[\\w-]+)+$";
+
+	/**
+	 * 常用正则表达式：匹配url
+	 */
+	public final static String regExp_url_1 = "^[a-zA-z]+://(\\w+(-\\w+)*)(\\.(\\w+(-\\w+)*))*(\\?\\S*)?$";
+	
+	/**
+	 * 常用正则表达式：匹配url
+	 */
+	public final static String regExp_url_2 = "[a-zA-z]+://[^\\s]*";
+
+	/**
+	 * 常用正则表达式：匹配中文字符
+	 */
+	public final static String regExp_chinese_1 = "[\\u4e00-\\u9fa5]";
+	
+	/**
+	 * 常用正则表达式：匹配双字节字符(包括汉字在内)
+	 */
+	public final static String regExp_chinese_2 = "[^\\x00-\\xff]"; 
+
+	/**
+	 * 常用正则表达式：匹配空行
+	 */
+	public final static String regExp_line = "\\n[\\s ? ]*\\r";
+
+	/**
+	 * 常用正则表达式：匹配HTML标记
+	 */
+	public final static String regExp_html_1 = "/ <(.*)>.* <\\/\\1> ? <(.*) \\/>/";
+	
+	/**
+	 * 常用正则表达式：匹配首尾空格
+	 */
+	public final static String regExp_startEndEmpty = "(^\\s*) ?(\\s*$)";
+
+	/**
+	 * 常用正则表达式：匹配帐号是否合法(字母开头，允许5-16字节，允许字母数字下划线)
+	 */
+	public final static String regExp_accountNumber = "^[a-zA-Z][a-zA-Z0-9_]{4,15}$"; 
+
+	/**
+	 * 常用正则表达式：匹配国内电话号码，匹配形式如 0511-4405222 或 021-87888822
+	 */
+	public final static String regExp_telephone = "\\d{3}-\\d{8} ?\\d{4}-\\d{7}";
+
+	/**
+	 * 常用正则表达式：腾讯QQ号, 腾讯QQ号从10000开始
+	 */
+	public final static String regExp_qq = "[1-9][0-9]{4,}";
+
+	/**
+	 * 常用正则表达式：匹配中国邮政编码
+	 */
+	public final static String regExp_postbody = "[1-9]\\d{5}(?!\\d)";
+
+	/**
+	 * 常用正则表达式：匹配身份证, 中国的身份证为15位或18位
+	 */
+	public final static String regExp_idCard = "\\d{15} ?\\d{18}";
+
+	/**
+	 * 常用正则表达式：IP
+	 */
+	public final static String regExp_ip = "\\d+\\.\\d+\\.\\d+\\.\\d+";
+	
+	/**
+	 * 字符编码
+	 */
+	public final static String encoding = "UTF-8";
+	
+	public static final String defaultDelimiter = "[;]";
+	private static String STRING_HTTP_PREFIX = "http://";
+	private static String STRING_HTTPS_PREFIX = "https://";
+	
+	
+	// bt字节参考量
+	public static final long SIZE_BT = 1024L;
+	// KB字节参考量
+	public static final long SIZE_KB = SIZE_BT * 1024L;
+	// MB字节参考量
+	public static final long SIZE_MB = SIZE_KB * 1024L;
+	// GB字节参考量
+	public static final long SIZE_GB = SIZE_MB * 1024L;
+	// TB字节参考量
+	public static final long SIZE_TB = SIZE_GB * 1024L;
+
+	public static final int SCALE = 2;
+	
+	private static Pattern HKMobilePattern = Pattern.compile("^[5,6,9]\\d{7}$");
+	
+	private static Pattern mobilePattern = Pattern.compile("^[1][3,4,5,8][0-9]{9}$");
+	
+	private static Pattern mobileOrPhonePattern=Pattern.compile("1([\\d]{10})|((\\+[0-9]{2,4})?\\(?[0-9]+\\)?-?)?[0-9]{7,8}");
+
+	private static Pattern emailPattern = Pattern.compile("^[\\w-_\\.+]*[\\w-_\\.]\\@([\\w-]+\\.)+[\\w]+[\\w]$");
+	
+	static final Pattern CHINESE_PATTERN = Pattern.compile("[\u4e00-\u9fa5]");
+
+	/**
+	 * 验证字符串是否匹配指定正则表达式
+	 * @param content
+	 * @param regExp
+	 * @return
+	 */
+	public static boolean regExpVali(String content, String regExp){
+		Pattern pattern = Pattern.compile(regExp);
+		Matcher matcher = pattern.matcher(content);
+		return matcher.matches();
+	}
+
+	/**
+	 * double精度调整
+	 * @param doubleValue 需要调整的值123.454
+	 * @param format 目标样式".##"
+	 * @return
+	 */
+	public static String decimalFormat(double doubleValue, String format){
+		DecimalFormat myFormatter = new DecimalFormat(format);  
+		String formatValue = myFormatter.format(doubleValue);
+		return formatValue;
+	}
+	
+	/**
+	 * Url Base64编码
+	 * 
+	 * @param data  待编码数据
+	 * @return String 编码数据
+	 * @throws Exception
+	 */
+	public static String encode(String data) throws Exception {
+		// 执行编码
+		byte[] b = Base64.encodeBase64URLSafe(data.getBytes(encoding));
+		return new String(b, encoding);
+	}
+
+	/**
+	 * Url Base64解码
+	 * 
+	 * @param data
+	 *            待解码数据
+	 * @return String 解码数据
+	 * @throws Exception
+	 */
+	public static String decode(String data) throws Exception {
+		// 执行解码
+		byte[] b = Base64.decodeBase64(data.getBytes(encoding));
+		return new String(b, encoding);
+	}
+
+	/**
+	 * URL编码（utf-8）
+	 * 
+	 * @param source
+	 * @return
+	 */
+	public static String urlEncode(String source) {
+		String result = source;
+		try {
+			result = java.net.URLEncoder.encode(source, encoding);
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		return result;
+	}
+
+	/**
+	 * 根据内容类型判断文件扩展名
+	 * @param contentType 内容类型
+	 * @return
+	 */
+	public static String getFileExt(String contentType) {
+		String fileExt = "";
+		if ("image/jpeg".equals(contentType)){
+			fileExt = ".jpg";
+			
+		} else if ("audio/mpeg".equals(contentType)){
+			fileExt = ".mp3";
+			
+		} else if ("audio/amr".equals(contentType)){
+			fileExt = ".amr";
+			
+		} else if ("video/mp4".equals(contentType)){
+			fileExt = ".mp4";
+			
+		} else if ("video/mpeg4".equals(contentType)){
+			fileExt = ".mp4";
+		}
+		
+		return fileExt;
+	}
+
+	/**
+	 * 获取bean名称
+	 * @param bean
+	 * @return
+	 */
+	public static String beanName(Object bean) {
+		String fullClassName = bean.getClass().getName();
+		String classNameTemp = fullClassName.substring(fullClassName.lastIndexOf(".") + 1, fullClassName.length());
+		return classNameTemp.substring(0, 1) + classNameTemp.substring(1);
+	}
+	
+	public final static Pattern referer_pattern = Pattern.compile("@([^@^\\s^:]{1,})([\\s\\:\\,\\;]{0,1})");//@.+?[\\s:]
+	 
+
+	/**
+	 * 首字母转小写
+	 * @param s
+	 * @return
+	 */
+	public static String toLowerCaseFirstOne(String s) {
+        if(Character.isLowerCase(s.charAt(0))){
+        	return s;
+        } else {
+        	return (new StringBuilder()).append(Character.toLowerCase(s.charAt(0))).append(s.substring(1)).toString();
+        }
+    }
+	
+	/**
+	 * 首字母转大写
+	 * @param s
+	 * @return
+	 */
+    public static String toUpperCaseFirstOne(String s) {
+        if(Character.isUpperCase(s.charAt(0))){
+        	return s;
+        } else {
+        	return (new StringBuilder()).append(Character.toUpperCase(s.charAt(0))).append(s.substring(1)).toString();
+        }
+    }
+    
+    
+   	public final static String EMPTY_STR = "";
+   	
+   	/**
+   	 * 检查字符串是否为<code>null</code>或空字符串<code>""</code>。
+   	 * 
+   	 * <pre>
+   	 * StringUtil.isEmptyString(null)      = true
+   	 * StringUtil.isEmptyString("")        = true
+   	 * StringUtil.isEmptyString(" ")       = true
+   	 * StringUtil.isEmptyString("bob")     = false
+   	 * StringUtil.isEmptyString("  bob  ") = false
+   	 * </pre>
+   	 * 
+   	 * @param str
+   	 *            要检查的字符串
+   	 * 
+   	 * @return 如果为空, 则返回<code>true</code>
+   	 */
+   	public static boolean isEmptyString(Object o) {
+   		String s = toString(o);
+   		if (null == s || s.trim().length() == 0) {
+   			return true;
+   		}
+   		return false;
+   	}
+
+   	public static String toString(Object s) {
+   		if (null == s) {
+   			return EMPTY_STR;
+   		}
+   		return valueOf(s);
+   	}
+   	
+   	public static String valueOf(Object obj) {
+   		return null == obj ? null : obj.toString();
+   	}
+
+   	/**
+   	 * Trims a given String. An empty String will be returned if the given
+   	 * String is null.
+   	 * 
+   	 * @param s
+   	 *            The String to be Trimmed.
+   	 * @return The String trimmed.
+   	 */
+   	public static String trim(String s) {
+   		if (s == null)
+   			return EMPTY_STR;
+   		else
+   			return s.trim();
+   	}
+   	
+   	/**
+	 * Trims a given String and then verifies its size against the specified
+	 * size. If the sizes do not match, null will be returned.
+	 * 
+	 * @param s
+	 *            The String to be trimmed and verified.
+	 * @param size
+	 *            The size for the verification.
+	 * @return The trimmed String or null if the size verification failed.
+	 */
+	public static String trimAndVerifySize(String s, int size) {
+
+		s = trim(s);
+
+		if (s.length() != size)
+			return null;
+		else
+			return s;
+	}
+
+	/**
+	 * Checks if a given String contains only digits.
+	 * 
+	 * @param s
+	 *            A String to be checked.
+	 * @return <PRE>
+	 * true
+	 * </PRE>
+	 * 
+	 *         if the given String contains only digits,
+	 * 
+	 *         <PRE>
+	 * false
+	 * </PRE>
+	 * 
+	 *         otherwise.
+	 */
+	public static boolean isAllDigit(String s) {
+		if (s == null || s.equals(EMPTY_STR))
+			return false;
+		else {
+			for (int i = 0; i < s.length(); i++) {
+				char c = s.charAt(i);
+				if (!Character.isDigit(c))
+					return false;
+			}
+			return true;
+		}
+	}
+
+	/**
+	 * Repeats a given String in the specified number of times, then
+	 * concatenates and returns it.
+	 * 
+	 * @param s
+	 *            A String to be repeated and concatenated.
+	 * @param occurs
+	 *            The number of times of the given String to be repeated.
+	 * @return The concatenated String.
+	 */
+	public static String repeatString(String s, int occurs) {
+		StringBuffer result = new StringBuffer();
+		if (s != null && occurs > 0) {
+			for (int i = 0; i < occurs; i++) {
+				result.append(s);
+			}
+		}
+		return result.toString();
+	}
+
+	/**
+	 * replace all the specify regex do not case UpperCase or LowerCase
+	 * 
+	 * @param text
+	 * @param regex
+	 * @param replacement
+	 * @return
+	 * @throws IllegalAccessException
+	 */
+	public static String replaceAllIgnoreCase(String text, String regex, String replacement)
+			throws IllegalAccessException {
+		if (null == text || null == regex || null == replacement)
+			throw new IllegalAccessException("Null Paramter Not Allow!");
+		text = text.replaceAll("(?i)" + regex, replacement);
+		return text;
+	}
+
+	/**
+	 * 替换字符串，不采用正则表达式，在性能要求高的情况下使用
+	 * 
+	 * @param line
+	 * @param str1
+	 * @param str2
+	 * @return
+	 */
+	public static final String replaceAll(String line, String str1, String str2) {
+		StringBuffer newStr = new StringBuffer();
+		int lastAppendIndex = 0;
+
+		int start = line.indexOf(str1, lastAppendIndex);
+
+		if (start == -1)
+			return line;
+
+		while (start > -1) {
+			newStr.append(line.substring(lastAppendIndex, start));
+			newStr.append(str2);
+			lastAppendIndex = start + str1.length();
+			start = line.indexOf(str1, lastAppendIndex);
+		}
+		newStr.append(line.substring(lastAppendIndex, line.length()));
+
+		return newStr.toString();
+
+	}
+
+	/**
+	 * 分割字符串，不采用正则表达式，在性能要求高的情况下使用
+	 * 
+	 * @param line
+	 * @param separator
+	 * @return
+	 */
+	public static final String[] split(String line, String separator) {
+		int index = 0;
+		List<String> matchList = new ArrayList<String>();
+
+		int start = line.indexOf(separator, index);
+
+		if (start == -1)
+			return new String[] { line.toString() };
+
+		while (start > -1) {
+			String match = line.subSequence(index, start).toString();
+			matchList.add(match);
+			index = start + separator.length();
+			start = line.indexOf(separator, index);
+		}
+
+		matchList.add(line.subSequence(index, line.length()).toString());
+
+		int resultSize = matchList.size();
+
+		while (resultSize > 0 && matchList.get(resultSize - 1).equals(""))
+			resultSize--;
+
+		String[] result = new String[resultSize];
+		return (String[]) matchList.subList(0, resultSize).toArray(result);
+	}
+
+	public static String sub(String value, int maxLength) {
+		if (isEmptyString(value))
+			return "";
+		return StringUtils.substring(value, 0, maxLength);
+	}
+
+	/**
+	 * 总是消除所有的HTML标签的内容，并返回一个子串 过长字符返回省略号
+	 * 
+	 * @param content
+	 * @param maxLength
+	 * @return
+	 */
+	public static String ellipsis(String content, int maxLength) {
+		StringBuffer substring = new StringBuffer();
+		int offset = 0;
+		boolean flag = true;
+		while (offset < content.length()) {
+			char c = content.charAt(offset);
+
+			int length = substring.length();
+			if (length >= maxLength && allowToCut(c)) {
+				substring.append(" ...");
+				break;
+			}
+
+			if (length >= maxLength + 20) {
+				substring.append(" ...");
+				break;
+			}
+
+			if (c == '<')
+				flag = false;
+
+			if (flag)
+				substring.append(c);
+
+			if (c == '>')
+				flag = true;
+
+			offset++;
+		}
+		return substring.toString();
+	}
+
+	private static boolean allowToCut(char c) {
+		if (c <= 57 && c >= 48)
+			return false;
+		if (c <= 90 && c >= 65)
+			return false;
+		if (c <= 122 && c >= 97)
+			return false;
+		return true;
+	}
+
+	/**
+	 * @param length
+	 * @param prefix
+	 * @param s
+	 * @return
+	 */
+	public static String addStringPrefix(int length, String prefix, String s) {
+		int strLen = null == s ? 0 : s.length();
+		int needPrefixNum = length - strLen;
+		StringBuffer result = new StringBuffer();
+		for (int i = 0; i < needPrefixNum; i++) {
+			result.append(prefix);
+		}
+		result.append(s);
+		return result.toString();
+	}
+
+	// 固定长度字符串，不足补空格 src-传入字符串，length-固定字符串长度，padding-填补什么，leadingPad-前补还是后补
+	// true为前补 false为后补
+	public static String fixLength(String src, int length, char padding, boolean leadingPad) {
+		if (src == null) {
+			src = "";
+		}
+		if (length <= src.length()) {
+			return src;
+		}
+		StringBuilder result = new StringBuilder(src);
+		for (int i = src.length(), j = length; i < j; i++) {
+			if (leadingPad) {
+				result.insert(0, padding);
+			} else {
+				result.append(padding);
+			}
+		}
+		return result.toString();
+	}
+
+	public static String displayStdSize(long longSize, int scale) {
+		if (longSize >= 0 && longSize < SIZE_BT) {
+			return longSize + "B";
+		} else if (longSize >= SIZE_BT && longSize < SIZE_KB) {
+			BigDecimal longs = new BigDecimal(Double.valueOf(longSize + "").toString());
+			BigDecimal sizeB = new BigDecimal(Double.valueOf(SIZE_BT + "").toString());
+			String result = longs.divide(sizeB, scale, BigDecimal.ROUND_HALF_UP).toString();
+			return result + "KB";
+		} else if (longSize >= SIZE_KB && longSize < SIZE_MB) {
+			BigDecimal longs = new BigDecimal(Double.valueOf(longSize + "").toString());
+			BigDecimal sizeKB = new BigDecimal(Double.valueOf(SIZE_KB + "").toString());
+			String result = longs.divide(sizeKB, scale, BigDecimal.ROUND_HALF_UP).toString();
+			return result + "MB";
+		} else if (longSize >= SIZE_MB && longSize < SIZE_GB) {
+			BigDecimal longs = new BigDecimal(Double.valueOf(longSize + "").toString());
+			BigDecimal sizeMB = new BigDecimal(Double.valueOf(SIZE_MB + "").toString());
+			String result = longs.divide(sizeMB, scale, BigDecimal.ROUND_HALF_UP).toString();
+			return result + "GB";
+		} else {
+			BigDecimal longs = new BigDecimal(Double.valueOf(longSize + "").toString());
+			BigDecimal sizeGB = new BigDecimal(Double.valueOf(SIZE_GB + "").toString());
+			String result = longs.divide(sizeGB, scale, BigDecimal.ROUND_HALF_UP).toString();
+			return result + "TB";
+		}
+	}
+
+	public static String displayStdSize(long longSize) {
+		return displayStdSize(longSize, SCALE);
+	}
+
+	public static String[] tokenizeToStringArray(final String str) {
+		return tokenizeToStringArray(str, defaultDelimiter);
+	}
+
+	public static String[] tokenizeToStringArray(final String str, final String delimiters) {
+		return str == null ? null : org.springframework.util.StringUtils.tokenizeToStringArray(str, delimiters);
+	}
+
+	public static Object[] removeDuplicatesAndNulls(final Object[] array) {
+		if (array == null) {
+			return null;
+		}
+		final LinkedHashMap<Object, Object> ht = new LinkedHashMap<Object, Object>();
+		for (final Object element : array) {
+			if (element == null) {
+				continue;
+			}
+			ht.put(element, element);
+		}
+
+		final Object[] ret = (Object[]) Array.newInstance(array.getClass().getComponentType(), ht.size());
+		int j = 0;
+
+		final Iterator it = ht.values().iterator();
+		while (it.hasNext()) {
+			ret[j++] = it.next();
+		}
+		return ret;
+	}
+
+	public static Collection removeDuplicatesAndNulls(final Collection coll) {
+		if (coll == null) {
+			return null;
+		}
+		return toList(removeDuplicatesAndNulls(coll.toArray(new Object[coll.size()])));
+	}
+
+	public static List toList(final Object obj) {
+		if (obj == null) {
+			return null;
+		}
+		if (obj.getClass().isArray()) {
+			final List l = new ArrayList();
+			for (final Object o : (Object[]) obj) {
+				l.add(o);
+			}
+			return l;
+		} else if (obj instanceof Collection) {
+			return new ArrayList((Collection) obj);
+		} else if (obj instanceof Enumeration) {
+			return new ArrayList(Collections.list((Enumeration) obj));
+		}
+		return null;
+	}
+
+	public static boolean hasText(final String str) {
+		return org.springframework.util.StringUtils.hasText(str);
+	}
+
+	public static String getExcelColumnLabel(int index) {
+		String rs = "";
+		do {
+			index--;
+			rs = ((char) (index % 26 + (int) 'A')) + rs;
+			index = (int) ((index - index % 26) / 26);
+		} while (index > 0);
+
+		return rs;
+	}
+
+	public static Long toLong(String value) {
+		if (isEmptyString(value))
+			return null;
+		return Long.valueOf(value);
+	}
+
+	/**
+	 * @Title: filterWebsitePrefix
+	 * @Description: 过滤网址前缀(目前支持过滤http://和https://)
+	 * @param @param websiteStr
+	 * @param @return 设定文件
+	 * @return String 返回类型
+	 * @throws
+	 * @date 2013-4-27 上午9:23:12
+	 */
+	public static String filterWebsitePrefix(String websiteStr) {
+		websiteStr = replaceLinebreakToEmptyString(websiteStr);
+		if (StringUtils.containsIgnoreCase(websiteStr, STRING_HTTP_PREFIX)) {
+			String[] siteStr = websiteStr.split(STRING_HTTP_PREFIX);
+			if (siteStr.length > 0) {
+				websiteStr = siteStr[siteStr.length - 1];
+			} else {
+				return EMPTY_STR;
+			}
+		} else if (StringUtils.containsIgnoreCase(websiteStr, STRING_HTTPS_PREFIX)) {
+			String[] siteStr = websiteStr.split(STRING_HTTPS_PREFIX);
+			if (siteStr.length > 0) {
+				websiteStr = siteStr[siteStr.length - 1];
+			} else {
+				return EMPTY_STR;
+			}
+		}
+		return websiteStr;
+	}
+
+	public static String replaceLinebreakToEmptyString(String s) {
+		if (isEmptyString(s))
+			return EMPTY_STR;
+		StringBuilder ret = new StringBuilder();
+		char[] cs = s.toCharArray();
+		for (char c : cs) {
+			switch (c) {
+			case '\r':
+			case '\n':
+				ret.append("");
+				break;
+			default:
+				ret.append(c);
+				break;
+			}
+		}
+		return ret.toString();
+	}
+
+	public static String transferCharJavascript(String s) {
+		StringBuilder ret = new StringBuilder();
+		char[] cs = s.toCharArray();
+		for (char c : cs) {
+			switch (c) {
+			case '\r':
+			case '\t':
+			case '\n':
+			case '"':
+			case '\\':
+			case '\'':
+			case '<':
+			case '>':
+			case '\0':
+				ret.append(String.format("\\u%04x", (int) c));
+				break;
+			default:
+				ret.append(c);
+				break;
+			}
+		}
+		return ret.toString();
+	}
+
+	public static String escapeSqlForLike(String value) {
+		StringBuilder ret = new StringBuilder();
+		char[] cs = value.toCharArray();
+		for (char c : cs) {
+			switch (c) {
+			case '%':
+				ret.append("\\%");
+				break;
+			case '_':
+				ret.append("\\_");
+				break;
+			case '[':
+				ret.append("\\[");
+				break;
+			case '\\':
+				ret.append("\\\\");
+				break;
+			case '\'':
+				ret.append("''");
+				break;
+			default:
+				ret.append(c);
+				break;
+			}
+		}
+		return ret.toString();
+	}
+
+	public static String unescapeSqlForLike(String value) {
+		StringBuilder ret = new StringBuilder();
+		char[] cs = value.toCharArray();
+		for (char c : cs) {
+			switch (c) {
+			case '\\':
+				ret.append("");
+				break;
+			default:
+				ret.append(c);
+				break;
+			}
+		}
+		return ret.toString();
+	}
+
+	public static String escapeSQLForMySQL(String value) {
+		StringBuilder ret = new StringBuilder();
+		char[] cs = value.toCharArray();
+		for (char c : cs) {
+			switch (c) {
+			case '\\':
+				ret.append("\\\\");
+				break;
+			case '\'':
+				ret.append("''");
+				break;
+			// case '%': 百分号如果sql是=的判断，则不成立，只有用 LIKE时才需要转移
+			// ret.append("\\%");
+			// break;
+			default:
+				ret.append(c);
+				break;
+			}
+		}
+		return ret.toString();
+	}
+
+	public static String encodeFileName(final HttpServletRequest request, String fileName)
+			throws UnsupportedEncodingException {
+		String agent = request.getHeader("USER-AGENT");
+		if (isEmptyString(agent))
+			return fileName;
+		agent = agent.toLowerCase();
+		if ((-1 != agent.indexOf("msie")) || (-1 != agent.indexOf("opera")) || (-1 != agent.indexOf("webkit"))) {
+			fileName = URLEncoder.encode(fileName, "UTF-8");
+			fileName = StringUtils.replace(fileName, "+", "%2B");
+			fileName = StringUtils.replace(fileName, " ", "%20");
+			return fileName;
+		} else if ((-1 != agent.indexOf("mozilla"))) {
+			return "=?UTF-8?B?" + (EncodeUtils.base64Encode(fileName.getBytes("UTF-8"))) + "?=";
+		} else {
+			return fileName;
+		}
+	}
+
+	/**
+	 * 用SQL方式，hibernate 使用like 必须使用
+	 * 
+	 * @param value
+	 * @return
+	 */
+	public static String escapeSql(String value) {
+		StringBuilder ret = new StringBuilder();
+		char[] cs = value.toCharArray();
+		for (char c : cs) {
+			switch (c) {
+			case '%':
+				ret.append("[%]");
+				break;
+			case '_':
+				ret.append("[_]");
+				break;
+			case '[':
+				ret.append("[[]");
+				break;
+			case '\'':
+				ret.append("''");
+				break;
+			default:
+				ret.append(c);
+				break;
+			}
+		}
+		return ret.toString();
+	}
+
+	// Since the subject is used to set the filename, it's not a bad idea to
+	// sanitize it to remove illegal characters.
+	public static String sanitizeFilename(String name) {
+		return name.replaceAll("[:\\\\/*?|<> \"']", "_");
+	}
+
+
+	private static boolean checkStr(Pattern p, String str) {
+		return p.matcher(str).matches();
+	}
+	
+	public static boolean isMobile(String str) {
+		boolean isMobile = checkStr(mobilePattern, str);	// 是否为大陆手机号
+		if(!isMobile){
+			isMobile = checkStr(HKMobilePattern, str);		// 是否为香港手机号
+		}
+		return isMobile;
+	}
+	
+	public static boolean isMobileOrPhone(String str) {
+		return checkStr(mobileOrPhonePattern, str);
+	}
+
+	public static boolean isEmail(String str) {
+		return checkStr(emailPattern, str);
+	}
+
+	/**
+	 * 替换html的特殊字符
+	 * 
+	 * @param content
+	 * @return
+	 */
+	public static String html(String content) {
+		if (content == null)
+			return "";
+		String html = content;
+
+		html = html.replaceAll("&", "&amp;");
+		html = html.replace("'", "&apos;");
+		html = html.replace("\"", "&quot;"); // "
+		html = html.replace("\t", "&nbsp;&nbsp;");// 替换跳格
+		html = html.replace(" ", "&nbsp;");// 替换空格
+		html = html.replace("<", "&lt;");
+
+		html = html.replaceAll(">", "&gt;");
+
+		return html;
+	}
+
+	public static boolean isChineseChar(String str) {
+		boolean temp = false;
+		Matcher m = CHINESE_PATTERN.matcher(str);
+		if (m.find()) {
+			temp = true;
+		}
+		return temp;
+	}
+	
+	public static String escapeRegexLimitword(String content) {
+		if (content == null)
+			return "";
+		String str = content;
+/*		str = str.replaceAll("\\.", "\\\\.");
+		str = str.replace("$", "\\$");
+		str = str.replace("\\^", "\\\\^");
+		str = str.replaceAll("\\*", "\\\\*");
+		str = str.replaceAll("\\+", "\\\\+");
+		str = str.replaceAll("\\?", "\\\\?");
+		str = str.replaceAll("\\", "\\\\");
+		str = str.replaceAll("\\/", "\\\\/");
+		str = str.replace("{", "\\{");
+		str = str.replace("[", "\\[");
+		str = str.replace("(", "\\(");
+		str = str.replaceAll("\\|", "\\\\|");
+		str = str.replace("}", "\\}");
+		str = str.replace("]", "\\]");
+		str = str.replace(")", "\\)");*/
+		return str;
+	}
+	
+	public static String joinForSQL(Object[] array, String separator){
+		if (array == null) {
+            return null;
+        }
+		
+		if (separator == null) {
+            separator = "";
+        }
+
+		int startIndex = 0, endIndex = array.length;
+        // endIndex - startIndex > 0:   Len = NofStrings *(len(firstString) + len(separator))
+        //           (Assuming that all Strings are roughly equally long)
+        int bufSize = (endIndex - startIndex);
+        if (bufSize <= 0) {
+            return "";
+        }
+
+        bufSize *= ((array[startIndex] == null ? 16 : array[startIndex].toString().length())
+                        + separator.length());
+
+        StrBuilder buf = new StrBuilder(bufSize);
+
+        for (int i = startIndex; i < endIndex; i++) {
+            if (i > startIndex) {
+                buf.append(separator);
+            }
+            if (array[i] != null) {
+                buf.append(array[i] instanceof String? "'" + array[i] + "'" : array[i]);
+            }
+        }
+        return buf.toString();
+	}
+	
+	public static String joinForSQL(Collection collection, String separator){
+		if (collection == null) {
+            return null;
+        }
+		
+		Iterator iterator = collection.iterator();
+		// handle null, zero and one elements before building a buffer
+        if (iterator == null) {
+            return null;
+        }
+        if (!iterator.hasNext()) {
+            return "";
+        }
+        Object first = iterator.next();
+        if (!iterator.hasNext()) {
+            return first instanceof String? "'" + first + "'" : ObjectUtils.toString(first);
+        }
+
+        // two or more elements
+        StrBuilder buf = new StrBuilder(256); // Java default is 16, probably too small
+        if (first != null) {
+            buf.append(first instanceof String? "'" + first + "'" : first);
+        }
+
+        while (iterator.hasNext()) {
+            if (separator != null) {
+                buf.append(separator);
+            }
+            Object obj = iterator.next();
+            if (obj != null) {
+                buf.append(obj instanceof String? "'" + obj + "'" : obj);
+            }
+        }
+        return buf.toString();
+	}
+
+    
+}

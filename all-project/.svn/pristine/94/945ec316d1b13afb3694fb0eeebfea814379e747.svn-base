@@ -1,0 +1,337 @@
+package saas.winbons.data.model.customer;
+
+import java.sql.SQLException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import saas.crm.base.enumtype.NotifyType;
+import saas.crm.base.event.SystemNotifyEvent;
+import saas.crm.dynamic.Action;
+import saas.crm.dynamic.manager.IDynamicManager;
+import saas.crm.dynamic.model.Stream;
+import saas.crm.dynamic.model.StreamDynamic;
+import saas.data.dto.MergeCustomerDTO;
+import saas.framework.mutitenant.TenantConstant;
+import saas.winbons.data.model.BaseModel;
+import saas.winbons.data.model.MqEvent;
+import saas.winbons.data.model.contact.CustomerContact;
+import saas.winbons.data.model.tag.BizRelTag;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dynamic.ItemTypeEnum;
+import saas.winbons.framework.execption.ServiceException;
+import saas.winbons.framework.service.ServiceLocator;
+import saas.winbons.framework.tools.ToolEvent;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolSqlXml;
+import saas.winbons.framework.tools.ToolString;
+
+import com.jfinal.ext.kit.ModelKit;
+import com.jfinal.ext.plugin.jms.JmsKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.IAtom;
+import com.jfinal.plugin.activerecord.Record;
+
+
+
+public class Customer extends BaseModel<Customer> {
+
+	private static final long serialVersionUID = -4264714399887864565L;
+	
+	public static final Customer dao = new Customer();
+	
+	public void saveObj(ContextDTO contextDTO,Customer customer,BizRelTag[] bizRelTags){
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("contextDTO", contextDTO);
+		params.put("data", ModelKit.toMap(customer));
+		if(!Db.tx(new IAtom() {
+			@Override
+			public boolean run() throws SQLException {
+				customer.set("c_status", 5010L);
+				checkObj(contextDTO,customer);
+				customer.save(contextDTO);
+				for(BizRelTag bizRelTag : bizRelTags){
+					bizRelTag.put("itemid", customer.get("id"));
+					bizRelTag.put("module", ItemTypeEnum.Customer.name());
+					bizRelTag.put("userid", contextDTO.getUserId());
+					bizRelTag.put("tagid", bizRelTag.get("id"));
+					bizRelTag.save(contextDTO);
+				}
+				return true;
+			}
+		})){
+			throw new ServiceException("Sql执行异常");
+		}else{
+			Map<String, Object> map = ModelKit.toMap(customer);
+			Map<String, Object> source = new HashMap<String,Object>();
+			source.put("data", map);
+			source.put("contextDTO", contextDTO);
+			//处理地图
+			ToolEvent.multicastEvent(new CustomerLoactionEvent(source));
+			//处理客户池  这块的提醒定时任务已经做了
+			//EventKit.postEvent(new CustomerPoolEvent(source));
+			//同步客户电话
+			Object object = map.get("tel");
+			if(!ToolString.isEmptyString(object)){
+				MergeCustomerDTO mergeCustomerDTO = new MergeCustomerDTO();
+				mergeCustomerDTO.setDbid(contextDTO.getDbId());
+				mergeCustomerDTO.setUserId(contextDTO.getUserId());
+				mergeCustomerDTO.setCustomerId(Long.parseLong(map.get("id").toString()));
+				mergeCustomerDTO.setCalleeNbr(object.toString());
+				mergeCustomerDTO.setOperateType(0);
+				JmsKit.sendQueue("caas.merge.customer", mergeCustomerDTO, "a");
+			}
+			
+		}
+		
+	}
+	
+	public void checkObj(ContextDTO contextDTO,Customer customer){
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("contextDTO", contextDTO);
+		params.put("data", ModelKit.toMap(customer));
+		String custName = customer.get("name");
+		params.put("custName", custName);
+		String checkCustomerNaneExits = ToolSqlXml.getSql("winbons.customer.checkCustomerNaneExits",params);
+		if(!ToolString.isEmptyString(checkCustomerNaneExits)){
+			throw new ServiceException("【" + checkCustomerNaneExits + "】已跟进客户【" + custName + "】");
+		}
+		Object custPool = customer.get("cust_pool");
+		if(null == custPool || custPool.toString().equals("-1")){
+			customer.set("cust_pool",-1L);
+			customer.set("owner_id", contextDTO.getCurrentOwnerId());
+		}else{
+			params.put("cust_pool_id", custPool);
+			if("-1".equals(ToolSqlXml.getSql("winbons.customer.checkPoolAcl",params))){
+				throw new ServiceException("不是您负责的客户池，无法创建客户");
+			}
+		}
+		params.put("userId", customer.get("owner_id"));
+		if(Integer.parseInt(ToolSqlXml.getSql("winbons.customer.checkOwnerCustomerNumber",params)) < 1){
+			throw new ServiceException("您可负责的客户数已达上限，无法创建客户");
+		}
+		//验证自定义字段
+		String checkDefinedColumn = ToolSqlXml.getSql("winbons.customer.checkDefinedColumn",params);
+		String[] split = checkDefinedColumn.split(",");
+		if(!split[0].equals("1")){
+			throw new ServiceException("属性:" + split[1] + (split[0].equals("-1") ? "不能为空" : "不唯一"));
+		}
+	}
+	
+	
+	public void deleteObjs(ContextDTO contextDTO,Long[] ids){
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("contextDTO", contextDTO);
+		if(!Db.tx(new IAtom() {
+			@Override
+			public boolean run() throws SQLException {
+				for(Long id : ids){
+					Customer c = Customer.dao.findById(contextDTO, contextDTO.getDbId(),id);
+					Long ownerId = null;
+					String customerName = c.getStr("name");
+					String userName = Db.findFirst(contextDTO, "select  display_name from t_crm_user where dbid = ? and user_id = ?",contextDTO.getDbId(),contextDTO.getUserId()).getStr("display_name");
+					if(null != c.get("owner_id")){
+						ownerId = c.getLong("owner_id");
+					}
+					Map<String, Object> map = ModelKit.toMap(c);
+					params.put("data", map);
+					String deleteCustomerValidate = ToolSqlXml.getSql("winbons.customer.deleteCustomerValidate",params);
+					String[] split = deleteCustomerValidate.split(",");
+					if(!split[0].equals("1")){
+						throw new ServiceException(split[1]);
+					}
+
+					Db.update(contextDTO, "DELETE FROM t_crm_cust_share_acl WHERE cust_id=?",id);
+					Db.update(contextDTO, "UPDATE t_crm_schedule_event SET module=NULL, itemid=NULL, itemid_type=NULL WHERE module=? AND itemid=?","Customer",id);
+					Db.update(contextDTO, "delete from t_crm_biz_rel_tag where  itemid = ? and module = ?",id,"Scheduled");
+					
+					List<Record> findContacts = Db.find(contextDTO, "select " + ToolJfinalSql.buildSelectSql(CustomerContact.class, "","") +" from t_crm_cust_contact where cust_id =?",id);
+					if(findContacts.size() > 0){
+						List<Long> contactIds = new ArrayList<Long>();
+						for(Record contact : findContacts){
+							contactIds.add(contact.getLong("id"));
+						}
+						Db.update(contextDTO, String.format("delete from t_crm_contact_share_acl where contact_id in(%s)  and isowner='Y' ",StringUtils.join(contactIds,",")));
+						Db.update(contextDTO, String.format("delete from t_edm_contactgroup where fcontactid in(%s)",StringUtils.join(contactIds,",")));
+						for(Record contact : findContacts){
+							Long contactId = contact.getLong("id");
+							String email = ToolString.toString(contact.get("email"));
+							if(!ToolString.isEmptyString(email)){
+								Record mailAddress = Db.findFirst(contextDTO, "select id from t_crm_mail_address where address=? limit 0,1",email);
+								if(null != mailAddress){
+									Db.update(contextDTO, "delete from t_crm_contact_mail where mail_address_id=? and contact_id=?",mailAddress.getLong("id"),contactId);
+								}
+								Db.update(contextDTO, "delete from t_crm_email_group_rel_contact where contact_id = ? ",contact.getLong("id"));
+							}
+							Db.update(contextDTO, "UPDATE t_crm_schedule_event SET module=NULL, itemid=NULL, itemid_type=NULL WHERE module=? AND itemid=?","Contact",contactId);
+							
+							
+							Db.update(contextDTO, "UPDATE t_crm_email_info SET contact_box_id=NULL,customer_id=NULL,contact_id=NULL WHERE dbid=? AND contact_id=?",contextDTO.getDbId(),contactId);
+							
+							Db.update(contextDTO, TenantConstant.NON_PARSER + "delete bru from t_crm_email_contact_box_rel_user bru inner JOIN t_crm_email_contact_box cb ON cb.dbid=bru.dbid AND cb.id=bru.contact_box_id WHERE cb.dbid=? AND cb.contact_id = ?",contextDTO.getDbId(),contactId);
+							Db.update(contextDTO, "DELETE FROM t_crm_email_contact_box WHERE dbid=? AND contact_id =? ",contextDTO.getDbId(),contactId);
+							
+							Db.update(contextDTO, "delete from t_crm_sales_opportunity_contact_acl where dbid=? AND contact_id = ?",contextDTO.getDbId(),contactId);
+							
+							Db.update(contextDTO, "delete from t_crm_cust_contact where dbid=? AND id=?",contextDTO.getDbId(),contactId);
+							
+							
+						}
+					}
+					
+					
+					
+					List<Record> find = Db.find(contextDTO, "select secure_id from t_crm_cust_share_acl where dbid = ? and cust_id =?",contextDTO.getDbId(),id);
+					List<Long> listRel = new ArrayList<Long>();
+					for(Record shareAcl : find){
+						if(!shareAcl.getLong("secure_id").equals(contextDTO.getUserId()) && !shareAcl.getLong("secure_id").equals(ownerId)){
+							listRel.add(shareAcl.getLong("secure_id"));
+						}
+					}
+					if(listRel.size() > 0 ){
+						String tipMsg = "您参与的客户【"+customerName + "】已被" + userName + "删除,请知悉。";
+						String msgInfo = "客户已被"+ userName+"删除";
+						Map<String,Object> mapx = new HashMap<String, Object>();
+						mapx.put("custId", id);
+						mapx.put("custName", customerName);
+						mapx.put("flag", "0");
+						mapx.put("msg", tipMsg);
+						mapx.put("msgInfo", msgInfo);
+						SystemNotifyEvent systemNotifyEventOther = new SystemNotifyEvent();
+						systemNotifyEventOther.setDbid(contextDTO.getDbId());
+						systemNotifyEventOther.setNow(true);//即时
+						systemNotifyEventOther.setReceiverIds(listRel.toArray(new Long[0]));
+						systemNotifyEventOther.setContent(ToolGson.GsonString(mapx));
+						systemNotifyEventOther.setType(NotifyType.customer_pool);
+						Map<String, Object> source = new HashMap<String,Object>();
+						source.put("data", systemNotifyEventOther);
+						source.put("contextDTO", contextDTO);
+						ToolEvent.multicastEvent(new MqEvent(source));
+					}
+					
+					if(ownerId != null && ownerId.longValue() != contextDTO.getUserId().longValue()){
+						String tipMsg = "您的客户【"+customerName + "】已被" + userName + "删除,请知悉。";
+						String msgInfo = "客户已被"+userName+"删除";//新版通知
+						Map<String,Object> mapx = new HashMap<String, Object>();
+						mapx.put("custId", id);
+						mapx.put("custName", customerName);
+						mapx.put("flag", "0");
+						mapx.put("msg", tipMsg);
+						mapx.put("msgInfo", msgInfo);
+						SystemNotifyEvent systemNotifyEventOther = new SystemNotifyEvent();
+						systemNotifyEventOther.setDbid(contextDTO.getDbId());
+						systemNotifyEventOther.setNow(true);//即时
+						systemNotifyEventOther.setReceiverIds(new Long[]{contextDTO.getUserId()});
+						systemNotifyEventOther.setContent(ToolGson.GsonString(mapx));
+						systemNotifyEventOther.setType(NotifyType.customer_pool);
+						Map<String, Object> source = new HashMap<String,Object>();
+						source.put("data", systemNotifyEventOther);
+						source.put("contextDTO", contextDTO);
+						ToolEvent.multicastEvent(new MqEvent(source));
+					}
+					
+					
+					Db.update(contextDTO, "delete from t_crm_customer where dbid=? AND id = ?",contextDTO.getDbId(),id);
+				}
+				return true;
+			}
+			
+		}));
+	}
+	
+	public void moveObjs(ContextDTO contextDTO,Long[] custIds,Long toUserId){
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("contextDTO", contextDTO);
+		params.put("userId", toUserId);
+		params.put("custIds", custIds);
+		if(!Db.tx(new IAtom() {
+			@Override
+			public boolean run() throws SQLException {
+				String sql = ToolSqlXml.getSql("winbons.customer.moveCustomerValidate",params);
+				if(!ToolString.isEmptyString(sql)){
+					throw new ServiceException(sql);
+				}
+				
+				for(Long custId : custIds){
+					params.put("custId", custId);
+					sql = ToolSqlXml.getSql("winbons.customer.checkOwner",params);
+					String[] split = sql.split(",");
+					if(split.length > 1){
+						throw new ServiceException("没有客户" + split[1] + "的管理权限");
+					}
+					//客户转移，将该用户的标签需要和客户关系清除
+					Db.update(contextDTO, "delete from t_crm_biz_rel_tag where  itemid = ? and module = ? and userid = ?",custId,"Customer",toUserId);
+					//处理客户
+					// 更新负责人
+					Db.update(contextDTO, "update t_crm_customer set owner_id=?, updated_by=?, updated_date=?,receive_date=? where dbid=? and id=?",toUserId,contextDTO.getUserId(),System.currentTimeMillis(),System.currentTimeMillis(),contextDTO.getDbId(),custId);
+					// 更新客户关联
+					Db.update(contextDTO, "update t_crm_cust_share_acl set secure_id=? where secure_id=? and cust_id=? and isowner='Y' and dbid=?",toUserId,contextDTO.getCurrentOwnerId(),custId,contextDTO.getDbId());
+					// 删除原先在共享的里面的数据
+					Db.update(contextDTO, "delete from t_crm_cust_share_acl where secure_id=? and cust_id=? and isowner='N' and dbid=?",toUserId,custId,contextDTO.getDbId());
+					/**
+					 * 2016年4月第二周需求调整：转移客户时将客户下的所有联系人都转走，删掉原先的共享关系 
+					 * 查询客户下对应的所有联系人*/
+					List<Record> findContact = Db.find(contextDTO, "select id from from t_crm_cust_contact a  where a.cust_id = ?",custId);
+					for(Record contact : findContact){
+						// 更新负责人
+						Db.update(contextDTO, "update t_crm_cust_contact set ownerId = ?,updated_date = ?,updated_by=? where id = ? and dbid = ?",toUserId,System.currentTimeMillis(),contextDTO.getUserId(),contact.getLong("id"),contextDTO.getDbId());
+						// 更新联系人关联，所有的联系人指定新负责人
+						Db.update(contextDTO, "update t_crm_contact_share_acl set secure_id=? where contact_id=? and isowner='Y' and dbid = ?",toUserId,contact.getLong("id"),contextDTO.getDbId());
+						
+						//批量删除原先在共享的里面的数据
+						Db.update(contextDTO, "delete from t_crm_contact_share_acl where  isowner='N' and contact_id = ? and dbid = ?",contact.getLong("id"),contextDTO.getDbId());
+					}
+					// 更新邮件信息
+					Db.update(contextDTO, "UPDATE t_crm_email_info SET user_id=?  WHERE dbid=? AND customer_id=? ",toUserId,contextDTO.getDbId(),custId);
+				}
+				return true;
+			}
+			
+		})){
+			throw new ServiceException("Sql执行异常");
+		}else{
+			//生产动态类信息
+			
+			List<Record> find = Db.find(contextDTO, String.format("select id,name from t_crm_customer where id in (%s) and dbid = ?",StringUtils.join(custIds,",")),contextDTO.getDbId());
+			Record user = Db.findFirst(contextDTO, "select display_name from t_crm_user where dbid=?,user_id=?", contextDTO.getDbId(),toUserId);
+			for(Record record : find){
+				Map<String, Object> source = new HashMap<String,Object>();
+				StreamDynamic streamDynamic = new StreamDynamic();
+				String msg = contextDTO.getUserName() + "将客户【" + record.getStr("name") + "】转移 给了"
+						+ user.getStr("display_name");
+				Stream stream = new Stream();
+				stream.setAction(Action.share);
+				stream.setActionValue(msg);
+				streamDynamic.setGroupId(record.getLong("id"));
+				streamDynamic.setGroupName(record.getStr("name"));
+				streamDynamic.setGroupTypeId(ItemTypeEnum.Customer.dbValue);
+				streamDynamic.setStream(stream);
+				streamDynamic.setItemTypeValue("addClientShare");
+				source.put("data", streamDynamic);
+				source.put("contextDTO", contextDTO);
+				ToolEvent.multicastEvent(new MqEvent(source));
+				
+				
+			}
+		}
+	}
+	
+	/*public void test(){
+		Long moduleValue[] = {ItemTypeEnum.Customer.dbValue};
+		try {
+			Object service = ServiceLocator.getService("dynamicManager");
+			List<Long> sendDynamicIdList = dynamicManager.getSendDynamicIdList(moduleValue, 7);
+			System.out.println(sendDynamicIdList.size());
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+	}*/
+	
+
+}

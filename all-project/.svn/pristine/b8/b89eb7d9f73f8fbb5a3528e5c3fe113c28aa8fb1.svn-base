@@ -1,0 +1,58 @@
+package saas.monitor.mvc.base;
+
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import saas.monitor.criteria.CommonCriteria;
+import saas.monitor.criteria.FilterVO;
+import saas.monitor.criteria.Page;
+import saas.monitor.criteria.SortVO;
+import saas.monitor.tools.ToolGson;
+import saas.monitor.tools.ToolSqlXml;
+
+import com.google.gson.reflect.TypeToken;
+import com.jfinal.core.Controller;
+import com.jfinal.kit.StrKit;
+
+
+public abstract class BaseController extends Controller {
+	
+	protected final Logger LOG = LoggerFactory.getLogger(getLogClass());
+	
+	protected abstract Class<? extends BaseController> getLogClass();
+
+
+	public CommonCriteria buildCommonCriteria(){
+		CommonCriteria commonCriteria = new CommonCriteria();
+		Page page = new Page(getParaToInt("start"),getParaToInt("limit"));
+		commonCriteria.setPage(page);
+		String para = getPara("criteria_");
+		String sort = getPara("sort_");
+		if(StrKit.notBlank(para)){
+			List<FilterVO> gsonToBean = ToolGson.GsonToBean(para, new TypeToken<List<FilterVO>>(){}.getType());
+			for(FilterVO filterVO : gsonToBean){
+				if(filterVO.getValue() instanceof String){
+					String replace = ToolSqlXml.replace(filterVO.getValue().toString());
+					if(filterVO.getOperation().equals("in")){
+						filterVO.setValues(replace.split(","));
+					}
+					filterVO.setValue(replace);
+				}
+			}
+			commonCriteria.setFilters(gsonToBean.toArray(new FilterVO[0]));
+		}else{
+			commonCriteria.setFilters(new FilterVO[0]);
+		}
+		if(StrKit.notBlank(sort)){
+			List<SortVO> gsonToBean = ToolGson.GsonToBean(sort, new TypeToken<List<SortVO>>(){}.getType());
+			commonCriteria.setSorts(gsonToBean.toArray(new SortVO[0]));
+		}else{
+			commonCriteria.setSorts(new SortVO[0]);
+		}
+		return commonCriteria;
+	}
+	
+	
+}

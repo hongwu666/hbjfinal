@@ -1,0 +1,49 @@
+  
+        /** 
+         * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+         * All Rights Reserved.
+         * Development of this softwareWinbons Technology Software Co.,Ltd.
+         * Without the formal written consent of the Company, 
+         * any other individuals, groups may not use, 
+         * copy, modify, or distribute this software
+         * @Title: SpopCMD.java 
+         * @Package saas.framework.cache.redis.cmds 
+         * @Description: TODO(用一句话描述该文件做什么) 
+         * @author star.ye 
+         * @date 2014年6月27日 下午5:48:26 
+         * @version 1.0 
+         */   
+     
+    
+package saas.framework.cache.redis.cmds;
+
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
+import saas.framework.cache.AbstractRedisCmd;
+
+  
+        /** 
+ * @ClassName: SpopCMD 
+ * @Description: TODO(这里用一句话描述这个类的作用) 
+ * @author star.ye
+ * @date 2014年6月27日 下午5:48:26  
+ */
+@Component
+public class SpopCMD extends AbstractRedisCmd {
+
+
+	@Override
+	public String getCmdId() {
+		return SPOP_CMD;
+	}
+
+
+	@Override
+	public Object execteBinary(byte[] key, List<byte[]> parmas,
+			Object[] extraParam) {
+		byte[] data=getJedis().spop(key);
+		return getCahceFromRedisReturn(data);
+	}
+}

@@ -1,0 +1,38 @@
+package saas.monitor.mvc.security;
+
+import saas.monitor.mvc.base.BaseModel;
+import saas.monitor.tools.security.ToolDigests;
+import saas.monitor.tools.security.ToolEncode;
+
+
+public class User extends BaseModel<User> {
+
+	private static final long serialVersionUID = 1453010922958383842L;
+	
+	public static final String HASH_ALGORITHM = "SHA-1";
+	public static final int HASH_INTERATIONS = 1024;
+	private static final int SALT_SIZE = 8;
+	public static final User dao = new User();
+	
+	public User init(User user){
+		return user;
+	}
+	
+	
+	public void entryptPassword(User user) {
+		byte[] salt = ToolDigests.generateSalt(SALT_SIZE);
+		user.set("salt", ToolEncode.hexEncode(salt));
+		byte[] hashPassword = ToolDigests.sha1(user.getStr("password").getBytes(), salt, HASH_INTERATIONS);
+		user.set("password", ToolEncode.hexEncode(hashPassword));
+	}
+	
+	public User getByName(String name) {
+		return User.dao.findFirst("select u.* from t_monitor_user  u where u.loginCode=?", name);
+	}
+
+	@Override
+	protected Class<User> getLogClass() {
+		return User.class;
+	}
+
+}

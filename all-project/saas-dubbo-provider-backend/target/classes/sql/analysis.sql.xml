@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--  
+	菜单sql
+-->
+<sql-statement namespace="winbins.analysis.setting">
+	
+	<sql id="findModuleSetting">
+	<![CDATA[ 
+		select ${columns} from t_crm_analysis_setting where dbid = ${contextDTO.dbId} 
+		<%
+				commonSql("winbons.common.params",filters!,sorts!);
+		%> 
+		
+	]]>
+	</sql>
+	
+	
+	<sql id="getModuleSetting">
+	<![CDATA[ 
+		select ${columns} from t_crm_analysis_setting where dbid = ${contextDTO.dbId}  and 
+		module = '${module}' and fieldName = '${fieldName}' and userId = ${userId} limit 0,1
+		
+	]]>
+	</sql>
+	
+	<sql id="getCustomerAnalysisDefine">
+	<![CDATA[ 
+		select ${columns},
+			case mapping_field_name 
+			when 'customerType' then 'type' 
+			when 'cstName' then 'c_status' 
+			else replace(mapping_field_name,'numField','num_field') end as columnName,isdisable
+		 from t_crm_definition_field where table_name = 't_crm_customer' 
+		and field_type = 'combobox' and dbid = ${contextDTO.dbId} and isdisable = 'N' and mapping_field_name not in ('cust_pool','deptName','deptId') 
+	
+	]]>
+	</sql>
+</sql-statement>

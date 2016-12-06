@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--  
+	菜单sql
+-->
+<sql-statement namespace="sql.common">
+	
+	<!-- 查询根菜单 -->
+	<sql id="params">
+		<![CDATA[ 
+			<% if(!isEmpty(filters)){ %>
+        		<% 
+				for(entry in filters){%>
+					and ${entry.property} ${entry.operation} 
+					<%
+						switch(entry.operation){
+							case 'is null':
+							print("");
+							break;
+							case 'is not null':
+							print("");
+							break;
+							case '<>':
+							case '=':
+							print("'" +  entry.value +"'");
+							break;
+							case '>':
+							case '>=':
+							case '<':
+							case '<=':
+							print("'" +  entry.value +"'");
+							break;
+							case 'like':
+							print("'%" + entry.value + "%'");
+							break;
+							case 'in':
+							print(inParse(entry.values));
+							break;
+						}
+					%>
+				<% } %>
+        	<% } %>
+        	
+        	<% if(!isEmpty(sorts)){ %>
+        		order by 
+	        	<% 
+					for(entry in sorts){%>
+					${entry.property} ${entry.order}
+						<% if(entryLP.last == false){
+								print(",");
+							}
+						%>
+        		<% } %>
+        	<% } %>
+    	]]>
+	</sql>
+	
+	<sql id="search">
+		<![CDATA[ 
+			from ${tableName}	where 1 = 1 
+			<%
+			commonSql("sql.common.params",result);
+			%>
+    	]]>
+	</sql>
+
+</sql-statement>

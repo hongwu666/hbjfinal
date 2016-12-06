@@ -1,0 +1,43 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: AttentionType.java 
+ * @Package saas.crm.dynamic 
+ * @Description: 关注的类型
+ * @author star.ye 
+ * @date 2014年10月23日 下午4:05:07 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic;
+
+/**
+ * @ClassName: AttentionType
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年10月23日 下午4:05:07
+ */
+
+public enum AttentionType {
+	Contact(-2), Customer(0), User(1), UserGroup(2), Dep(3), DOCUMENT(4), OPPORTUNITY(5),
+	LEADS(6), WORKREPORT(7);
+
+	public final int typeValue;
+
+	private AttentionType(int typeValue) {
+		this.typeValue = typeValue;
+	};
+
+	public static AttentionType getAttentionType(int value) {
+		for (AttentionType attentionType : values()) {
+			if (attentionType.typeValue == value) {
+				return attentionType;
+			}
+		}
+		return AttentionType.User;
+	}
+}

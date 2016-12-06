@@ -1,0 +1,9 @@
+package saas.winbons.data.model.report;
+
+import saas.winbons.data.model.BaseModel;
+
+public class ReportFormItem extends BaseModel<ReportForm>{
+
+	private static final long serialVersionUID = 6366040884939053687L;
+
+}

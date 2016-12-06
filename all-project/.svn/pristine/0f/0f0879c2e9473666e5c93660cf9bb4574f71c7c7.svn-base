@@ -1,0 +1,11 @@
+package saas.winbons.data.model.contact;
+
+import saas.winbons.data.model.BaseModel;
+
+public class CustomerContactMail extends BaseModel<CustomerContactMail> {
+
+	private static final long serialVersionUID = -4673434189584186558L;
+
+	
+	
+}

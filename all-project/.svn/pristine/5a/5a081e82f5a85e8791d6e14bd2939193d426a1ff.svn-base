@@ -1,0 +1,16 @@
+package saas.monitor.beetl.func;
+
+import org.beetl.core.Context;
+import org.beetl.core.Function;
+
+import saas.monitor.tools.ToolString;
+import saas.monitor.tools.security.ShiroUtils;
+
+public class AuthAcl implements Function {
+
+	@Override
+	public Object call(Object[] paras, Context ctx) {
+		return ShiroUtils.hasAuthority(ToolString.toString(paras[0]));
+	}
+
+}

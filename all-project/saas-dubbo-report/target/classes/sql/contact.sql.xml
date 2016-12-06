@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 菜单sql -->
+<sql-statement namespace="winbons.contact">
+
+	
+	<!-- scan Add contact一 -->
+	<sql id="scanStep1">
+	<![CDATA[
+		<%
+		/*根据客户名称获取客户*/
+		var result = sqlFn(contextDTO,"one","select id,name,owner_id,cust_pool_id from t_crm_customer c where c.dbid=? and c.name = ?",contextDTO.dbId,custName);
+		if(isEmpty(result)){
+			/*验证其他属性是否冲突*/
+			var checkDefinedColumnResult = callTemplateFn("winbons.customer.checkDefinedColumn",contextDTO,{data:data},true);
+			if(checkDefinedColumnResult == "1,"){
+				
+			}
+		}
+		
+		return "";
+		%>
+	
+	]]>
+	</sql>
+	
+	
+	
+</sql-statement>

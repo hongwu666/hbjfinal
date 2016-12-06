@@ -1,0 +1,5 @@
+package saas.winbons.mq;
+
+public class ClueImportEvent {
+
+}

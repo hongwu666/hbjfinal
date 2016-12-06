@@ -1,0 +1,38 @@
+package saas.winbons.format;
+
+import java.util.Map;
+
+import com.jfinal.plugin.activerecord.Model;
+
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.framework.tools.ToolString;
+
+public class BooleanFormtCallback implements ICallbackFormat {
+	
+
+	@Override
+	public Object callback(Map<String, Object> map, String name, String dbName) {
+		Object object = map.get(dbName);
+		boolean value = ToolString.toString(object).equals(DataConstant.YES_OR_NO_YES);
+		map.put(name, value);
+		return value;
+	}
+
+	@Override
+	public Object build(Model model,String attr,Object value){
+		String result = "N";
+		if(value instanceof Boolean){
+			if((Boolean)value)result = "Y";
+		}else{
+			result = value.toString();
+		}
+		model.set(attr, result);
+		return result;
+	}
+
+	@Override
+	public String getType() {
+		return "boolean";
+	}
+
+}

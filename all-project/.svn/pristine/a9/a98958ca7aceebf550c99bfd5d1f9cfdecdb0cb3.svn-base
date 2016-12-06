@@ -1,0 +1,34 @@
+package com.jfinal.plugin.sql;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.jfinal.kit.StrKit;
+
+import saas.winbons.dubbo.api.ContextDTO;
+
+public class WinbonsSqlAnnotation {
+	
+	public static String buildSqlAnnotation(ContextDTO contextDTO,String sql){
+		if(null != contextDTO && contextDTO.getDbId() != null && !StrKit.isBlank(sql)){
+			if(sql.startsWith("/*noformat*/")){
+				sql = sql.replace("/*noformat*/", "");
+			}else{
+				sql = SQLParserUtil.parseSQL(sql, "dbid", contextDTO.getDbId().toString());
+			}
+
+		}
+		return sql;
+	}
+	
+	public static Map<String, Object> buildMongoAnnotation(ContextDTO contextDTO,Map<String,Object> map){
+		if(null == map){
+			map = new HashMap<String,Object>();
+			map.put("dbid", contextDTO.getDbId());
+		}else{
+			map.put("dbid", contextDTO.getDbId());
+		}
+		return map;
+	}
+
+}

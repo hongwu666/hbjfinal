@@ -1,0 +1,25 @@
+package saas.winbons.framework.sql;
+
+public enum DefinitionType {
+	
+
+	Splitline("splitline"),//分割线
+	Number("number"),//数字类型
+	Autocomplete("autocomplete"),//自动填充 现在就客户用到   命名不合理
+	Text("text"),//文本类型
+	Special("special"),//特殊类型, 下拉数据的来用根据 field_type_value 业务去拿
+	Combobox("combobox"),//通过 comboxid 去t_crm_list_item表拿数据
+	Textarea("textarea"),//文本域
+	Fdt("fdt"),//时间搓   datetime类型
+	Fdate("fdate"),//时间搓   date类型
+	Ftime("ftime"),//时间搓   time类型
+	Linkage("linkage")//联动类型,现在用到地图类型,
+	;
+
+	public String value;
+
+	private DefinitionType(String value) {
+		this.value = value;
+	}
+
+}

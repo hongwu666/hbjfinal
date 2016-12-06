@@ -1,0 +1,221 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: File.java 
+ * @Package saas.crm.dynamic.model 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年8月5日 下午4:30:16 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.model;
+
+import java.io.Serializable;
+
+import com.alibaba.fastjson.annotation.JSONField;
+
+/**
+ * @ClassName: File
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年8月5日 下午4:30:16
+ */
+
+public class File implements Serializable {
+
+	private static final long serialVersionUID = 2806431026005137120L;
+
+	private String id;
+
+	private String fileName;
+
+	private String imageUrl;
+
+	private String smallImgUrl;
+
+	private String fileUrl;
+
+	private int fileType;
+
+	private long fileLength;
+
+	private boolean screenShot = false;
+	
+	public File(String fileName, long fileLength, int type) {
+		super();
+		this.fileName = fileName;
+		this.fileLength = fileLength;
+		this.fileType = type;
+	}
+
+	/**
+	 * @return the screenShot
+	 */
+	@JSONField(serialize = false)
+	public boolean isScreenShot() {
+		return screenShot;
+	}
+
+	/**
+	 * @param screenShot
+	 *            the screenShot to set
+	 */
+	public void setScreenShot(boolean screenShot) {
+		this.screenShot = screenShot;
+	}
+
+	/**
+	 * @return the id
+	 */
+
+	public String getId() {
+
+		return id;
+	}
+
+	/**
+	 * @param id
+	 *            the id to set
+	 */
+
+	public void setId(String id) {
+
+		this.id = id;
+	}
+
+	/**
+	 * @return the fileName
+	 */
+
+	public String getFileName() {
+
+		return fileName;
+	}
+
+	/**
+	 * @param fileName
+	 *            the fileName to set
+	 */
+
+	public void setFileName(String fileName) {
+
+		this.fileName = fileName;
+	}
+
+	/**
+	 * @return the imageUrl
+	 */
+
+	public String getImageUrl() {
+
+		return imageUrl;
+	}
+
+	/**
+	 * @param imageUrl
+	 *            the imageUrl to set
+	 */
+
+	public void setImageUrl(String imageUrl) {
+
+		this.imageUrl = imageUrl;
+	}
+
+	/**
+	 * @return the smallImgUrl
+	 */
+
+	public String getSmallImgUrl() {
+
+		return smallImgUrl;
+	}
+
+	/**
+	 * @param smallImgUrl
+	 *            the smallImgUrl to set
+	 */
+
+	public void setSmallImgUrl(String smallImgUrl) {
+
+		this.smallImgUrl = smallImgUrl;
+	}
+
+	/**
+	 * @return the fileUrl
+	 */
+
+	public String getFileUrl() {
+
+		return fileUrl;
+	}
+
+	/**
+	 * @param fileUrl
+	 *            the fileUrl to set
+	 */
+
+	public void setFileUrl(String fileUrl) {
+
+		this.fileUrl = fileUrl;
+	}
+
+	/**
+	 * @return the fileType
+	 */
+
+	public int getFileType() {
+
+		return fileType;
+	}
+
+	/**
+	 * @param fileType
+	 *            the fileType to set
+	 */
+
+	public void setFileType(int fileType) {
+
+		this.fileType = fileType;
+	}
+
+	/**
+	 * @return the fileLength
+	 */
+
+	public long getFileLength() {
+
+		return fileLength;
+	}
+
+	/**
+	 * @param fileLength
+	 *            the fileLength to set
+	 */
+
+	public void setFileLength(long fileLength) {
+
+		this.fileLength = fileLength;
+	}
+
+	public File(String imageUrl, String fileUrl) {
+		this.imageUrl = imageUrl;
+		this.fileUrl = fileUrl;
+	}
+
+	public File() {
+	}
+
+	public File(String url, int type) {
+		if (type == FileType.IMAGE.value) {
+			this.imageUrl = url;
+		} else {
+			this.fileUrl = url;
+		}
+		this.fileType = type;
+	}
+}

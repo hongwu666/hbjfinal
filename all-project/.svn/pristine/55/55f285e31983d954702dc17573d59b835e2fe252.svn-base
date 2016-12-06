@@ -1,0 +1,236 @@
+/**
+ * 
+ */
+package saas.framework.nosql;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+import java.util.WeakHashMap;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.Transformer;
+import org.apache.commons.lang3.StringUtils;
+import org.jboss.resteasy.spi.UnhandledException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.mongodb.MongoDbFactory;
+import org.springframework.data.mongodb.core.convert.MongoConverter;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.stereotype.Repository;
+
+import saas.framework.nosql.annotation.FileStoreDocument;
+import saas.framework.nosql.domain.AttachmentObject;
+import saas.framework.nosql.domain.FSFile;
+import saas.framework.nosql.domain.FileStoreArticle;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.nosql.CustomGridFsTemplate;
+
+import com.mongodb.DB;
+import com.mongodb.DBObject;
+import com.mongodb.Mongo;
+import com.mongodb.gridfs.GridFSDBFile;
+import com.mongodb.gridfs.GridFSFile;
+
+/**
+ * 
+ * @ClassName: FileStoreDaoImpl
+ * @Description: Modified By HeatoN.Feng
+ * @author star.ye
+ * @date 2014年7月7日 上午11:14:42
+ */
+@Repository(value = "fileSysEngine")
+public class FileSystemEngineImpl implements FileSystemEngine, InitializingBean {
+
+	private static final Logger logger = LoggerFactory.getLogger(FileSystemEngineImpl.class);
+
+	// a cache that maintains bucket name vs GridFsTemplate
+	private WeakHashMap<String, CustomGridFsTemplate> templateForBucketCache = new WeakHashMap<String, CustomGridFsTemplate>();
+
+	protected final MongoDbFactory dbFactory;
+	protected final MongoConverter converter;
+	protected final String bucket;
+
+	@Autowired
+	@Qualifier("gridFsTemplate")
+	private CustomGridFsTemplate gridFsTemplate;
+
+	@Autowired
+	public FileSystemEngineImpl(@Qualifier("mongoFsFactory") MongoDbFactory dbFactory, @Qualifier("mappingConverter") MongoConverter converter) {
+		this(dbFactory, converter, null);
+	}
+
+	/**
+	 * @param dbFactory
+	 * @param converter
+	 * @param bucket
+	 */
+	public FileSystemEngineImpl(MongoDbFactory dbFactory, MongoConverter converter, String bucket) {
+		this.dbFactory = dbFactory;
+		this.converter = converter;
+		this.bucket = bucket;
+	}
+
+	@Override
+	public void store(FileStoreArticle article) {
+		GridFSFile gridFsFile = getGridFsTemplate(article.getClass()).store(article.getData(), article.getFileName(), article);
+		article.setId(gridFsFile.getId().toString());
+		article.setLength(gridFsFile.getLength());
+		article.setUploadDate(gridFsFile.getUploadDate());
+		article.setMd5(gridFsFile.getMD5());
+		article.setChunkSize(gridFsFile.getChunkSize());
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <T extends FileStoreArticle> T getFileById(Class<T> entityType, Object id) {
+		Query query = new Query().addCriteria(Criteria.where("_id").is(id));
+		GridFSDBFile file = getGridFsTemplate(entityType).findOne(query);
+		if (file != null) {
+			T entity = (T) createObject(file);
+			return entity;
+		}
+		return null;
+	}
+
+	@Deprecated
+	@Override
+	public <T extends FileStoreArticle> List<T> getFilesByFileName(Class<T> entityType, String fileName) {
+		Query query = new Query().addCriteria(Criteria.where("filename").is(fileName));
+		return findFiles(entityType, query);
+	}
+
+	@Override
+	public <T extends FileStoreArticle> void delete(Class<T> entityType) {
+		getGridFsTemplate(entityType).delete(null);
+	}
+
+	@Override
+	public <T extends FileStoreArticle> void delete(Class<T> entityType, Object id) {
+		Query query = new Query().addCriteria(Criteria.where("_id").is(id));
+		getGridFsTemplate(entityType).delete(query);
+	}
+
+	@Override
+	public <T extends FileStoreArticle> long getFileCount(Class<T> entityType) {
+		ContextDTO contextDTO = new ContextDTO();
+		return getGridFsTemplate(entityType).count(contextDTO,null);
+	}
+
+	/**
+	 * 
+	 * @param query
+	 * @return
+	 */
+	@Deprecated
+	protected <T extends FileStoreArticle> List<T> findFiles(Class<T> entityType, Query query) {
+		List<GridFSDBFile> files = getGridFsTemplate(entityType).find(query);
+		return transformList(files);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected <T extends FileStoreArticle> List<T> transformList(List<GridFSDBFile> files) {
+		return (List<T>) CollectionUtils.collect(files, new GridFSDBFileTransformer(), new ArrayList<T>());
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T extends FileStoreArticle> T createObject(GridFSDBFile file) {
+		DBObject dbObject = file.getMetaData();
+
+		String className = (String) dbObject.get("_class");
+		if (StringUtils.isNotBlank(className)) {
+			try {
+				Class<T> entityType = (Class<T>) Class.forName(className);
+				T entity = converter.read(entityType, dbObject);
+				entity.setId(file.getId());
+				entity.setFileName(file.getFilename());
+				entity.setLength(file.getLength());
+				entity.setMd5(file.getMD5());
+				entity.setUploadDate(file.getUploadDate());
+				entity.setContentType(file.getContentType());
+				entity.setChunkSize(file.getChunkSize());
+				entity.setData(file.getInputStream());
+				return entity;
+			} catch (ClassNotFoundException e) {
+				throw new UnhandledException(e);
+			}
+		} else {
+			return (T) new FSFile(file);
+		}
+	}
+
+	private <T> CustomGridFsTemplate getGridFsTemplate(Class<T> entityClass) {
+		String bucket = null;
+		if (entityClass.isAnnotationPresent(FileStoreDocument.class)) {
+			bucket = entityClass.getAnnotation(FileStoreDocument.class).bucket();
+		}
+		if (StringUtils.isBlank(bucket)) {
+			bucket = entityClass.getSimpleName().toLowerCase();
+		}
+		if (!templateForBucketCache.containsKey(bucket)) {
+			CustomGridFsTemplate template = new CustomGridFsTemplate(dbFactory, converter, bucket);
+			templateForBucketCache.put(bucket, template);
+		}
+		return templateForBucketCache.get(bucket);
+	}
+
+	protected CustomGridFsTemplate createTemplate() {
+		return this.gridFsTemplate;
+	}
+
+	/**
+	 * 
+	 * @author Santanu
+	 */
+	protected class GridFSDBFileTransformer implements Transformer {
+		@Override
+		public Object transform(Object input) {
+			GridFSDBFile file = (GridFSDBFile) input;
+			return createObject(file);
+		}
+	}
+
+	@Override
+	public String saveFile(Long dbId, InputStream in, String name, String objId) {
+		AttachmentObject attachmentObject = new AttachmentObject();
+		attachmentObject.setDbid(dbId);
+		attachmentObject.setFileName(name);
+		attachmentObject.setData(in);
+		attachmentObject.setUploadDate(new Date());
+		if (objId != null)
+			attachmentObject.setParentArticleId(objId);
+		store(attachmentObject);
+		return String.valueOf(attachmentObject.getId());
+	}
+
+	@Override
+	public String saveFile(Long dbId, InputStream in, String name) {
+		return saveFile(dbId, in, name, null);
+	}
+
+	@Override
+	public String saveFile(Long dbId, byte[] data) {
+		AttachmentObject attachmentObject = new AttachmentObject();
+		attachmentObject.setDbid(dbId);
+		attachmentObject.setFileName(UUID.randomUUID().toString());
+		attachmentObject.setData(new ByteArrayInputStream(data));
+		store(attachmentObject);
+		return String.valueOf(attachmentObject.getId());
+	}
+
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		this.gridFsTemplate = createTemplate();
+
+		DB db = dbFactory.getDb();
+		Mongo mongo = db.getMongo();
+		logger.info("成功连接上mongo【文件】服务器: Host=" + mongo.getAddress().getHost() + ", Port=" + mongo.getAddress().getPort() + ", databaseName=" + db.getName());
+	}
+}

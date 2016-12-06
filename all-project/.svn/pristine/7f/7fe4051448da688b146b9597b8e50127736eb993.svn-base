@@ -1,0 +1,79 @@
+package saas.winbons.framework.tools;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.jfinal.ext.kit.ModelKit;
+import com.jfinal.ext.kit.RecordKit;
+import com.jfinal.plugin.activerecord.Model;
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.Record;
+
+public abstract class ToolModel {
+
+	
+	@SuppressWarnings("rawtypes")
+	public static List<Map<String,Object>> modelListConvert(List list){
+		if(list.size() == 0)return  new ArrayList<Map<String,Object>>();
+		List<Map<String,Object>> result = new ArrayList<Map<String,Object>>();
+		for(Object baseModel : list){
+			result.add(ModelKit.toMap((Model<?>)baseModel));
+		}
+		return result;
+	}
+	
+	public static List<Map<String,Object>> recordListConvert(List list){
+		if(list.size() == 0)return  new ArrayList<Map<String,Object>>();
+		List<Map<String,Object>> result = new ArrayList<Map<String,Object>>();
+		for(Object baseModel : list){
+			result.add(((Record)baseModel).getColumns());
+		}
+		return result;
+	}
+	
+	public static Model<?> recordToModel(Class<? extends Model<?>> clazz, Record record){
+		Model<?> model = null;
+	    try {
+	        model = clazz.newInstance();
+	    } catch (Exception e) {
+	        return model;
+	    }
+	    for (String columnName : record.getColumnNames()) {
+	        model.set(columnName, record.get(columnName));
+	    }
+	    return model;
+	}
+	
+	public static Map<String,Object> mapToModelMap(Map<Object,Object> map,String modelName) throws Exception{
+		Map<String,Object> buildMap = new HashMap<String, Object>();
+		if(ToolString.isEmptyString(modelName)){
+			for (Object key : map.keySet()) {
+				buildMap.put(key.toString(),map.get(key));
+			}
+		}else{
+			String modelNameAndDot = modelName + ".";
+			for (Object key : map.keySet()) {
+				if(key.toString().startsWith(modelNameAndDot)){
+					buildMap.put(key.toString().substring(modelNameAndDot.length()),map.get(key));
+				}
+			}
+		}
+		return buildMap;
+	}
+	
+	
+	
+	
+	public static Page<Model> recordPageConvert(Page<Record> p,Class class1){
+		List<Record> list = p.getList();
+		List<Model> listModel = new ArrayList<Model>();
+		for(Record r : list){
+			Model<?> model = RecordKit.toModel(class1, r);
+			listModel.add(model);
+		}
+		return new Page(list, p.getPageNumber(), p.getPageSize(), p.getTotalPage(), p.getTotalRow());
+		//Page page = new Page()
+	}
+}

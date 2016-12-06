@@ -1,0 +1,53 @@
+package saas.winbons.data.model.tag;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.winbons.data.model.BaseModel;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+
+public class BizRelTag extends BaseModel<BizRelTag> {
+
+	private static final long serialVersionUID = -7455585661864784075L;
+
+	public static final BizRelTag dao = new BizRelTag();
+	
+	
+	public Collection<Long> getItemIdByTagId(ContextDTO contextDTO,String module, Long tagId, Long userId) {
+		String sql = ToolSqlXml.getSql("winbins.tag.getItemIdByTagId");
+		List<BizRelTag> find = BizRelTag.dao.find(contextDTO, sql);
+		List<Long> listLong = new ArrayList<Long>();
+		for(BizRelTag bizRelTag : find){
+			listLong.add(bizRelTag.getLong("itemid"));
+		}
+		return listLong;
+	}
+	
+	public List<Map<String,Object>> getBizTagsByItemId(ContextDTO contextDTO,String module, Long itemid, Long userId){
+		Map<String,Object> map = new HashMap<String,Object>();
+		String buildSelectSql = " ";
+		buildSelectSql += ToolJfinalSql.buildSelectSql(BizRelTag.class, "a",null,null);
+		buildSelectSql += ",b.tagname ,b.tagcolor  ,b.fsort as sort";
+		map.put("columns", buildSelectSql);
+		String sql = ToolSqlXml.getSql("winbins.tag.getBizTagsByItemId",map);
+		List<Record> find = Db.find(contextDTO, sql,itemid,userId,module);
+		return ToolModel.recordListConvert(find);
+	}
+	
+	public BizRelTag[] getBizTagsModelByItemId(ContextDTO contextDTO,String module, Long itemid){
+		List<BizRelTag> find = BizRelTag.dao.find(contextDTO, "select " + ToolJfinalSql.buildSelectSql(BizRelTag.class, "","") + " from t_crm_biz_rel_tag where module = ? and itemid=?",module,itemid);
+		return find.toArray(new BizRelTag[0]);
+	}
+	
+	
+	
+}

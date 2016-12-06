@@ -1,0 +1,69 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: OrderItem.java 
+ * @Package saas.framework.sql 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年7月3日 上午9:42:13 
+ * @version 1.0 
+ */
+
+package saas.winbons.framework.sql;
+
+/**
+ * @ClassName: OrderItem
+ * @author star.ye
+ * @date 2014年7月3日 上午9:42:13
+ */
+
+public class OrderItem {
+
+	private String propertyName;
+
+	private boolean desc=true;
+
+	public String getPropertyName() {
+
+		return propertyName;
+	}
+
+	public void setPropertyName(String propertyName) {
+		this.propertyName = propertyName;
+	}
+
+	public boolean isDesc() {
+		return desc;
+	}
+
+	public void setDesc(boolean desc) {
+
+		this.desc = desc;
+	}
+
+	public OrderItem(String propertyName, boolean desc) {
+		super();
+		this.propertyName = propertyName;
+		this.desc = desc;
+	}
+
+	public OrderItem(String propertyName) {
+		super();
+		this.propertyName = propertyName;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append(" ").append(propertyName).append(" ");
+		if(desc){
+			builder.append("desc");
+		}
+		return builder.toString();
+	}
+	
+}

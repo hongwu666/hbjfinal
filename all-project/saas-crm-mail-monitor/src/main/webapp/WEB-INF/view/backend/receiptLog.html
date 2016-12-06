@@ -1,0 +1,255 @@
+<div class="row">
+	<div class="col-md-12">
+		<div class="portlet light portlet-fit portlet-datatable ">
+			<div class="portlet-body">
+				<div class="table-container">
+					<table
+						class="table table-striped table-bordered table-hover table-checkable" id="datatable_orders">
+						<thead>
+						 <tr role="row" class="heading">
+						 	<th width="10%"> 状态 </th>
+						 	<th width="10%"> 租户Id </th>
+						 	<th width="20%"> 时间 </th>
+						 	<th width="10%"> 用户Id </th>
+						 	<th width="20%"> 邮箱 </th>
+						 	<th width="10%"> 备注信息 </th>
+						 	<th width="10%"> 操作 </th>
+						 </tr>
+						  <tr role="row" class="filter">
+						  <td>
+             							<select name="isOk" class="form-control form-filter input-sm" id="listStatus" operation="=" >
+             							<option value="" selected="selected">不选择</option>
+             							<option value="N" >失败</option>
+             							<option value="Y" >成功</option>
+             							</select>
+						  
+                                            </td>
+                                                     <td>
+                                                       <input type="text" class="form-control form-filter input-sm" name="dbid" operation="like">
+                                                        </td>
+                                                        
+                                                   <td>
+                                                   <div class="form-group" style="margin-bottom:0px;">
+                                                    <div class="input-group input-large date-picker input-daterange" data-date="2012-11-10" data-date-format="yyyy-mm-dd">
+                                                        <input type="text" class="form-control form-filter" name="createDate" operation=">=">
+                                                        <span class="input-group-addon"> to </span>
+                                                        <input type="text" class="form-control form-filter" name="createDate" operation="<="> </div>
+                                            </div>
+                                                        </td>
+                                                        
+                                                        <td>
+                                                       <input type="text" class="form-control form-filter input-sm" name="userId" operation="like">
+                                                        </td>
+                                                        <td>
+                                                       <input type="text" class="form-control form-filter input-sm" name="emailAccountString" operation="like">
+                                                        </td>
+                                                        <td>
+                                                       <select name="memo" class="form-control form-filter input-sm" id="memo" operation="=" >
+				             							<option value="" selected="selected">不选择</option>
+				             							<option value="接收新邮件" >接收新邮件</option>
+				             							<option value="接收新邮件" >没有新邮件</option>
+				             							<option value="邮件初始化连接错误" >邮件初始化连接错误</option>
+				             							<option value="当前正在处理中，等完成收信完毕后在发起..." >当前正在处理中，等完成收信完毕后在发起...</option>
+				             							</select>
+                                                        </td>
+                                                        
+                                                         <td>
+                                                        <div class="margin-bottom-5">
+                                                            <button class="btn btn-sm btn-success filter-submit margin-bottom">
+                                                                <i class="fa fa-search" ></i> 查询</button>
+                                                        </div>
+                                                    </td>
+                                                            
+						  
+						  </tr>
+						</thead>
+						<tbody>
+                                  <tr> <td colspan="7">
+                                           <div id="slickGrid" class="grid"></div>
+                                           <div id="pager" class="om-grid om-widget om-widget-content" style="width:100%;height:30px;"></div>
+                                           </td>
+                                 
+                                            </tr>
+						
+						</tbody>
+					</table>
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+</div>
+<% include("/common/slickGrid.html"){} %>
+
+<script type="text/javascript">
+var myDataView,myGrid,pager,myWaterInfoDataView,myWaterInfoGrid,myWaterPage,
+_watchItems = [],sjc = 1;
+
+$(window).resize(function() {
+	  $("#slickGrid").width($("#slickGrid").parent().width());
+	  $("#slickGrid").height($(document).height() - 360);
+	  if(myGrid){
+		  myGrid.resizeCanvas();
+	  }
+
+});
+
+$(document).ready(function(){
+	$(window).resize();
+	  
+	  $(".filter-submit").bind("click",function(){
+		  var filterParameters = [];
+		  $(".form-filter").each(function() {
+			  if($(this).val() != "" ){
+				  if($(this).attr("name") == "createDate"){
+					  var _d = new Date($(this).val());
+					  _d.setHours(0);
+					  _d.setMinutes(0);
+					  _d.setSeconds(0);
+					  _d.setMilliseconds(0);
+					  var _value = _d.getTime();
+					  if($(this).attr("operation") == "<="){
+						  _value = _value + 1000 * 60 * 60 * 24;
+					  }
+					  filterParameters.push({property:$(this).attr("name"),value:_value,operation:$(this).attr("operation")}); 
+				  }else{
+					  filterParameters.push({property:$(this).attr("name"),value:$(this).val(),operation:$(this).attr("operation")}); 
+				  }
+				 
+			  }
+		  });
+		  pager.setSearch(JSON.stringify(filterParameters));
+		  pager.reload();
+	  });
+	  
+	  
+	   myDataView = new Slick.Data.DataView({ inlineFilters: true });
+	   myDataView.setItems([]);
+	   var options = {
+			   editable: true,
+			   enableAddRow: false,
+		        enableCellNavigation: true,
+		        enableColumnReorder: true,
+			    forceFitColumns: true,
+				asyncEditorLoading: false,
+			    forceSyncScrolling: false,
+			    rowHeight: 30
+	   }
+	   var columnsSortable = [{
+						  id: "dbid",
+						  name: "租户Id",
+						  field: "dbid",
+						  width: 100,
+						  sortable: true
+						},{
+							  id: "userId",
+							  name: "用户Id",
+							  field: "userId",
+							  width: 100,
+							  sortable: true
+							},{
+								  id: "emailAccountId",
+								  name: "邮箱Id",
+								  field: "emailAccountId",
+								  width: 100,
+								  sortable: true
+								},{
+									  id: "emailAccountString",
+									  name: "邮箱",
+									  field: "emailAccountString",
+									  width: 100,
+									  sortable: true
+									},{
+										  id: "createDate",
+										  name: "创建时间",
+										  field: "createDate",
+										  width: 100,
+										  formatter:function (row, cell, value, columnDef, dataContext){
+												if(value){
+													  var _d = new Date();
+													  _d.setTime(value);
+													return _d.pattern("yyyy-MM-dd HH:mm:ss");
+												}
+												return "";
+											},
+											 sortable: true
+										},{
+											  id: "memo",
+											  name: "备注",
+											  field: "memo",
+											  width: 100,
+											  sortable: true
+											},{
+												id: "isOk",
+												  name: "状态",
+												  field: "isOk",
+												  width: 100,
+												  formatter:function (row, cell, value, columnDef, dataContext){
+														if(value){
+															  if(value == "Y"){
+																  return "成功";
+															  }else{
+																  return "失败";
+															  }
+														}
+														return "";
+													}
+											}
+								];								
+	   
+	   myGrid = new Slick.Grid("#slickGrid", myDataView, columnsSortable, options);
+		 myGrid.setSelectionModel(new Slick.RowSelectionModel());
+		 myGrid.registerPlugin( new Slick.AutoTooltips({ enableForHeaderCells: true }) );
+	   pager = new Slick.Controls.Pager(myDataView, myGrid, $("#pager"),{pagesize:100,url:"${ctx}/jf/backend/ajaxListReceiptLog"});
+	    $(".filter-submit").trigger("click");
+		 myDataView.onPagingInfoChanged.subscribe(function (e, pagingInfo) {
+		});
+
+		 myDataView.onRowCountChanged.subscribe(function (e, args) {
+				myGrid.updateRowCount();
+				myGrid.render();
+			  });
+		 
+		 myDataView.onRowsChanged.subscribe(function (e, args) {
+				 myGrid.invalidateRows(args.rows);
+				 myGrid.render();
+			  });
+		 
+		 myGrid.onScroll.subscribe(function (e, args) {
+		 });
+		 
+		 myGrid.onSort.subscribe(function (e, args) {
+			 var sorts = [];
+			 sorts.push({"property":args.sortCol.id,"order":args.sortAsc == true ? "asc" : "desc"});
+			 pager.setSort(JSON.stringify(sorts));
+			 $(".filter-submit").trigger("click");
+		  });
+		 
+		  myGrid.onAddNewRow.subscribe(function (e, args) {
+		      var item = args.item;
+		      myGrid.invalidateRow(mainData.length);
+		      mainData.push(item);
+		      myGrid.updateRowCount();
+		      myGrid.render();
+		    });
+		  
+		  myGrid.onCellChange.subscribe(function (e, args) {
+		  });
+		  
+		  myGrid.onClick.subscribe(function (e, args) {
+		  });
+		  
+		  myGrid.onDblClick.subscribe(function (e, args) {
+				initEditData(args.row);
+		 });
+		  
+		  myGrid.onKeyDown.subscribe(function (e, args) {
+		  });
+	
+});
+
+
+
+
+</script>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 合同sql -->
+<sql-statement namespace="winbons.contract">
+
+	
+	<!--搜索合同 -->
+	<sql id="searchContract">
+	<![CDATA[
+		FROM
+		t_crm_contract t301
+		LEFT JOIN t_crm_customer t101 ON t101.id = t301.customerid
+		AND t101.dbid = t301.dbid
+		LEFT JOIN t_crm_department depart ON depart.id = t301.departmentid
+		AND depart.dbid = t301.dbid
+		LEFT JOIN (
+			SELECT
+			id,
+			item_label AS name
+			FROM
+			t_crm_list_item t1
+			WHERE
+			t1.dbid = ${contextDTO.dbId}
+			AND list_id = 1005
+		) item1 ON item1.id = t301.type
+		LEFT JOIN (
+			SELECT
+			id,
+			item_label AS name
+			FROM
+			t_crm_list_item t2
+			WHERE
+			t2.dbid = ${contextDTO.dbId}
+			AND list_id = 1006
+		) item2 ON item2.id = t301. status
+		LEFT JOIN t_crm_sales_opportunity t201 ON t201.id = t301.opportunityid
+		AND t201.dbid = t301.dbid
+		LEFT JOIN (
+			SELECT
+			contractid,
+			sum(amount) AS mount
+			FROM
+			t_crm_payments
+			WHERE
+			dbid = ${contextDTO.dbId}
+			GROUP BY
+			contractid
+		) pay ON t301.id = pay.contractid
+		  LEFT JOIN t_crm_user t101User ON t101.owner_id = t101User.user_id AND t101.dbid = t101User.dbid 
+		  LEFT JOIN t_crm_user t301User ON t301.ownerId = t301User.user_id AND t301.dbid = t301User.dbid 
+		WHERE
+		t301.dbid = ${contextDTO.dbId} AND t101.owner_id IS NOT NULL
+		AND t301.id IN (
+			${callTemplateFn("winbons.contract.getContractExistsSqlByType",contextDTO,data)}
+		)
+		<% 
+			commonSql("winbons.common.params",filters!,sorts!);
+		%>
+	]]>
+	</sql>
+	
+		<sql id="getContractExistsSqlByType">
+	<![CDATA[ 
+		select acl.contract_id from t_crm_contract_share_acl acl where 
+		acl.dbid = ${contextDTO.dbId} 
+		<% 
+		switch(selectType!){
+			case 1:
+			print(' AND acl.isowner="N" and acl.secure_id =' +  contextDTO.userId);
+			break;
+			case 2:
+			print(' AND acl.isowner="Y" and acl.secure_id =' +  contextDTO.userId);
+			break;
+			default :
+			if(!isEmpty(queryOwnerIds)){
+			%>
+				AND acl.secure_id in ${inParse(strutil.split(queryOwnerIds,","))}
+			<%		
+			}else{
+				var queryOwnerIds = contextDTO.userId + "";
+				if(contextDTO.admin){
+					var sql = callTemplateFn("winbons.department.getBeManagerUserIdsByManagerId",contextDTO,{userId:contextDTO.userId},true);
+					var result = sqlFn(contextDTO,"list",sql);
+					if(!isEmpty(result)){
+						for(res in result){
+							queryOwnerIds = queryOwnerIds + "," + res.user_id;
+						}
+					}
+				}else{
+					queryOwnerIds = callTemplateFn("winbons.department.getManagerUserIdByAcl",contextDTO,{userId:contextDTO.userId,aclName:"Customer:query"},true);
+				}
+			%>
+				AND acl.secure_id in ${inParse(strutil.split(queryOwnerIds,","))}
+			<%	
+			}
+			%>
+			
+			<%
+			break;
+		}
+		%>
+		
+		
+	]]>
+	</sql>
+	
+	
+</sql-statement>

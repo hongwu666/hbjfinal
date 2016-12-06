@@ -1,0 +1,67 @@
+package saas.monitor.interceptor;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import saas.monitor.constantInit.ConstantInit;
+import saas.monitor.constantInit.ConstantWebContext;
+import saas.monitor.mvc.security.User;
+import saas.monitor.tools.ToolWeb;
+import saas.monitor.tools.security.ToolIDEA;
+import com.jfinal.aop.Interceptor;
+import com.jfinal.aop.Invocation;
+import com.jfinal.kit.PropKit;
+
+public class AuthInterceptor implements Interceptor {
+
+	@Override
+	public void intercept(Invocation inv) {
+
+	}
+	
+	/**
+	 * 设置验证码
+	 * @param response
+	 * @param authCode
+	 */
+	public static void setAuthCode(HttpServletResponse response, String authCode){
+		// 1.生成验证码加密cookie
+		String authCodeCookie = ToolIDEA.encrypt(authCode);
+		
+		// 2.设置登陆验证码cookie
+		int maxAgeTemp = -1;
+		ToolWeb.addCookie(response,  "", "/", true, ConstantWebContext.request_authCode, authCodeCookie, maxAgeTemp);
+	}
+
+	
+	public static String getAuthCode(HttpServletRequest request){
+		// 1.获取cookie加密数据
+		String authCode = ToolWeb.getCookieValueByName(request, ConstantWebContext.request_authCode);
+		if (null != authCode && !authCode.equals("")) {
+			// 2.解密数据
+			authCode = ToolIDEA.decrypt(authCode);
+			return authCode;
+		}
+		return null;
+	}
+	
+	/**
+	 * 设置当前登录用户到cookie
+	 * @param request
+	 * @param response
+	 * @param user
+	 * @param autoLogin
+	 */
+	public static void setCurrentUser(HttpServletRequest request, HttpServletResponse response, User user, boolean autoLogin) {
+		// 1.设置cookie有效时间
+		int maxAgeTemp = -1;
+		if (autoLogin) {
+			maxAgeTemp = PropKit.getInt(ConstantInit.config_maxAge_key);
+		}
+
+		// 2.设置用户名到cookie
+		ToolWeb.addCookie(response, "", "/", true, "displayName", user.getStr("loginCode"), maxAgeTemp);
+	}
+
+
+}

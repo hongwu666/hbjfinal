@@ -1,0 +1,177 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: RedisQueue.java 
+ * @Package saas.framework.cache.redis 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年9月25日 上午8:55:28 
+ * @version 1.0 
+ */
+
+package saas.framework.cache.redis;
+
+import java.util.AbstractQueue;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import redis.clients.jedis.Jedis;
+import saas.framework.cache.JedisCallback;
+import saas.framework.cache.RedisCmdHelper;
+
+/**
+ * @ClassName: RedisQueue
+ * @Description: redis 线程安全监听阻塞式队列
+ * @author star.ye
+ * @date 2014年9月25日 上午8:55:28
+ */
+public class RedisQueue<E> extends AbstractQueue<E> implements BlockingQueue<E> {
+
+	private final RedisCmdHelper redisCmdHelper;
+
+	private ISerializer serializer;
+
+	private byte[] redisListKey = null;
+
+	private final BlockingQueue<E> blockingQueue = new LinkedBlockingQueue<E>();
+
+	private AtomicBoolean startBlocking = new AtomicBoolean();
+
+	public RedisQueue(RedisCmdHelper redisCmdHelper, ISerializer serializer,
+			String mapKey) {
+		this.redisCmdHelper = redisCmdHelper;
+		this.serializer = serializer;
+		this.redisListKey = mapKey.getBytes();
+		startBlocking.set(false);
+	}
+
+	public boolean offer(E e) {
+		final byte[] redisValue = serializer
+				.serializeFrom(new DefaultRedisItem(e));
+		redisCmdHelper.executeCallBack(new JedisCallback() {
+			@Override
+			public Object executCmd(Jedis jedis) {
+				return jedis.lpush(redisListKey, redisValue);
+			}
+		});
+		return true;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public E poll() {
+		return (E) redisCmdHelper.executeCallBack(new JedisCallback() {
+			public Object executCmd(Jedis jedis) {
+				byte[] value = jedis.lpop(redisListKey);
+				if (value != null) {
+					return getFromByte(value);
+				}
+				return null;
+			}
+		});
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public E peek() {
+		return ((E) redisCmdHelper.executeCallBack(new JedisCallback() {
+			public Object executCmd(Jedis jedis) {
+				byte[] value = jedis.lindex(redisListKey, 0);
+				if (value != null) {
+					return getFromByte(value);
+				}
+				return null;
+			}
+		}));
+	}
+
+	private Object getFromByte(byte[] bytevalues) {
+		IRedisCaheItem cacheItem = serializer.deserializeInto(bytevalues);
+		return cacheItem.getObj();
+	}
+
+//	private void startThread(boolean flag) {
+//		if (flag) {
+//			Thread t = new Thread(new Runnable() {
+//				public void run() {
+//					redisCmdHelper.executeCallBack(new JedisCallback() {
+//						@SuppressWarnings("unchecked")
+//						public Object executCmd(Jedis jedis) {
+//							while (startBlocking.get()) {
+//								List<byte[]> dataValues = jedis.blpop(60,
+//										redisListKey);
+//								if (dataValues != null) {
+//									blockingQueue
+//											.add((E) getFromByte(dataValues
+//													.get(1)));
+//								}
+//							}
+//							return null;
+//						}
+//					});
+//				}
+//			}, "blockingQueue_thread" + new String(redisListKey));
+//			t.setDaemon(true);
+//			t.start();
+//		}
+//	}
+
+	public E take() throws InterruptedException {
+		return blockingQueue.take();
+	}
+
+	@Override
+	public Iterator<E> iterator() {
+		return null;
+	}
+
+	public int size() {
+		return (Integer) redisCmdHelper.executeCallBack(new JedisCallback() {
+			public Object executCmd(Jedis jedis) {
+				Long num = jedis.llen(redisListKey);
+				if (num != null) {
+					return num.intValue();
+				}
+				return 0;
+			}
+		});
+	}
+
+	public void put(E e) throws InterruptedException {
+
+	}
+
+	@Override
+	public boolean offer(E e, long timeout, TimeUnit unit)
+			throws InterruptedException {
+		return false;
+	}
+
+	public E poll(long timeout, TimeUnit unit) throws InterruptedException {
+		boolean flag = startBlocking.compareAndSet(false, true);
+//		startThread(flag);
+		return blockingQueue.poll(timeout, unit);
+	}
+
+	public int remainingCapacity() {
+
+		return 0;
+
+	}
+
+	public int drainTo(Collection<? super E> c) {
+		return 0;
+	}
+
+	public int drainTo(Collection<? super E> c, int maxElements) {
+		return 0;
+	}
+}

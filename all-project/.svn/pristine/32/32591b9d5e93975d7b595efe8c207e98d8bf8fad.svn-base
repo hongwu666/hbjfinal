@@ -1,0 +1,28 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: ISeq.java 
+ * @Package saas.crm.dynamic.model 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年8月12日 上午9:08:46 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.model;
+
+/**
+ * @ClassName: ISeq
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年8月12日 上午9:08:46
+ */
+
+public interface ISeq {
+
+	public Long getIndex();
+}

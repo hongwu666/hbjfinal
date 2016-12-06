@@ -1,0 +1,31 @@
+package saas.winbons.data.model.customer;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.winbons.data.model.BaseModel;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+
+public class CustomerPool extends BaseModel<CustomerPool> {
+
+	private static final long serialVersionUID = -3486479184111723043L;
+	
+	public static final CustomerPool dao = new CustomerPool();
+	
+
+	public List<Map<String, Object>> findCustPools(ContextDTO contextDTO){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contextDTO", contextDTO);
+		String sql = ToolSqlXml.getSql("winbons.customer.findCustPools",map);
+		List<Record> find = Db.find(contextDTO, sql);
+		List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find);
+		return recordListConvert;
+	}
+
+}

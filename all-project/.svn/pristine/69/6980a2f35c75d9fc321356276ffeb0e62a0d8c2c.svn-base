@@ -1,0 +1,61 @@
+package saas.framework.cache.redis;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class DefaultRedisItem implements IRedisCaheItem {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -2635300726543532906L;
+
+	private long createTime;
+
+	public void setCreateTime(long createTime) {
+		this.createTime = createTime;
+	}
+
+	private Object object;
+	
+	private static final Logger logger =LoggerFactory.getLogger(DefaultRedisItem.class);
+
+	public void setObject(Object object) {
+		this.object = object;
+	}
+
+	public void readObject(ObjectInputStream in) {
+		try {
+			this.object = in.readObject();
+		} catch (IOException e) {
+			logger.error("io exception",e);
+		} catch (ClassNotFoundException e) {
+			logger.error("ClassNotFoundException",e);
+		}
+	}
+
+	public DefaultRedisItem() {
+	}
+
+	public DefaultRedisItem(Object obj) {
+		createTime = System.currentTimeMillis();
+		this.object = obj;
+	}
+
+	public long getCreationTime() {
+		return createTime;
+	}
+
+	@Override
+	public Object getObj() {
+		return object;
+	}
+
+	@Override
+	public void setObj(Object obj) {
+		this.object=obj;		
+	}
+}

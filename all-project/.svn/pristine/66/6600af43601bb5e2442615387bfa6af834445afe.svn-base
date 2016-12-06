@@ -1,0 +1,67 @@
+package saas.winbons.provider;
+
+import java.util.List;
+import java.util.Map;
+
+import com.jfinal.plugin.activerecord.Model;
+
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.service.AbstractCommonService;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.sql.FilterItemList;
+
+public class WorkorderServiceImpl extends AbstractCommonService {
+
+	@Override
+	public Class<? extends Model<?>> getModelClass() {
+		return null;
+	}
+
+	@Override
+	public Class<? extends IEnumFormat> getFormatClass() {
+		return null;
+	}
+
+	@Override
+	public String getGridId() {
+		return null;
+	}
+
+	@Override
+	public String getTableName() {
+		return null;
+	}
+
+	@Override
+	public AbstractCommonService getService() {
+		return null;
+	}
+
+	@Override
+	public FilterItemList buildFilterItem(ContextDTO contextDTO, SimulationHttpServletRequest request) {
+		return null;
+	}
+
+	@Override
+	public String getGridHeadSql() {
+		return null;
+	}
+
+	@Override
+	public String getGridSql() {
+		return null;
+	}
+
+	@Override
+	public void rebuildCreateSearchView(RequestDTO requestDTO) {
+		
+	}
+
+	@Override
+	public void reUpdateCreateSearchView(List<Map<String, Object>> list) {
+		
+	}
+
+}

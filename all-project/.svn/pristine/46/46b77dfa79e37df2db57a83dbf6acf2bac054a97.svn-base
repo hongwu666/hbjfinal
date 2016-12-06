@@ -1,0 +1,10 @@
+package com.jfinal.plugin.activerecord;
+
+public class DataConstant {
+	
+	public static class WinbonsHint{
+		public static final String Start = "/*!winbons: ";
+		public static final String End = " winbons*/";
+	}
+
+}

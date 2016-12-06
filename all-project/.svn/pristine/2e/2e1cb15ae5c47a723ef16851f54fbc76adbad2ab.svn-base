@@ -1,0 +1,19 @@
+package saas.monitor.mvc.index;
+
+import saas.monitor.mvc.base.BaseController;
+import saas.monitor.render.MyCaptchaRender;
+import com.jfinal.render.Render;
+
+public class AuthImgController extends BaseController {
+
+	public void index() {
+		Render render = new MyCaptchaRender();
+		render(render);
+	}
+
+	@Override
+	protected Class<? extends BaseController> getLogClass() {
+		return AuthImgController.class;
+	}
+
+}

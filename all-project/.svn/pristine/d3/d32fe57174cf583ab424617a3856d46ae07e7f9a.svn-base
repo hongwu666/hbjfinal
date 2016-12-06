@@ -1,0 +1,8 @@
+package saas.framework.cache;
+
+public interface IRedisCmd {
+
+	public Object exeute(Object key, Object[] values, Object[] extraParam);
+
+	public String getCmdId();
+}

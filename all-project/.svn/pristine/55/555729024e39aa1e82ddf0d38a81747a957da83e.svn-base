@@ -1,0 +1,7 @@
+package saas.winbons.dubbo.api.document;
+
+import saas.winbons.dubbo.api.ApiService;
+
+public interface IDocumentService extends ApiService {
+
+}

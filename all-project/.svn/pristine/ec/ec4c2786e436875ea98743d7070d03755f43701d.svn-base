@@ -1,0 +1,17 @@
+/**
+ * All rights reserved by DigitNexus Technology INC.
+ */
+package saas.framework.cache;
+
+
+/**
+ * Description:
+ * 
+ * @author Felix.Fu
+ * @Date Apr 2, 2013 3:48:16 PM
+ * @since v1.0.0
+ */
+public interface DataLoader<K, V> {
+
+    V load(K key);
+}

@@ -1,0 +1,91 @@
+package saas.crm.base.event;
+
+import java.io.Serializable;
+import java.util.Date;
+
+import saas.crm.base.enumtype.NotifyType;
+
+/***
+ * 此对象要与 task项目里面的对应对象属性字段要一模一样
+ * @author win-7
+ *
+ */
+public class SystemNotifyEvent implements Serializable{
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
+	private Long dbid;//租户id
+	
+	private Long dataId; //记录id
+	
+	private Date date; //通知时间
+	
+	private String content; //通知内容
+	
+	private NotifyType type; //通知类型
+	
+	private boolean isNow = true; //Y代表立即发送，N代表定时发送
+	
+	//接收人id集合
+	private Long[] receiverIds = null;
+
+	public Long getDataId() {
+		return dataId;
+	}
+
+	public void setDataId(Long dataId) {
+		this.dataId = dataId;
+	}
+
+	public Date getDate() {
+		return date;
+	}
+
+	public void setDate(Date date) {
+		this.date = date;
+	}
+
+	public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
+		this.content = content;
+	}
+
+	public NotifyType getType() {
+		return type;
+	}
+
+	public void setType(NotifyType type) {
+		this.type = type;
+	}
+
+	public boolean isNow() {
+		return isNow;
+	}
+
+	public void setNow(boolean isNow) {
+		this.isNow = isNow;
+	}
+
+	public Long[] getReceiverIds() {
+		return receiverIds;
+	}
+
+	public void setReceiverIds(Long[] receiverIds) {
+		this.receiverIds = receiverIds;
+	}
+
+	public Long getDbid() {
+		return dbid;
+	}
+
+	public void setDbid(Long dbid) {
+		this.dbid = dbid;
+	}
+	
+}

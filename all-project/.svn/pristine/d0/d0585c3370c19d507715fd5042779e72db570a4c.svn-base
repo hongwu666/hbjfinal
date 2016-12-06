@@ -1,0 +1,24 @@
+  	<link rel="stylesheet" href="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/slick.grid.css" type="text/css">
+   <link rel="stylesheet" href="${ctx}/assets/global/plugins/slickgrid/dist/example-bootstrap.css" type="text/css">
+   <link rel="stylesheet" href="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/controls/slick.pager.css" type="text/css">
+      <script src="${ctx}/assets/global/plugins/slickgrid/lib/jquery.event.drag-2.2.js" type="text/javascript"></script>
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/jquery-ui/ui/jquery.ui.core.js" type="text/javascript"></script>
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/jquery-ui/ui/jquery.ui.widget.js" type="text/javascript"></script>
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/jquery-ui/ui/jquery.ui.mouse.js" type="text/javascript"></script>
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/jquery-ui/ui/jquery.ui.resizable.js" type="text/javascript"></script>
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/jquery-ui/ui/jquery.ui.sortable.js" type="text/javascript"></script>
+   <!-- <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/jquery-ui/ui/jquery.ui.effect.js" type="text/javascript"></script> -->
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/slick.core.js"></script>
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/slick.editors.js"></script>
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/slick.grid.js"></script>
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/slick.dataview.js"></script>
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/plugins/slick.checkboxselectcolumn.js"></script>
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/plugins/slick.rowselectionmodel.js"></script>
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/controls/slick.pager.js?t=1000"></script>
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/plugins/slick.cellselectionmodel.js"></script>
+   <script type="text/javascript" src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/plugins/slick.cellrangedecorator.js"></script>
+	<script type="text/javascript" src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/plugins/slick.cellrangeselector.js"></script>
+	<script type="text/javascript" src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/plugins/slick.rowselectionmodel.js"></script>
+	<script type="text/javascript" src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/plugins/slick.cellexternalcopymanager.js"></script>
+	<script type="text/javascript" src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/plugins/slick.autotooltips.js"></script>
+   <script src="${ctx}/assets/global/plugins/slickgrid/dist/components/slickgrid/bootstrap-slickgrid.js"></script>

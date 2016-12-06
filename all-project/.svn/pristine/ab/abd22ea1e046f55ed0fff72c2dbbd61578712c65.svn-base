@@ -1,0 +1,9 @@
+package saas.winbons.dubbo.api.market;
+
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+
+public interface IMarketRestService{
+
+	ResultDTO executeDto(RequestDTO requestDTO);
+}

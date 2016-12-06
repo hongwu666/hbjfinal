@@ -1,0 +1,44 @@
+package saas.winbons.provider.mina;
+
+import saas.winbons.dubbo.api.ApiService;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.api.report.IReportService;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolSqlXml;
+import saas.winbons.framework.tools.ToolString;
+
+public class ReportMinaServiceImpl implements IReportService{
+	
+	private ApiService reportService;
+
+	public void setReportService(ApiService reportService) {
+		this.reportService = reportService;
+	}
+
+
+
+
+
+	@Override
+	public ResultDTO executeDto(RequestDTO requestDto) {
+		for(FilterDTO filterDTO : requestDto.getFitler()){
+			if(!ToolString.isEmptyString(filterDTO.getValue()) && filterDTO.getValue() instanceof String){
+				filterDTO.setValue(ToolSqlXml.replace(ToolString.toString(filterDTO.getValue())));
+			}
+			Object[] values = filterDTO.getValues();
+			if(null != values && values.length > 0){
+				String[] strs = new String[values.length];
+				int i = 0;
+				for(Object o : values){
+					strs[i++] = ToolSqlXml.replace(ToolString.toString(o));
+				}
+			}
+		}
+		ResultDTO executeDto = reportService.executeDto(requestDto);
+		executeDto.setData(ToolGson.GsonString(executeDto.getData()));
+		return executeDto;
+	}
+
+}

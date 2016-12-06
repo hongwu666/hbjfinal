@@ -1,0 +1,60 @@
+package saas.winbons.data.model.customer;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.context.ApplicationListener;
+import org.springframework.stereotype.Component;
+
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolString;
+
+@Component
+public class CustomerPoolEventListener implements ApplicationListener<CustomerPoolEvent> {
+
+	@Override
+	public void onApplicationEvent(CustomerPoolEvent event) {
+		Map<String,Object> source = (Map<String,Object>)event.getSource();
+		Map<String,Object> customer = (Map<String, Object>) source.get("data");
+		ContextDTO contextDTO = (ContextDTO) source.get("contextDTO");
+		
+		if(!ToolString.isEmptyString(customer.get("owner_id"))){
+			//t_crm_cust_public_pool_rules
+			Object cust_pool = customer.get("cust_pool");
+			if(!ToolString.isEmptyString(cust_pool)){
+				List<Map<String, Object>> findCustPoolRulesByPoolId = CustomerPoolRule.dao.findCustPoolRulesByPoolId(contextDTO, Long.parseLong(cust_pool.toString()));
+				for(Map<String, Object> poolRule : findCustPoolRulesByPoolId){
+						if(ToolString.toString(poolRule.get("is_open")).equals(DataConstant.YES_OR_NO_YES)){
+							String type = ToolString.toString(poolRule.get("sub_type"));
+							Object notice_days = Integer.parseInt(poolRule.get("notice_days").toString());
+							Object c_status = Long.parseLong(customer.get("c_status").toString());
+							Long startTime = 0L;
+							Integer days = Integer.parseInt(poolRule.get("days").toString());	// 超时天数
+							if(!ToolString.isEmptyString(customer.get("receive_date"))){
+								startTime = Long.parseLong(customer.get("receive_date").toString());
+							}
+							Long expireDays = startTime + Long.parseLong(days+"") * 24 * 60 * 60 * 1000;	// 回收时间
+							
+							
+							//新建的客户都是属于非合作客户
+							if("ufcr".equals(type)){
+								return;
+							}
+							// 未合作客户
+							if("5010".equals(ToolString.toString(customer.get("c_status")))){
+								if("ufcr".equals(type)){
+									if(null == customer.get("expire_date")){
+										customer.put("expire_date", expireDays);
+									} else {
+										customer.put("expire_date", Math.min(expireDays, Long.parseLong(customer.get("expire_date").toString())));
+									}
+								}
+							}
+						}
+				}
+			}
+		}
+	}
+
+}

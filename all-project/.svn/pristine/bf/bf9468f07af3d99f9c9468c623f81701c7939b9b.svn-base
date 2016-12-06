@@ -1,0 +1,33 @@
+package saas.monitor.tools;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import saas.monitor.mvc.base.BaseModel;
+import com.jfinal.ext.kit.ModelKit;
+import com.jfinal.ext.kit.RecordKit;
+import com.jfinal.plugin.activerecord.Record;
+
+public abstract class ToolModel {
+
+	
+	@SuppressWarnings("rawtypes")
+	public static List<Map<String,Object>> modelListConvert(List list){
+		if(list.size() == 0)return  new ArrayList<Map<String,Object>>();
+		List<Map<String,Object>> result = new ArrayList<Map<String,Object>>();
+		for(Object baseModel : list){
+			result.add(ModelKit.toMap((BaseModel<?>)baseModel));
+		}
+		return result;
+	}
+	
+	public static List<Map<String,Object>> recordListConvert(List list){
+		if(list.size() == 0)return  new ArrayList<Map<String,Object>>();
+		List<Map<String,Object>> result = new ArrayList<Map<String,Object>>();
+		for(Object baseModel : list){
+			result.add(((Record)baseModel).getColumns());
+		}
+		return result;
+	}
+}

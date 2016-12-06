@@ -1,0 +1,41 @@
+package saas.winbons.beetl.func;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.beetl.core.Context;
+import org.beetl.core.Function;
+
+import saas.winbons.framework.tools.ToolSqlXml;
+
+public class CallTemplateFn implements Function {
+
+	@Override
+	public Object call(Object[] paras, Context ctx) {
+		Map<String,Object> map = new HashMap<String,Object>();
+		Object o = paras[0];
+		boolean existReturn = false;
+		if(paras.length >= 2){
+			map.put("contextDTO", paras[1]);
+		}
+		if(paras.length >= 3){
+			map.putAll((Map<? extends String, ? extends Object>) paras[2]);
+		}
+		if(paras.length >= 4){
+			existReturn = (boolean)paras[3];
+		}
+		String sql = ToolSqlXml.getSql(o.toString(),map);
+		try {
+			if(existReturn){
+				return sql;
+			}else{
+				ctx.byteWriter.writeString(sql);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+}

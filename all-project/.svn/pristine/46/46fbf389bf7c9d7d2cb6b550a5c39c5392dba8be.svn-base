@@ -1,0 +1,244 @@
+/** 
+ * Copyright (C) 2013 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: TenantSqlVisitor.java 
+ * @Package saas.framework.sql 
+ * @author yxx
+ * @date 2014-3-17 下午2:05:04 
+ * @version 1.0 
+ */
+
+package com.jfinal.plugin.sql;
+
+import java.util.List;
+
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
+import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
+import net.sf.jsqlparser.expression.operators.relational.InExpression;
+import net.sf.jsqlparser.expression.operators.relational.ItemsList;
+import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.delete.Delete;
+import net.sf.jsqlparser.statement.insert.Insert;
+import net.sf.jsqlparser.statement.select.FromItem;
+import net.sf.jsqlparser.statement.select.Join;
+import net.sf.jsqlparser.statement.select.Limit;
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.Select;
+import net.sf.jsqlparser.statement.select.SelectBody;
+import net.sf.jsqlparser.statement.select.SetOperationList;
+import net.sf.jsqlparser.statement.select.SubSelect;
+import net.sf.jsqlparser.statement.update.Update;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+/**
+ * @ClassName: TenantSqlVisitor
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author yxx
+ * @date 2014-3-17 下午2:05:04
+ */
+
+public class TenantSqlVisitor extends TraversalVisitor {
+
+	private String columnName;
+
+	private String value;
+
+	private static final ThreadLocal<PlainSelect> currentSelect = new ThreadLocal<PlainSelect>();
+
+	private static final Logger logger = LoggerFactory.getLogger(TenantSqlVisitor.class);
+
+	final private Limit defautlLimit = new Limit() {
+		public String toString() {
+			return " LIMIT ?,? ";
+		}
+	};
+
+	public TenantSqlVisitor(String columnName, String value) {
+		this.columnName = columnName;
+		this.value = value;
+	}
+
+	public void visit(Insert insert) {
+		String tableName = insert.getTable().getName();
+		if (isNeedTranslate(tableName)) {
+			List<Column> columns = insert.getColumns();
+			boolean isContain = false;
+			for (Column column : columns) {
+				if (columnName.equalsIgnoreCase(column.getColumnName())) {
+					isContain = true;
+				}
+			}
+			if (!isContain) {
+				columns.add(new Column(columnName));
+				ItemsList itemsList = insert.getItemsList();
+				ExpressionList expressionList = (ExpressionList) itemsList;
+				expressionList.getExpressions().add(new LongValue(value));
+			}
+		}
+	}
+
+	public void visit(Select select) {
+		SelectBody selectBody = select.getSelectBody();
+		if (selectBody instanceof PlainSelect) {
+			PlainSelect plainSelect = (PlainSelect) selectBody;
+			if (plainSelect.getLimit() != null) {
+				// hibernate 参数化
+				Limit limit = plainSelect.getLimit();
+				logger.debug("limit args is rowCount :{},offeset:{}", limit.getRowCount(), limit.getOffset());
+				if (limit.isOffsetJdbcParameter() && limit.isRowCountJdbcParameter()) {
+					plainSelect.setLimit(defautlLimit);
+				}
+			}
+			changeSelect(plainSelect);
+			currentSelect.set(plainSelect);
+			super.visit(select);
+			currentSelect.remove();
+		} else if (selectBody instanceof SetOperationList) {
+			SetOperationList unionSetOperationList = new UnionSetOperationList((SetOperationList) selectBody);
+			List<PlainSelect> selects = unionSetOperationList.getPlainSelects();
+			for (PlainSelect plainSelect : selects) {
+				changeSelect(plainSelect);
+				currentSelect.set(plainSelect);
+				super.visit(plainSelect);
+				currentSelect.remove();
+			}
+			select.setSelectBody(unionSetOperationList);
+		} else {
+			throw new RuntimeException("not impl");
+		}
+	}
+
+	private void changeSelect(PlainSelect plainSelect) {
+		FromItem fromItem = plainSelect.getFromItem();
+		if (fromItem instanceof Table) {
+			Table table = (Table) plainSelect.getFromItem();
+			String tableName = table.getName();
+			if (isNeedTranslate(tableName)) {
+				Expression expression = plainSelect.getWhere();
+				plainSelect.setWhere(changeWhere(expression, table));
+			}
+		}
+	}
+
+	private Expression changeWhere(Expression expression, Table table) {
+		if (isNeedTranslate(table.getName())) {
+			Expression tempExpression = createByTable(table);
+			if (expression != null) {
+				if (expression instanceof OrExpression) {
+					expression = new MyOrExpression((OrExpression) expression);
+				}
+				AndExpression andExpression = new AndExpression(tempExpression, expression);
+				return andExpression;
+			} else {
+				return tempExpression;
+			}
+		} else {
+			return expression;
+		}
+	}
+
+	@Override
+	public void visit(InExpression inExpression) {
+		ItemsList itemsList = inExpression.getRightItemsList();
+		if (itemsList instanceof SubSelect) {
+			SubSelect subSelect = (SubSelect) itemsList;
+			visit(subSelect);
+		}
+	}
+
+	private boolean isNeedTranslate(String tableName) {
+		if (TableCache.isCommonTable(tableName)) {
+			return false;
+		}
+		return tableName.startsWith("t_") || tableName.startsWith("e_") || TableCache.isTenantTable(tableName);
+	}
+
+	@Override
+	public void visit(Delete delete) {
+		Expression expression = delete.getWhere();
+		delete.setWhere(changeWhere(expression, delete.getTable()));
+	}
+
+	@Override
+	public void visit(Update update) {
+		Expression expression = update.getWhere();
+		update.setWhere(changeWhere(expression, update.getTable()));
+	}
+
+	public void visit(SubSelect select) {
+		SelectBody selectBody = select.getSelectBody();
+		if (selectBody instanceof PlainSelect) {
+			PlainSelect plainSelect = (PlainSelect) selectBody;
+			changeSelect(plainSelect);
+		} else if (selectBody instanceof SetOperationList) {
+			SetOperationList setOperationList = (SetOperationList) selectBody;
+			for (PlainSelect plainSelect : setOperationList.getPlainSelects()) {
+				changeSelect(plainSelect);
+			}
+			UnionSetOperationList unionSetOperationList = new UnionSetOperationList(setOperationList);
+			select.setSelectBody(unionSetOperationList);
+		}
+		super.visit(select);
+	}
+
+	private void setAlias(Table table) {
+		if (table.getAlias() == null) {
+			//
+		}
+	}
+
+	protected void visitJoin(Join join) {
+		FromItem fromItem = join.getRightItem();
+		if (fromItem instanceof SubSelect) {
+			SubSelect subSelect = (SubSelect) fromItem;
+			visit(subSelect);
+			return;
+		}
+		Expression expression = join.getOnExpression();
+		if (expression == null) {
+			PlainSelect cuPlainSelect = currentSelect.get();
+			Expression where = cuPlainSelect.getWhere();
+			cuPlainSelect.setWhere(changeWhere(where, (Table) fromItem));
+			return;
+		}
+		Table table = (Table) fromItem;
+		if (isNeedTranslate(table.getName())) {
+			join.setOnExpression(new AndExpression(expression, createByTable(table)));
+		}
+		super.visitJoin(join);
+	}
+
+	private Expression createByTable(Table table) {
+		setAlias(table);
+		EqualsTo equalsTo = new EqualsTo();
+		Table tableTemp = null;
+		if (table.getAlias() != null)
+			tableTemp = new Table(table.getAlias().getName());
+		equalsTo.setLeftExpression(new Column(tableTemp, columnName));
+		equalsTo.setRightExpression(new LongValue(value));
+		String tableName = table.getName();
+		if (!tableName.startsWith("e_"))
+			return equalsTo;
+		EqualsTo constEquals = new EqualsTo();
+		constEquals.setLeftExpression(new Column(tableTemp, columnName));
+		constEquals.setRightExpression(new LongValue(0));
+		return new OrExpression(equalsTo, constEquals) {
+			public String toString() {
+				return "(" + super.toString() + ")";
+			}
+		};
+	}
+
+}

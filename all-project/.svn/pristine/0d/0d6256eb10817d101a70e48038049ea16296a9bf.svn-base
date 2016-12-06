@@ -1,0 +1,50 @@
+package saas.framework.cache;
+
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.redisson.Redisson;
+
+import saas.framework.cache.impl.EhCacheImpl;
+import saas.framework.cache.redis.RedissonCache;
+
+public final class CachesManager {
+
+	@SuppressWarnings("rawtypes")
+	private static ConcurrentHashMap<String, ICache> caches = new ConcurrentHashMap<String, ICache>();
+
+	/**
+	 * 
+	 * @Title: getCache
+	 * @Description: TODO(这里用一句话描述这个方法的作用)
+	 * @param @param dataLoader 缓存加载器
+	 * @param @param cacheName
+	 * @param @return 设定文件
+	 * @return ICache<K,V> 返回类型
+	 * @throws
+	 * @date 2014-3-5 上午9:46:18
+	 */
+	@SuppressWarnings("unchecked")
+	public synchronized static <K, V> ICache<K, V> getCache(
+			DataLoader<K, V> dataLoader, String cacheName) {
+		if (caches.get(cacheName) == null)
+			return new EhCacheImpl<K, V>(dataLoader, cacheName);
+		return caches.get(cacheName);
+	}
+
+	/**
+	 * 
+	 * @Title: getCache
+	 * @param @param cacheName
+	 * @param @return 设定文件
+	 * @return ICache<K,V> 返回类型
+	 * @throws
+	 * @date 2014-3-5 上午9:46:36
+	 */
+	public static <K, V> ICache<K, V> getCache(String cacheName) {
+		return getCache(null, cacheName);
+	}
+
+	public static <K, V> ICache<K, V> getRedisCache(Redisson redisson) {
+		return new RedissonCache<K, V>(redisson);
+	}
+}

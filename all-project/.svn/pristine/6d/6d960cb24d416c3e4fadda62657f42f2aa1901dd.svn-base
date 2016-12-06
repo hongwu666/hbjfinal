@@ -1,0 +1,104 @@
+package saas.monitor.mvc.index;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.apache.shiro.subject.Subject;
+
+import saas.monitor.mvc.base.BaseController;
+import saas.monitor.plugin.SqlXmlPlugin;
+import saas.monitor.tools.FileUtils;
+import saas.monitor.tools.SimpleExeclUtils;
+import saas.monitor.tools.ToolString;
+
+import com.google.gson.Gson;
+import com.jfinal.aop.Before;
+import com.jfinal.ext.interceptor.LogInterceptor;
+
+public class IndexController extends BaseController {
+
+	@Override
+	protected Class<? extends BaseController> getLogClass() {
+		return IndexController.class;
+	}
+
+	public void index(){
+		render("/login/index.html");
+	}
+	
+	public void logout(){
+		Subject subject = SecurityUtils.getSubject();
+		if (subject.isAuthenticated()) {
+			subject.logout(); // session 会销毁，在SessionListener监听session销毁，清理权限缓存
+		}
+		redirect("/jf");
+	}
+	
+	@Before({LoginValidator.class})
+	public void validate(){
+		String username = getPara("loginCode");
+		String password = getPara("loginPassword");
+		String error = IndexService.service.login(getRequest(), getResponse(), username, password);
+		if(!StringUtils.isEmpty(error)) {
+			setAttr("error", error);
+			render("index.html");
+		}else{
+			
+			
+			
+			
+			redirect("/jf/backend");
+		}
+	}
+	
+	@RequiresPermissions("0088")
+	public void reloadSql(){
+		try{
+			String sqlPath = getPara("sqlPath");
+			String sqlId = getPara("sqlId");
+			SqlXmlPlugin.init(true);
+		}catch(Exception e){
+			renderText(e.getMessage());
+			e.printStackTrace();
+			return;
+			
+		}
+		renderText("");
+	}
+	
+	
+	
+	
+	public void ajaxBuildExecl(){
+		String simpleExeclTemplateJson = getPara("simpleExeclTemplateVOJson");
+		SimpleExeclTemplateVO simpleExeclTemplateVO = new Gson().fromJson(simpleExeclTemplateJson, SimpleExeclTemplateVO.class);
+		if(ToolString.isEmptyString(simpleExeclTemplateVO.getTitleName())){
+			simpleExeclTemplateVO.setTitleName("导出文件");
+		}
+		final HttpServletRequest requestFinal = getRequest();
+		HttpServletResponse response = getResponse();
+		response.reset();
+		response.resetBuffer();
+		response.setContentType("application/octet-stream");
+		try {
+			response.setHeader("Content-Disposition", "attachment;filename=" + FileUtils.encodeFileName(requestFinal, simpleExeclTemplateVO.getTitleName() + ".xls"));
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try {
+			SimpleExeclUtils.buildExecl(new SimpleExeclTemplateVO[]{simpleExeclTemplateVO}, response.getOutputStream());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+
+}

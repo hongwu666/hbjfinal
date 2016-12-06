@@ -1,0 +1,60 @@
+package saas.data.dto;
+
+import java.io.Serializable;
+
+/**
+ * 与电话服务通讯客户DTO
+ * @author Administrator
+ *
+ */
+public class MergeCustomerDTO implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private Long dbid;
+	private Long userId;		//用户id
+	private Long customerId;	//客户id
+	private String calleeNbr;	//客户电话
+	private int operateType;	//操作类型，0是添加，1是修改
+	
+	public Long getDbid() {
+		return dbid;
+	}
+
+	public void setDbid(Long dbid) {
+		this.dbid = dbid;
+	}
+
+	public Long getUserId() {
+		return userId;
+	}
+
+	public void setUserId(Long userId) {
+		this.userId = userId;
+	}
+
+	public Long getCustomerId() {
+		return customerId;
+	}
+
+	public void setCustomerId(Long customerId) {
+		this.customerId = customerId;
+	}
+
+	public String getCalleeNbr() {
+		return calleeNbr;
+	}
+
+	public void setCalleeNbr(String calleeNbr) {
+		this.calleeNbr = calleeNbr;
+	}
+
+	public int getOperateType() {
+		return operateType;
+	}
+
+	public void setOperateType(int operateType) {
+		this.operateType = operateType;
+	}
+
+}

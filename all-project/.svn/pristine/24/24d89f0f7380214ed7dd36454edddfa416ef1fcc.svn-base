@@ -1,0 +1,7 @@
+package saas.winbons.dubbo.api.contact;
+
+import saas.winbons.dubbo.api.ApiService;
+
+public interface IContactService extends ApiService {
+
+}

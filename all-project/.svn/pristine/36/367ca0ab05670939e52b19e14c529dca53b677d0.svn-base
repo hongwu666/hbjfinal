@@ -1,0 +1,218 @@
+package saas.winbons.run;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.springframework.context.event.SimpleApplicationEventMulticaster;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.CriteriaDefinition;
+import org.springframework.data.mongodb.core.query.Query;
+
+import com.jfinal.ext2.kit.RandomKit;
+import com.mongodb.DBObject;
+import com.mongodb.gridfs.GridFSDBFile;
+
+import saas.framework.nosql.FileSystemEngine;
+import saas.framework.nosql.domain.AttachmentObject;
+import saas.winbons.data.model.base.UserImportEvent;
+import saas.winbons.data.model.defined.DefinedFeildModel;
+import saas.winbons.dubbo.api.ApiService;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.api.SortDTO;
+import saas.winbons.framework.nosql.CustomGridFsTemplate;
+import saas.winbons.framework.nosql.CustomMongoTemplate;
+import saas.winbons.framework.service.ServiceLocator;
+import saas.winbons.framework.tools.ToolFile;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolNumber;
+import saas.winbons.framework.tools.ToolString;
+import saas.winbons.jfinal.JfinalCoreInit;
+
+public class StartUp {
+	
+	private static volatile boolean running = true;
+	
+	private static ContextDTO contextDTO = new ContextDTO();
+
+	public static void main(String[] args) throws IOException, InterruptedException {
+		ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring/*.xml");
+		ServiceLocator.setApplicationContext(applicationContext);
+		applicationContext.start();
+		new JfinalCoreInit();
+		contextDTO.setDbId(12052384L);
+		contextDTO.setUserId(100000037098L);
+		contextDTO.setAdmin(false);
+		contextDTO.setCurrentOwnerId(100000037098L);
+		contextDTO.setMobileRequest(false);
+		contextDTO.setUserName("he123@123.he");
+		contextDTO.setLoginId("he123@123.he");
+		
+		contextDTO.setServiceType(7);
+		//newGetImportStatus();
+		//newImportUser();
+		//poiExecl();
+		
+
+		
+		//newImportCustomer();
+		//outExecl();
+		//builidExecl();
+		newImportContact();
+		//newListView();
+		
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				synchronized (StartUp.class) {
+					running = false;
+					StartUp.class.notify();
+				}
+			}
+		});
+		synchronized (StartUp.class) {
+			while (running) {
+				try {
+					StartUp.class.wait();
+				} catch (Throwable e) {
+				}
+			}
+		}
+		
+		
+
+
+	}
+	
+	private static void newListView(){
+		ApiService service = (ApiService)ServiceLocator.getService("backendService");
+		RequestDTO requestDto = new RequestDTO(contextDTO,"newListNewImport");
+		requestDto.putFitler(new FilterDTO("a.importtype", "1"));
+		requestDto.putSort(new SortDTO("desc", "a.begin_date"));
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+	
+	private static void  newImportUser(){
+		ApiService service = (ApiService)ServiceLocator.getService("backendService");
+		RequestDTO requestDto = new RequestDTO(contextDTO,"newImportUser");
+		requestDto.put("importLogModel.importfile", "578703dbe4b044f02095d3c4");
+		requestDto.put("importLogModel.importtype", "5");
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+	
+	private static void  newGetImportStatus(){
+		ApiService service = (ApiService)ServiceLocator.getService("backendService");
+		RequestDTO requestDto = new RequestDTO(contextDTO,"newGetImportStatus");
+		requestDto.putFitler(new FilterDTO("importfile", "578703dbe4b044f02095d3c4", "="));
+		requestDto.putFitler(new FilterDTO("importtype", "5", "="));
+		
+		
+		
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println(ToolGson.GsonString(executeDto));
+	}
+	
+	
+	private static void poiExecl(){
+		Map<String,Object> source = new HashMap<String,Object>();
+		source.put("data", 120535332515L);
+		source.put("contextDTO", contextDTO);
+		UserImportEvent userImportEvent = new UserImportEvent(source);
+		SimpleApplicationEventMulticaster simpleApplicationEventMulticaster = (SimpleApplicationEventMulticaster)ServiceLocator.getService("applicationEventMulticaster");
+		simpleApplicationEventMulticaster.multicastEvent(userImportEvent);
+	}
+	
+	private static void newImportCustomer(){
+		ApiService service = (ApiService)ServiceLocator.getService("backendService");
+		RequestDTO requestDto = new RequestDTO(contextDTO,"newImport");
+		requestDto.put("importfile", "583e48f7e4b0008fe2ccea6f");
+		requestDto.put("importtype", 1);
+		requestDto.put("ownerId", 100000037098L);
+		requestDto.put("ftype",0);
+		requestDto.put("status",0);
+		ResultDTO executeDto = service.executeDto(requestDto);
+		
+		
+	}
+	
+	private static void newImportContact(){
+		ApiService service = (ApiService)ServiceLocator.getService("backendService");
+		RequestDTO requestDto = new RequestDTO(contextDTO,"newImport");
+		requestDto.put("importfile", "583f8ffbe4b00dec99fa3a87");
+		requestDto.put("importtype", 2);
+		requestDto.put("ownerId", 100000037098L);
+		requestDto.put("ftype",0);
+		requestDto.put("status",0);
+		ResultDTO executeDto = service.executeDto(requestDto);
+	}
+	
+	private static void outExecl(){
+		FileSystemEngine fileSystemEngine = (FileSystemEngine) ServiceLocator.getService("fileSysEngine");
+		AttachmentObject fileById = fileSystemEngine.getFileById(AttachmentObject.class, "583c6740e4b029e3bdf3a877");
+		try {
+			//fileById.getData();
+			//Workbook workbook=null;
+			//workbook = WorkbookFactory.create(fileById.getData());
+			//Sheet sheet = workbook.getSheetAt(0);				
+			//int lastRowNum = sheet.getLastRowNum();
+			//System.out.println(lastRowNum);
+			ToolFile.writeFile(fileById.getData(), "c:/", "import.xls", true);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+	private static void builidExecl(){
+		try{
+			Workbook workbook=null;
+			workbook = WorkbookFactory.create(new File("F:\\苍南天信\\模板2.xls"));
+			Sheet sheet = workbook.getSheet("原始表");
+			sheet.setForceFormulaRecalculation(true);
+			
+			for(int i = 2;i<143;i++){
+				Row row = sheet.getRow(i);
+				for(int a = 1;a <33;a++){
+					Cell cell = row.getCell(a*3);
+					Cell cell2 = row.getCell(a*3 + 1);
+					cell.setCellValue(i * a);
+					cell2.setCellValue(i * a + RandomKit.random(1, 10));
+				}
+			}
+			
+			
+			
+			
+			
+			String fileUrl = "F:\\苍南天信\\模板2_out.xls";
+			int numberOfSheets = workbook.getNumberOfSheets();
+			for(int a = 0;a < numberOfSheets;a++){
+				Sheet sheetAt = workbook.getSheetAt(a);
+				sheetAt.setForceFormulaRecalculation(true);
+			}
+			
+			
+			FileOutputStream fileOutputStream = new FileOutputStream(fileUrl);
+			workbook.write(fileOutputStream);
+			fileOutputStream.close();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	
+
+}

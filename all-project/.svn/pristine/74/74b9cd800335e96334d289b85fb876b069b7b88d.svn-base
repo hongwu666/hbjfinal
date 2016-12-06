@@ -1,0 +1,108 @@
+package saas.framework.cache;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
+import saas.framework.cache.redis.cmds.RedisCmdsFactory;
+import saas.winbons.framework.service.ServiceLocator;
+
+public class RedisCmdHelper {
+
+	private int db = 3;
+
+	private static ThreadLocal<Jedis> jedisPoolCache = new ThreadLocal<Jedis>();
+
+	private static final Logger logger = LoggerFactory.getLogger(RedisCmdHelper.class);
+
+	private JedisPool jedisPool;
+
+	private RedisCmdsFactory redisCmdsFactory;
+
+	public RedisCmdHelper() {
+		this.redisCmdsFactory = (RedisCmdsFactory) ServiceLocator.getService("redisCmdsFactory");
+	}
+
+	public void setJedisPool(JedisPool jedisPool) {
+		this.jedisPool = jedisPool;
+	}
+
+	public void setDb(int db) {
+		this.db = db;
+	}
+
+	public Object executeCallBack(JedisCallback jedisCallback) {
+		Jedis jedis = null;
+		boolean isError = false;
+		try {
+			jedis = getJedis();
+			Object obj = jedisCallback.executCmd(jedis);
+			return obj;
+		} catch (Exception ex) {
+			isError = true;
+			logger.error("execute cmd error", ex);
+			return null;
+		} finally {
+			if (jedis != null){
+				returnConnection(jedis, isError);
+			}
+			jedisPoolCache.remove();
+		}
+	}
+
+	public Object doRedisCmd(String cmd, Object key, Object[] params, Object[] extraParam) {
+		if (redisCmdsFactory == null) {
+			redisCmdsFactory = (RedisCmdsFactory) ServiceLocator.getService("redisCmdsFactory");
+		}
+		if (redisCmdsFactory == null) {
+			logger.error("redisCmdsFactory cant be null");
+		}
+		Object result = null;
+		Jedis jedis = null;
+		boolean isError = false;
+		try {
+			jedis = getJedis();
+			jedisPoolCache.set(jedis);
+			IRedisCmd redisCmd = redisCmdsFactory.getRedisCmdByKey(cmd);
+			if (redisCmd != null) {
+				result = redisCmd.exeute(key, params, extraParam);
+			}
+		} catch (Exception ex) {
+			logger.error("execute cmd error", ex);
+			isError = true;
+		} finally {
+			if (jedis != null) {
+				returnConnection(jedis, isError);
+			}
+			jedisPoolCache.remove();
+		}
+		return result;
+	}
+
+	public Object doRedisCmd(String cmd, Object key, Object[] params) {
+		return doRedisCmd(cmd, key, params, null);
+	}
+
+	public Object doRedisCmd(String cmd, Object key) {
+		return doRedisCmd(cmd, key, null, null);
+	}
+
+	private Jedis getJedis() {
+		Jedis jedis = jedisPool.getResource();
+		jedis.select(db);
+		return jedis;
+	}
+
+	private void returnConnection(Jedis jedis, Boolean error) {
+		if (error) {
+			jedisPool.returnBrokenResource(jedis);
+		} else {
+			jedisPool.returnResource(jedis);
+		}
+	}
+
+	public static Jedis getCurrentJedis() {
+		return jedisPoolCache.get();
+	}
+}

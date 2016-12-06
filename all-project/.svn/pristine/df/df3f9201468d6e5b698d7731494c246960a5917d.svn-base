@@ -1,0 +1,7 @@
+package saas.monitor.constantInit;
+
+public class ConstantAuthority {
+	
+	public static final String system_suppler = "0188";
+
+}

@@ -1,0 +1,91 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: LocationMap.java 
+ * @Package saas.crm.dynamic.model 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年12月11日 下午1:51:17 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.model;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+/**
+ * @ClassName: LocationMap
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年12月11日 下午1:51:17
+ */
+@Document(collection = "locationMap")
+@CompoundIndex(def = "{address:1}", background = true)
+public class LocationMap {
+
+	@Id
+	private String address;
+
+	private String baiduUrl;
+
+	private String localtionUrl;
+
+	/**
+	 * @return the address
+	 */
+
+	public String getAddress() {
+		return address;
+	}
+
+	/**
+	 * @param address
+	 *            the address to set
+	 */
+	public void setAddress(String address) {
+		this.address = address;
+	}
+
+	/**
+	 * @return the baiduUrl
+	 */
+	public String getBaiduUrl() {
+
+		return baiduUrl;
+	}
+
+	/**
+	 * @param baiduUrl
+	 *            the baiduUrl to set
+	 */
+
+	public void setBaiduUrl(String baiduUrl) {
+
+		this.baiduUrl = baiduUrl;
+	}
+
+	/**
+	 * @return the localtionUrl
+	 */
+
+	public String getLocaltionUrl() {
+
+		return localtionUrl;
+	}
+
+	/**
+	 * @param localtionUrl
+	 *            the localtionUrl to set
+	 */
+
+	public void setLocaltionUrl(String localtionUrl) {
+
+		this.localtionUrl = localtionUrl;
+	}
+}

@@ -1,0 +1,94 @@
+package saas.winbons.run;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import com.jfinal.ext.kit.ModelKit;
+
+import saas.winbons.data.model.customer.Customer;
+import saas.winbons.dubbo.api.ApiService;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.framework.service.ServiceLocator;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolSqlXml;
+import saas.winbons.jfinal.JfinalCoreInit;
+
+public class ContactStartUp {
+	
+private static volatile boolean running = true;
+	
+	private static ContextDTO contextDTO = new ContextDTO();
+	
+	public static void main(String[] args) throws IOException, InterruptedException {
+		ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring/*.xml");
+		ServiceLocator.setApplicationContext(applicationContext);
+		applicationContext.start();
+		new JfinalCoreInit();
+		contextDTO.setDbId(12053435L);
+		contextDTO.setUserId(100000095027L);
+		contextDTO.setAdmin(false);
+		contextDTO.setCurrentOwnerId(100000095027L);
+		contextDTO.setMobileRequest(false);
+		
+		createViewByScan();
+		//scanStep1();
+		
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				synchronized (ContactStartUp.class) {
+					running = false;
+					ContactStartUp.class.notify();
+				}
+			}
+		});
+		synchronized (ContactStartUp.class) {
+			while (running) {
+				try {
+					ContactStartUp.class.wait();
+				} catch (Throwable e) {
+				}
+			}
+		}
+		
+	}
+	
+	private static ResultDTO createViewByScan() {
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			
+			
+			
+			ApiService service = (ApiService)ServiceLocator.getService("contactService");
+			RequestDTO requestDto = new RequestDTO(contextDTO,"createViewByScan");
+			resultDTO = service.executeDto(requestDto);
+			System.out.println(ToolGson.GsonString(resultDTO));
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	
+	private static void scanStep1(){
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("contextDTO", contextDTO);
+		Customer customer = Customer.dao.findById(contextDTO, contextDTO.getDbId(),120535068433L);
+		customer.set("name", "abcd1");
+		String custName = customer.get("name");
+		params.put("custName", custName);
+		params.put("data", ModelKit.toMap(customer));
+		
+		System.out.println(ToolSqlXml.getSql("winbons.contact.scanStep1",params));
+	}
+	
+	
+	
+
+}

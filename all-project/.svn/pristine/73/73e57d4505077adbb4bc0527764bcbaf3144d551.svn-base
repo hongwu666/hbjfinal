@@ -1,0 +1,19 @@
+package saas.winbons.dubbo.web.dto;
+
+import java.util.Map;
+
+import saas.winbons.framework.tools.ToolString;
+
+public class SimulationHttpServletRequest {
+	
+	private Map<Object, Object> map;
+	
+	public SimulationHttpServletRequest(Map<Object, Object> map){
+		this.map = map;
+	}
+	
+	public String getParameter(String parameter){
+		return ToolString.toString(map.get(parameter));
+	}
+
+}

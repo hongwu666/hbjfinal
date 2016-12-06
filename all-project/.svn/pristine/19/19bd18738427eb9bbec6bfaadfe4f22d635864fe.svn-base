@@ -1,0 +1,183 @@
+package saas.winbons.data.model.base;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationListener;
+import org.springframework.stereotype.Component;
+
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolString;
+
+@Component
+public class UserImportEventListener implements ApplicationListener<UserImportEvent> {
+
+	protected final Logger LOG = LoggerFactory.getLogger(UserImportEventListener.class);
+	
+	/*@Autowired
+	private FileSystemEngine fileSystemEngine;*/
+	
+	
+
+	@Override
+	public void onApplicationEvent(UserImportEvent event) {
+		try {/*
+			Map<String, Object> source = (Map<String, Object>) event.getSource();
+			Long id = (Long) source.get("data");
+			ContextDTO contextDTO = (ContextDTO) source.get("contextDTO");
+			ImportLogModel findById = ImportLogModel.dao.findById(contextDTO, contextDTO.getDbId(),id);
+			AttachmentObject fileById = fileSystemEngine.getFileById(AttachmentObject.class, findById.getStr("importfile"));
+			findById.put("status", 1);
+			findById.update(contextDTO);
+			String ftype = ToolString.toString(findById.getInt("ftype"));
+			
+			Workbook workbook=null;
+			workbook = WorkbookFactory.create(fileById.getData());
+			Sheet sheet = workbook.getSheetAt(0);				
+			int lastRowNum = sheet.getLastRowNum();
+			for(int rowIdx = 1; rowIdx <= lastRowNum; rowIdx++){
+				Row currRow = sheet.getRow(rowIdx);
+				if (currRow==null){
+					continue;
+				}
+				Iterator<Cell> iter = currRow.cellIterator();
+				boolean exist = false;
+				Map<Object, Object> userMap = new HashMap<Object,Object>();
+				boolean error = false;
+				while(iter.hasNext()){
+					Cell cell = iter.next();
+					cell.setCellType(Cell.CELL_TYPE_STRING);
+					String stringCellValue = cell.getStringCellValue();
+					int columnIndex = cell.getColumnIndex();
+					LOG.info(columnIndex + ":" + stringCellValue);
+					switch(columnIndex){
+						case 0://登录帐号
+						{
+							error = createError(currRow,stringCellValue,"登录编号不能为空",findById,contextDTO);
+							if(error)break;
+							User u = User.dao.findById(contextDTO, contextDTO.getDbId(),stringCellValue);
+							if(null != u)exist = true;
+							if(ftype.equals("1")){//'导入方式，0：覆盖式导入，1：新增导入'
+								if(exist){
+									error = createError(currRow,"","登录编号已经存在",findById,contextDTO);
+									break;
+								}
+							}
+							userMap.put("user.login_id", stringCellValue);
+						}
+						break;
+						case 1://姓名
+						{
+							error = createError(currRow,stringCellValue,"姓名不能为空",findById,contextDTO);
+							if(error)break;
+							userMap.put("user.display_name", stringCellValue);
+						}
+						break;
+						case 2://初始密码
+						{
+							error = createError(currRow,stringCellValue,"初始密码不能为空",findById,contextDTO);
+							if(error)break;
+							userMap.put("login.password", stringCellValue);
+						}
+						break;
+						case 3:
+						{
+							error = createError(currRow,stringCellValue,"手机不能为空",findById,contextDTO);
+							if(error)break;
+							userMap.put("contact.mobile", stringCellValue);
+						}
+						break;
+						case 4:
+						{
+							error = createError(currRow,stringCellValue,"所属部门不能为空",findById,contextDTO);
+							if(error)break;
+							Map<String,Object> params = new HashMap<String,Object>();
+							List<FilterDTO> filters = new ArrayList<FilterDTO>();
+							filters.add(new FilterDTO("name", stringCellValue, "="));
+							filters.add(new FilterDTO("isdeleted", "0", "="));
+							params.put("filters", filters);
+							List<Department> find = Department.dao.find(contextDTO, ToolSqlXml.getSql("winbons.department.getDeparts", params));
+							if(find.size() == 0){
+								error = createError(currRow,"","所属部门不存在",findById,contextDTO);
+								break;
+							}
+							userMap.put("user.department_id", find.get(0).getLong("id"));
+						}
+						break;
+						case 5:
+						{
+							userMap.put("user.email", stringCellValue);
+						}
+						break;
+						case 6:
+						{
+							error = createError(currRow,stringCellValue,"所属职位不能为空",findById,contextDTO);
+							if(error)break;
+							Map<String,Object> params = new HashMap<String,Object>();
+							List<FilterDTO> filters = new ArrayList<FilterDTO>();
+							filters.add(new FilterDTO("pos_name", stringCellValue, "="));
+							params.put("filters", filters);
+							List<Department> find = Department.dao.find(contextDTO, ToolSqlXml.getSql("winbons.department.getDeptPosition", params));
+							if(find.size() == 0){
+								error = createError(currRow,"","所属职位不存在",findById,contextDTO);
+								break;
+							}
+							userMap.put("user.dept_pos_id", find.get(0).getLong("id"));
+						}
+						break;
+						case 7:
+						{
+							if(stringCellValue.equals("女")){
+								userMap.put("user.gender", "1");
+							}else{
+								userMap.put("user.gender", "0");
+							}
+						}
+						break;
+						case 8:
+						{
+							error = createError(currRow,stringCellValue,"员工编号不能为空",findById,contextDTO);
+							if(error)break;
+							userMap.put("user.staff_no", stringCellValue);
+						}
+						break;
+					}
+					if(error)break;
+				}
+				if(!error){
+					try{
+						if(!exist){
+							User.dao.addUser(contextDTO, userMap);
+						}else{
+							User.dao.updateUser(contextDTO, userMap);
+						}
+					}catch(Exception e){
+						error = createError(currRow,"",e.getMessage(),findById,contextDTO);
+					}
+
+				}
+			}
+			FileOutputStream out = new FileOutputStream("c:\\aaa.xls");
+			workbook.write(out);
+			out.close();
+			
+			
+		*/}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	
+	private boolean createError(Row currRow,String stringCellValue,String error,ImportLogModel findById,ContextDTO contextDTO){
+		if(ToolString.isEmptyString(stringCellValue)){
+			Cell createCell = currRow.createCell(10);
+			createCell.setCellValue(error);
+			findById.set("failureQty", findById.getInt("failureQty") + 1);
+			findById.update(contextDTO);
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+}

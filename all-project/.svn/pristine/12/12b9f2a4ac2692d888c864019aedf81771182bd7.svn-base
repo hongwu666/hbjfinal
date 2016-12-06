@@ -1,0 +1,13 @@
+package saas.winbons.data.model.base;
+
+import org.springframework.context.ApplicationEvent;
+
+public class DynamicEvent extends ApplicationEvent {
+
+	private static final long serialVersionUID = 5174180536116552828L;
+
+	public DynamicEvent(Object source) {
+		super(source);
+	}
+
+}

@@ -1,0 +1,62 @@
+package saas.winbons.data.model.calendar;
+
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import saas.winbons.data.model.BaseModel;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolEvent;
+
+import com.jfinal.ext.kit.ModelKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.IAtom;
+
+public class CalendarInfo extends BaseModel<CalendarInfo> {
+
+	private static final long serialVersionUID = -4264714399887864565L;
+	
+	public static final CalendarInfo dao = new CalendarInfo();
+	
+	protected final Logger LOG = LoggerFactory.getLogger(CalendarInfo.class);
+	
+	
+	public void saveObj(ContextDTO contextDTO,CalendarInfo calendarInfo){
+		if(Db.tx(new IAtom() {
+			@Override
+			public boolean run() throws SQLException {
+				calendarInfo.save(contextDTO);
+				CalendarRelUser calendarRelUser = new CalendarRelUser();
+				calendarRelUser.set("calendarId", calendarInfo.get("id"));
+				calendarRelUser.set("relUserId", calendarInfo.get("ownerId"));
+				calendarRelUser.save(contextDTO);
+				return true;
+			}
+		})){
+			Map<String, Object> map = ModelKit.toMap(calendarInfo);
+			Map<String, Object> source = new HashMap<String,Object>();
+			source.put("data", map);
+			source.put("contextDTO", contextDTO);
+			ToolEvent.multicastEvent(new CalendarInfoEvent(source));
+		}
+	}
+	
+	public void updateObj(ContextDTO contextDTO,CalendarInfo calendarInfo){
+		if(Db.tx(new IAtom() {
+			@Override
+			public boolean run() throws SQLException {
+				return calendarInfo.update(contextDTO);
+			}
+		})){
+			Map<String, Object> map = ModelKit.toMap(calendarInfo);
+			Map<String, Object> source = new HashMap<String,Object>();
+			source.put("data", map);
+			source.put("contextDTO", contextDTO);
+			ToolEvent.multicastEvent(new CalendarInfoEvent(source));
+		}
+	}
+
+}

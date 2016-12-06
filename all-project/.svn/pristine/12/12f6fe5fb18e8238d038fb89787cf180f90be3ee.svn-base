@@ -1,0 +1,25 @@
+﻿#数据库
+jdbcUrl = jdbc:mysql://192.168.2.167:3306/saas_mail_monitor?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull
+user = star
+password = 123456
+devMode = true
+
+
+jdbcUrlSaas = jdbc:mysql://192.168.2.167:3306/saas_CRM?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull
+userSaas = star
+passwordSaas = 123456
+
+redis.ip=192.168.2.170
+redis.port=6379
+redis.password=123456
+
+#IDEA加密秘钥
+config.securityKey = ttJw6Oc4NEtwPf8CbmwLNQ==
+
+
+
+#cookie最大时间 3600 * 24 * 15 = 12960000 秒 = 15 天
+config.maxAge = 12960000
+
+#60 * 30 如果邮箱没有回馈 半个小时不再发起  
+BuildReceiveEmailJob.pending=1800

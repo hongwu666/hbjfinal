@@ -1,0 +1,36 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: FilterType.java 
+ * @Package saas.framework.sql 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年6月28日 上午9:56:18 
+ * @version 1.0 
+ */
+
+package saas.winbons.framework.sql;
+
+/**
+ * @ClassName: FilterType
+ * @author star.ye
+ * @date 2014年6月28日 上午9:56:18
+ */
+
+public enum FilterType {
+
+	EQ("="), NEQ("<>"), GT(">"), GTE(">="), IN("in"), NIN("not in"), 
+	EXIST("exists"), NEXIST("not exists"), LT("<"), LTE("<="), 
+	LIKE("like"), ISNULL("is null"), ISNOTNULL("is not null"),
+	BETWEEN("between");
+
+	public String value;
+
+	private FilterType(String value) {
+		this.value = value;
+	}
+}

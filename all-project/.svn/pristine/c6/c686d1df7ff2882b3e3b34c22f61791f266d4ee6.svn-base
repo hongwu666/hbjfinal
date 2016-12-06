@@ -1,0 +1,42 @@
+package saas.winbons.data.model;
+
+
+public abstract class OperatorModel <M extends BaseModel<M>> extends BaseModel<M> { /**
+	 * 
+	 */
+	private static final long serialVersionUID = -2372365948668139555L;
+	
+	public void setCreatedDate(java.lang.Long createdDate) {
+		set("created_date", createdDate);
+	}
+
+	public java.lang.Long getCreatedDate() {
+		return get("created_date");
+	}
+
+	public void setCreatedBy(java.lang.Long createdBy) {
+		set("created_by", createdBy);
+	}
+
+	public java.lang.Long getCreatedBy() {
+		return get("created_by");
+	}
+
+	public void setUpdatedDate(java.lang.Long updatedDate) {
+		set("updated_date", updatedDate);
+	}
+
+	public java.lang.Long getUpdatedDate() {
+		return get("updated_date");
+	}
+
+	public void setUpdatedBy(java.lang.Long updatedBy) {
+		set("updated_by", updatedBy);
+	}
+
+	public java.lang.Long getUpdatedBy() {
+		return get("updated_by");
+	}
+
+
+}

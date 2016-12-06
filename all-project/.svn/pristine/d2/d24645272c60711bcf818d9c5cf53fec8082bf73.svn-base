@@ -1,0 +1,45 @@
+package saas.framework.cache.impl;
+
+import java.lang.ref.SoftReference;
+import java.util.concurrent.ConcurrentHashMap;
+
+import saas.framework.cache.DataLoader;
+
+/**
+ * 
+ * @ClassName: ConcurrentMapCache
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author yxx
+ * @date 2014年2月24日 下午3:22:50
+ * @param <K>
+ * @param <V>
+ */
+public class ConcurrentMapCache<K, V> extends MapCache<K, V> {
+
+	protected DataLoader<K, V> cacheLoader;
+
+	public ConcurrentMapCache(String name, int cachedCapacity, int concurrencyLevel) {
+		this(null, name, cachedCapacity, concurrencyLevel);
+	}
+
+	public ConcurrentMapCache(DataLoader<K, V> cacheLoader, String name, int cachedCapacity, int concurrencyLevel) {
+		super(name, new ConcurrentHashMap<K, SoftReference<V>>(cachedCapacity, 0.75f, concurrencyLevel));
+	}
+
+	public ConcurrentMapCache(String name) {
+		this(name, 16, 1);
+	}
+
+	@Override
+	public V get(K key) {
+		V value = super.get(key);
+		if (value == null && cacheLoader != null) {
+			value = cacheLoader.load(key);
+			if (value != null) {
+				put(key, value);
+			}
+		}
+		return value;
+	}
+
+}

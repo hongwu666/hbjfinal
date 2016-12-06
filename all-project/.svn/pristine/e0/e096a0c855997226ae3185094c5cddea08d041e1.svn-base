@@ -1,0 +1,129 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: FilterItem.java 
+ * @Package saas.framework.sql 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年6月28日 上午9:54:59 
+ * @version 1.0 
+ */
+
+package saas.winbons.framework.sql;
+
+/**
+ * @ClassName: FilterItem
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年6月28日 上午9:54:59
+ */
+
+public class FilterItem {
+
+	private String propertyName;
+
+	private Object value;
+
+	private FilterType fileFilterType;
+	
+	private Object suffixValue;
+
+	public String getPropertyName() {
+
+		return propertyName;
+	}
+
+	public void setPropertyName(String propertyName) {
+
+		this.propertyName = propertyName;
+	}
+
+	public Object getValue() {
+
+		return value;
+	}
+
+	public void setValue(Object value) {
+
+		this.value = value;
+	}
+
+	public Object getSuffixValue() {
+		return suffixValue;
+	}
+
+	public void setSuffixValue(Object suffixValue) {
+		this.suffixValue = suffixValue;
+	}
+
+	public FilterType getFileFilterType() {
+
+		return fileFilterType;
+	}
+
+	public void setFileFilterType(FilterType fileFilterType) {
+
+		this.fileFilterType = fileFilterType;
+	}
+	
+	public FilterItem(String propertyName, Object value) {
+		this(propertyName, value, FilterType.EQ);
+	}
+
+	public FilterItem(String propertyName, Object value, FilterType fileFilterType) {
+		this.propertyName = propertyName;
+		this.value = value;
+		this.fileFilterType = fileFilterType;
+	}
+	
+	/**
+	 * 区间范围查询才使用此构造器
+	 * @param propertyName
+	 * @param value
+	 * @param fileFilterType
+	 * @param suffixValue
+	 */
+	public FilterItem(String propertyName, Object value, FilterType fileFilterType,Object suffixValue) {
+		this.propertyName = propertyName;
+		this.value = value;
+		this.fileFilterType = fileFilterType;
+		this.suffixValue = suffixValue;
+	}
+
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		FilterType filterType = getFileFilterType();
+		sb.append(getPropertyName()).append(" ").append(getFileFilterType().value).append(" ");
+		Object value = getValue();
+		switch (filterType) {
+		case IN:
+		case NIN:
+		case EXIST:
+		case NEXIST:
+			sb.append("(").append(value).append(") ");
+			break;
+		case ISNULL:
+		case ISNOTNULL:
+			break;
+		case LIKE:
+			value = "%" + value + "%";
+		default:
+			appendValue(sb, value);
+		}
+		return sb.toString();
+	}
+
+	private void appendValue(StringBuilder sb, Object value) {
+		if (value instanceof String) {
+			sb.append("'").append(value).append("' ");
+		} else if (value instanceof Number) {
+			sb.append(value);
+		} else {
+			sb.append(value);
+		}
+	}
+}

@@ -1,0 +1,27 @@
+package saas.crm.data.constant;
+
+public class GlobalConstant {
+
+  public static final String YES = "Y";
+  public static final int Y = 1;
+	public static final int N = 0;
+	
+	public static final String NO = "N";
+	
+	/**
+	 * 超级管理员的角色为-1
+	 */
+	public static final Long super_manger_role = -1L;
+	
+	public static final Long INIT_DATE = -1L;
+	
+	public static final int SUPER_MANAGER = 1;
+	
+	public static final String DEFAULT_PASS="888888";
+	
+	public static final Long notBizGroupId = -2L;
+	public static final String notBizGroupName = "-";
+	
+	public static final String fromFlag_statistics = "statistics";//活动统计
+	
+}

@@ -1,0 +1,35 @@
+package saas.winbons.dubbo.serialize;
+
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.api.SortDTO;
+
+/*import com.alibaba.dubbo.common.serialize.support.SerializationOptimizer;*/
+
+/*public class SerializationOptimizerImpl implements SerializationOptimizer {
+
+	@SuppressWarnings("rawtypes")
+	@Override
+	public Collection<Class> getSerializableClasses() {
+		List<Class> classes = new LinkedList<Class>();
+		classes.add(ContextDTO.class);
+		classes.add(FilterDTO.class);
+		classes.add(SortDTO.class);
+		classes.add(RequestDTO.class);
+		classes.add(ResultDTO.class);
+		
+		return classes;
+	}
+
+}*/
+
+public class SerializationOptimizerImpl {
+
+
+}

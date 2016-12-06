@@ -1,0 +1,26 @@
+package saas.monitor.mvc.security;
+
+import java.util.List;
+import java.util.Map;
+
+import saas.monitor.constantInit.ConstantInit;
+import saas.monitor.mvc.base.BaseModel;
+import saas.monitor.tools.ToolModel;
+import com.jfinal.ext.plugin.tablebind.TableBind;
+
+public class Role extends BaseModel<Role> {
+	
+	private static final long serialVersionUID = 6584191936530840222L;
+	public static final Role dao = new Role();
+
+	@Override
+	protected Class<? extends BaseModel<Role>> getLogClass() {
+		return Role.class;
+	}
+	
+	public List<Map<String,Object>> getRoles(){
+		List<Role> list = Role.dao.find("select * from icc_system_role where enabled = ?", ConstantInit.YES_OR_NO_YES);
+		return ToolModel.modelListConvert(list);
+	}
+
+}

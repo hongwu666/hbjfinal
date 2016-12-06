@@ -1,0 +1,78 @@
+package saas.monitor.criteria;
+
+public class CommonCriteria implements java.io.Serializable {
+
+	private static final long serialVersionUID = 2652504576694710637L;
+	
+	private FilterVO[] filters;
+	private SortVO[] sorts;
+	private Page page;
+	private boolean paged;
+	
+	/**
+	 * @return the filters
+	 */
+
+	public FilterVO[] getFilters() {
+
+		return filters;
+	}
+
+	/**
+	 * @param filters
+	 *            the filters to set
+	 */
+
+	public void setFilters(FilterVO[] filters) {
+
+		this.filters = filters;
+	}
+
+	/**
+	 * @return the sorts
+	 */
+
+	public SortVO[] getSorts() {
+
+		return sorts;
+	}
+
+	/**
+	 * @param sorts
+	 *            the sorts to set
+	 */
+
+	public void setSorts(SortVO[] sorts) {
+
+		this.sorts = sorts;
+	}
+
+	/**
+	 * @return the page
+	 */
+
+	public Page getPage() {
+
+		return page;
+	}
+
+	/**
+	 * @param page
+	 *            the page to set
+	 */
+
+	public void setPage(Page page) {
+		this.paged = true;
+		this.page = page;
+	}
+
+	/**
+	 * @return the paged
+	 */
+
+	public boolean isPaged() {
+
+		return paged;
+	}
+
+}

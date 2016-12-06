@@ -1,0 +1,549 @@
+package saas.winbons.provider;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import saas.crm.market.enumtype.FollowStatusEnum;
+import saas.winbons.data.model.ListItem;
+import saas.winbons.data.model.leads.Leads;
+import saas.winbons.data.model.organization.Department;
+import saas.winbons.data.model.security.User;
+import saas.winbons.data.model.tag.BizRelTag;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.service.AbstractCommonService;
+import saas.winbons.dubbo.web.dto.CommonPageResult;
+import saas.winbons.dubbo.web.dto.FilterValueDTO;
+import saas.winbons.dubbo.web.dto.PageResult;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.dynamic.ItemTypeEnum;
+import saas.winbons.enumtype.Gender;
+import saas.winbons.format.EnumFormatTool;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.sql.FilterItem;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.sql.FilterItemListImpl;
+import saas.winbons.framework.sql.FilterType;
+import saas.winbons.framework.sql.OrderItem;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+import saas.winbons.framework.tools.ToolString;
+import saas.winbons.framework.utils.CrmDateUtils;
+import saas.winbons.market.contant.LeaderMappingFile;
+import saas.winbons.market.contant.LeadsColumnConvertor;
+
+import com.alibaba.fastjson.JSONArray;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Model;
+
+public class MarketServiceImpl extends AbstractCommonService {
+	
+
+	@Override
+	public Class<? extends Model<?>> getModelClass() {
+		return Leads.class;
+	}
+	
+	
+	private static ThreadLocal<HashMap<Long, String>> listItemMap = new ThreadLocal<HashMap<Long, String>>(){
+		@Override 
+		protected HashMap<Long, String> initialValue() { 
+			return new HashMap<Long, String>(); 
+		} 
+	};
+
+	@Override
+	public AbstractCommonService getService() {
+		return this;
+	}
+	
+	
+
+	@Override
+	protected String tableJoin(ContextDTO contextDTO) {
+		return super.tableJoin(contextDTO) + " as leads";
+	}
+	
+	
+	@Override
+	protected String buildSelectSql() {
+		String buildSelectSql = "select ";
+		buildSelectSql += ToolJfinalSql.buildSelectSql(getModelClass(), "leads",null,null);
+		return buildSelectSql;
+	}
+	
+	@Override
+	protected void entityFormat(ContextDTO contextDTO,Map<String, Object> map){
+		EnumFormatTool.dealFormat(LeadsColumnConvertor.class, map);
+	}
+
+	@Override
+	public String getGridId() {
+		return "ID_GRID_LEADS";
+	}
+	
+
+	@Override
+	public FilterItemList buildFilterItem(ContextDTO contextDTO,SimulationHttpServletRequest request) {
+
+		FilterItemList filterItemList = new FilterItemListImpl();
+		
+		/** 设置排序 */
+		String orderBy = request.getParameter("orderBy");
+		String desc = request.getParameter("desc");
+		if(StringUtils.isBlank(orderBy) || "ud".equals(orderBy)){
+			filterItemList.addOrderItem(new OrderItem("leads.updated_date", true));
+		} else if("cd".equals(orderBy)){
+			filterItemList.addOrderItem(new OrderItem("leads.created_date", true));
+		}else{
+			boolean isDesc = true;
+			if(StringUtils.isNotBlank(desc)){
+				isDesc = "1".equals(desc)?true:false;
+			}
+			String value = LeaderMappingFile.getMappingFiled(orderBy);
+			filterItemList.addOrderItem(new OrderItem(value, isDesc));
+		}
+		
+		/** 如果通过ID直接查询，那么就不往后继续判断了 */
+		String dataId = request.getParameter("dataId");
+		if(StringUtils.isNotBlank(dataId)){
+			filterItemList.addFilterItem(new FilterItem("leads.id", Long.parseLong(dataId), FilterType.EQ));
+			return filterItemList;
+		}
+		
+		String leadsIds = request.getParameter("ids");
+		if(StringUtils.isNotBlank(leadsIds)){
+			if(leadsIds.contains("_")){
+				List<String> idList = new ArrayList<String>();
+				String[] cids = leadsIds.split(",");
+				for (int i = 0; i < cids.length; i++) {
+					String cid = cids[i];
+					if(cid.contains("_")){
+						String id = cid.split("_")[1];
+						idList.add(id);
+					}
+				}
+				if(!idList.isEmpty()){
+					filterItemList.addFilterItem(new FilterItem("leads.id", StringUtils.join(idList, ","), FilterType.IN));
+				}
+			} else {
+				filterItemList.addFilterItem(new FilterItem("leads.id", leadsIds, FilterType.IN));
+			}
+			return filterItemList;
+		}
+		
+		// 按负责人过滤
+		String owner = request.getParameter("CONSTANT_OWNERID");
+		if (StringUtils.isNotBlank(owner)) {
+			filterItemList.addFilterItem(new FilterItem("leads.owner_id", owner, FilterType.EQ));
+		}else{
+			filterItemList.addFilterItem(new FilterItem("leads.owner_id",contextDTO.getUserId(),FilterType.EQ));
+		}
+		
+		// 按状态过滤
+		String status = request.getParameter("status");
+		if (StringUtils.isNotBlank(status)) {
+			if("0".equals(status)){
+				filterItemList.addFilterItem(new FilterItem("leads.status",status,FilterType.EQ));
+			}else if("1".equals(status)){
+				filterItemList.addFilterItem(new FilterItem("leads.status",status,FilterType.EQ));
+			}else if("2".equals(status)){
+				filterItemList.addFilterItem(new FilterItem("leads.status",status,FilterType.EQ));
+			}else {
+				filterItemList.addFilterItem(new FilterItem("leads.status",StringUtils.join(new String[]{"0","1","2"},","),FilterType.IN));
+			}
+		}else {
+			filterItemList.addFilterItem(new FilterItem("leads.status",StringUtils.join(new String[]{"0","1","2"},","),FilterType.IN));
+		}
+		
+		
+		// 按更新时间过滤
+		Long sTime = null;
+		Long eTime = null;
+		String time = request.getParameter("time");
+		if(StringUtils.isNotBlank(time)){
+			Date startTime = CrmDateUtils.getDateByType(time, true);
+			sTime = startTime.getTime();
+			Date endTime = CrmDateUtils.getDateByType(time, false);
+			eTime = endTime.getTime();
+		} else {
+			String startTimeStr = request.getParameter("startTime");
+			String endTimeStr = request.getParameter("endTime");
+			if(StringUtils.isNotBlank(startTimeStr)){
+				try {
+					SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+					Date startTime = formater.parse(startTimeStr+" 00:00:00");
+					sTime = startTime.getTime();
+				} catch (ParseException e) {
+					sTime = null;
+					
+				}
+			}
+			if(StringUtils.isNotBlank(endTimeStr)){
+				try {
+					SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+					Date endTime = formater.parse(endTimeStr+" 23:59:59");
+					eTime = endTime.getTime();
+				} catch (ParseException e) {
+					eTime = null;
+				}
+			}	
+		}
+		if(sTime != null ){
+			filterItemList.addFilterItem(new FilterItem("leads.updated_date", sTime, FilterType.GTE));
+		}
+		if(eTime != null){
+			filterItemList.addFilterItem(new FilterItem("leads.updated_date", eTime, FilterType.LTE));
+		}
+		
+		// 按公司名称过滤
+		boolean compSearch=false;
+		String compname = request.getParameter("compname");
+		if (StringUtils.isNotBlank(compname)) {
+			if(compname.indexOf("%")>=0){
+				compname = compname.replaceAll("%", "\\\\%");
+			}
+			filterItemList.addFilterItem(new FilterItem("leads.comp_name", compname, FilterType.LIKE));
+			compSearch=true;
+		}
+		
+		
+		// 按联系人姓名过滤
+		boolean nameSearch=false;
+		String name = request.getParameter("name");
+		if (StringUtils.isNotBlank(name)) {
+			if(name.indexOf("%")>=0){
+				name = name.replaceAll("%", "\\\\%");
+			}
+			filterItemList.addFilterItem(new FilterItem("leads.name", name, FilterType.LIKE));
+			nameSearch=true;
+		}
+		
+		//特别查找
+		String orname = request.getParameter("orname");
+		if ((!compSearch) && (!nameSearch) && orname!=null && orname.length()>0){
+			if(orname.indexOf("%")>=0){
+				orname = orname.replaceAll("%", "\\\\%");
+			}
+			filterItemList.addFilterItem(new FilterItem("(leads.comp_name like '%"+orname+"%' or leads.name like '%"+orname+"%') and 1", new Integer(1), FilterType.EQ));
+			//filterItemList.setLogicType(LogicType.OR);
+			//filterItemList.addFilterItem(new FilterItem("leads.name", orname+")", FilterType.LIKE));
+		}
+		
+		//按标签过滤
+		String tagId = request.getParameter("tagId");
+		if(StringUtils.isNotBlank(tagId)){
+			Collection<Long> itemIds = BizRelTag.dao.getItemIdByTagId(contextDTO, ItemTypeEnum.Leads.name(),Long.parseLong(tagId), contextDTO.getUserId());
+			if(CollectionUtils.isNotEmpty(itemIds)){
+				filterItemList.addFilterItem(new FilterItem("leads.id",  StringUtils.join(itemIds, ",") , FilterType.IN));
+			}else{
+				filterItemList.addFilterItem(new FilterItem("leads.id",  null , FilterType.EQ));
+			}
+		}
+		
+		// 只查询tag=0未转为客户的线索
+		filterItemList.addFilterItem(new FilterItem("leads.tag", 0, FilterType.EQ));
+		
+		FilterItemList fi = getFilters(request);
+		if(fi !=null && fi.filerItemSize()>0){
+			for(int i=0;i<fi.filerItemSize();i++){
+				filterItemList.addFilterItem(fi.getFilterItem(i));
+			}
+		}
+				
+		return filterItemList;
+	}
+	
+	private FilterItemList getFilters(SimulationHttpServletRequest request){
+		FilterItemList filterItemList = new FilterItemListImpl();
+		Long sTime = null;
+		Long eTime = null;
+		//统一封装处理筛选条件
+		String filterStr = request.getParameter("filters");
+		if(!StringUtils.isBlank(filterStr)){
+			List<FilterValueDTO> dtoList = JSONArray.parseArray(filterStr, FilterValueDTO.class);
+			if(dtoList!=null && dtoList.size()>0){
+				for (FilterValueDTO dto : dtoList) {
+					FilterType ft = FilterType.IN;
+					String filterFile = dto.getFilter();
+					String typeField = dto.getType();
+					if ("text".equals(typeField)) {
+						ft = FilterType.LIKE;
+					} else if ("combobox".equals(typeField)) {
+						ft = FilterType.IN;
+					}
+					//取客户对应的数据库字段
+					String value = LeaderMappingFile.getMappingFiled(filterFile);
+					
+					//初始化接收到的值的变量
+					String[] valu = new String[1];
+					//如果是创建时间和更新时间，要特殊处理一下本周本月,如果是自定义类型的时间，只能筛选时间段
+					if ("createdDate".equals(filterFile) || "updatedDate".equals(filterFile)
+							|| "date".equals(typeField)|| "dt".equals(typeField)) {
+						
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = new String[2];
+							valu = dto.getValues().split(",");
+							if (valu[0] != null) {
+								try {
+									SimpleDateFormat formater = new SimpleDateFormat(
+											"yyyy-MM-dd HH:mm:ss");
+									Date startTime = null;
+									if("dt".equals(typeField)){
+										startTime = formater.parse(valu[0]+":00");
+									}else{
+										startTime = formater.parse(valu[0]+ " 00:00:00");
+									}
+									sTime = startTime.getTime();
+								} catch (ParseException e) {
+									sTime = null;
+								}
+							}
+							if (valu[1] != null) {
+								try {
+									SimpleDateFormat formater = new SimpleDateFormat(
+											"yyyy-MM-dd HH:mm:ss");
+									Date endTime = null;
+									if("dt".equals(typeField)){
+										endTime = formater.parse(valu[1]+":59");
+									}else{
+										endTime = formater.parse(valu[1]+ " 23:59:59");
+									}
+									eTime = endTime.getTime();
+								} catch (ParseException e) {
+									eTime = null;
+								}
+							}
+						} else {
+							if ("thizWeek".equals(dto.getValues())|| "thizMonth".equals(dto.getValues())) {
+								Date startTime = CrmDateUtils.getDateByType(
+										dto.getValues(), true);
+								sTime = startTime.getTime();
+								Date endTime = CrmDateUtils.getDateByType(
+										dto.getValues(), false);
+								eTime = endTime.getTime();
+							}
+						}
+						valu = new String[2];
+						if (sTime != null) {
+							if("dt".equals(typeField) || "date".equals(typeField)){
+								valu[0] = " UNIX_TIMESTAMP("+value+")*1000 " ;
+								filterItemList.addFilterItem(new FilterItem(valu[0],
+										sTime, FilterType.GTE));
+							}else{
+								filterItemList.addFilterItem(new FilterItem(value,
+										sTime, FilterType.GTE));
+							}
+							
+						}
+						if (eTime != null) {
+							if("dt".equals(typeField) || "date".equals(typeField)){
+								valu[1] = " UNIX_TIMESTAMP("+value+")*1000 " ;
+								filterItemList.addFilterItem(new FilterItem(valu[1],
+										eTime, FilterType.LTE));
+							}else{
+								filterItemList.addFilterItem(new FilterItem(value,
+										eTime, FilterType.LTE));
+							}
+							
+						}
+					}
+					else {
+						if(dto.getValues().indexOf(",")>=0){
+							valu =dto.getValues().split(",");
+						}else{
+							valu[0] =dto.getValues();
+							if(valu[0].indexOf("%")>=0){
+								valu[0] = valu[0].replaceAll("%", "\\\\%");
+							}
+						}
+						filterItemList.addFilterItem(new FilterItem(value,StringUtils.join(valu, ","), ft));
+					}
+				}
+			}
+		}
+		
+		return filterItemList;
+	}
+	
+	@Override
+	public PageResult buildPageResult(ContextDTO contextDTO,Object data, Object columnModel, long totalCount, int limit, int currentPage) {
+		CommonPageResult leadsPageResult = new CommonPageResult(currentPage, totalCount, limit, data);
+		if (columnModel != null) {
+			leadsPageResult.setColumnModel(columnModel);
+		}
+		List leadsList = (List) data;
+		Set<Long> userids = new HashSet<Long>();
+		
+		for(int i=0;i<leadsList.size();i++){
+			HashMap  leadsMap = (HashMap) leadsList.get(i);
+			//取出负责人id
+			if(leadsMap != null){
+				Long userId = (Long) leadsMap.get("owner_id");
+				userids.add(userId);
+			}
+			model2LeadsVO(contextDTO,leadsMap);
+		}
+		listItemMap.remove();
+		if(userids.size() > 0){
+			Long[] array = userids.toArray(new Long[0]);
+			List<Map<String, Object>> simpleUserInfoByUserIds = User.dao.getSimpleUserInfoByUserIds(contextDTO, array);
+			leadsPageResult.setUsers(simpleUserInfoByUserIds);
+		}
+		leadsPageResult.setItems(leadsList);
+		return leadsPageResult;
+	}
+	
+	public void model2LeadsVO(ContextDTO contextDTO,Map<String, Object> data){
+		EnumFormatTool.dealFormat(LeadsColumnConvertor.class, data);
+		
+		Object status = data.get("status");
+		Object ownerId = data.get("owner_id");
+		Object source = data.get("source");
+		Object dept = data.get("dept");
+		Object gender = data.get("gender");
+		
+		if(!ToolString.isEmptyString(ownerId)){
+			data.put("ownerName", User.dao.findById(contextDTO, contextDTO.getDbId(),ownerId).getStr("display_name"));
+		}
+		if(!ToolString.isEmptyString(status)){
+			data.put("statusName", FollowStatusEnum.findValue(Long.parseLong(status.toString())));
+		}
+		if(!ToolString.isEmptyString(source)){
+			data.put("sourceName", getValueFromItemMap(contextDTO,Long.parseLong(source.toString())));
+		}
+		if(!ToolString.isEmptyString(dept)){
+			data.put("deptName", Department.dao.findById(contextDTO, contextDTO.getDbId(),Long.parseLong(dept.toString())).getStr("name"));
+		}
+		data.put("tags", BizRelTag.dao.getBizTagsByItemId(contextDTO, ItemTypeEnum.Leads.name(), (Long)data.get("id"), contextDTO.getUserId()));
+		data.put("gender", getIl8nMessage(Gender.getType(gender.toString()).getMessageKey()));
+		
+		
+		
+		
+	}
+	
+	private String getValueFromItemMap(ContextDTO contextDTO,Long id){
+		if(id == null)	{return null;}
+		Map<Long, String> items = listItemMap.get();
+		String name = items.get(id);
+		if(name == null){
+			name = ListItem.dao.getListNameById(contextDTO,id);
+			if(name != null){
+				items.put(id, name);
+			}
+		}
+		return name;
+	}
+	
+	public ResultDTO createSearchView(RequestDTO requestDTO){
+		Map<Object, Object> data = requestDTO.getData();
+		FilterDTO filterDTO = new FilterDTO();
+		filterDTO.setProperty("mapping_field_name");
+		filterDTO.setOperation(FilterType.NIN.value);
+		filterDTO.setValues(new String[]{"id","ownerId","tag","textarea","time"});
+		requestDTO.putFitler(filterDTO);
+		//ResultDTO modelDefineField = UiSettingServiceImpl.service.getModelDefineField(requestDTO);
+		return null;
+	}
+
+	@Override
+	public String getTableName() {
+		return "t_crm_leads";
+	}
+	
+	
+	@Override
+	public String[] getNotDisplayFields(ContextDTO contextDTO,boolean isCreate) {
+		String[] commonHideFields = new String[]{"tag"};
+		if (isCreate){
+			commonHideFields = (String[]) ArrayUtils.addAll(commonHideFields, new String[]{"createdDate", "createdBy", "updatedDate", "updatedBy"});
+		}
+		return commonHideFields;
+	}
+	
+	public ResultDTO checkRepeat(RequestDTO requestDTO) {
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Map<Object, Object> data = requestDTO.getData();
+		Map<String,Object> params = new HashMap<String, Object>();
+		List<FilterDTO> listFilterDTO = new ArrayList<FilterDTO>();
+		listFilterDTO.add(new FilterDTO("comp_name", ToolString.toString(data.get("compName"))));
+		params.put("filters", listFilterDTO);
+		params.put("tableName", getTableName());
+		String sql = ToolSqlXml.getSql("winbons.common.search", params);
+		String buildSelectSql = "select ";
+		buildSelectSql += ToolJfinalSql.buildSelectSql(getModelClass(), null,null,null);
+		List<Leads> leadsList = Leads.dao.find(contextDTO, buildSelectSql + sql);
+		ResultDTO resultDTO = new ResultDTO();
+		resultDTO.setData(ToolModel.modelListConvert(leadsList));
+		return resultDTO;
+	}
+	
+	public ResultDTO save(RequestDTO requestDTO) {
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Object object = requestDTO.get("jsonObj");
+		Map<String,Object> fromJson = ToolGson.GsonToBean(object.toString(), Map.class);
+		Leads.dao.saveObj(contextDTO, fromJson);
+		ResultDTO resultDTO = new ResultDTO();
+		return resultDTO;
+	}
+
+
+
+	@Override
+	public Class<? extends IEnumFormat> getFormatClass() {
+		return LeadsColumnConvertor.class;
+	}
+
+
+
+	@Override
+	public String getGridHeadSql() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+
+	@Override
+	public String getGridSql() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+
+	@Override
+	public void rebuildCreateSearchView(RequestDTO requestDTO) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+
+	@Override
+	public void reUpdateCreateSearchView(List<Map<String, Object>> list) {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	
+
+	
+}

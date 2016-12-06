@@ -1,0 +1,48 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: LockUtils.java 
+ * @Package saas.crm.base.utils 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年8月13日 上午11:17:00 
+ * @version 1.0 
+ */
+
+package saas.crm.base.utils;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import org.redisson.Redisson;
+import org.redisson.core.RLock;
+
+/**
+ * @ClassName: LockUtils
+ * @Description: 分布式锁
+ * @author star.ye
+ * @date 2014年8月13日 上午11:17:00
+ */
+
+public class LockUtils {
+
+	private static ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+
+	public static RLock getLock(Redisson redisson, String key) {
+		final RLock lock = redisson.getLock(key);
+		scheduledExecutorService.schedule(new Runnable() {
+			@Override
+			public void run() {
+				if (lock.isLocked()) {
+					lock.forceUnlock();//解锁
+				}
+			}
+		}, 5, TimeUnit.SECONDS);
+		return lock;
+	}
+}

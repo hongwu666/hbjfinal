@@ -1,0 +1,154 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: AttentionUser.java 
+ * @Package saas.crm.dynamic.model 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年8月11日 下午2:34:08 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.model;
+
+import org.springframework.data.annotation.Id;
+
+/**
+ * @ClassName: AttentionUser
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年8月11日 下午2:34:08
+ */
+
+public class AttentionRel implements ISeq {
+
+	// public static final int Customer = 0;
+	//
+	// public static final int USER = 1;
+
+	@Id
+	private String id;
+
+	private Long attentionId;
+
+	private Long userId;
+
+	private int itemclassid = 0; // 业务类型 与AttentionType对应
+
+	private int dynamicType;
+
+	private Long latestIndex = -1L;
+
+	/**
+	 * @return the id
+	 */
+
+	public String getId() {
+		return id;
+	}
+
+	/**
+	 * @return the itemclassid
+	 */
+	public int getItemclassid() {
+		return itemclassid;
+	}
+
+	/**
+	 * @param itemclassid
+	 *            the itemclassid to set
+	 */
+
+	public void setItemclassid(int itemclassid) {
+
+		this.itemclassid = itemclassid;
+	}
+
+	/**
+	 * @param id
+	 *            the id to set
+	 */
+
+	public void setId(String id) {
+
+		this.id = id;
+	}
+
+	/**
+	 * @return the attentionId
+	 */
+
+	public Long getAttentionId() {
+
+		return attentionId;
+	}
+
+	/**
+	 * @param attentionId
+	 *            the attentionId to set
+	 */
+
+	public void setAttentionId(Long attentionId) {
+
+		this.attentionId = attentionId;
+	}
+
+	/**
+	 * @return the userId
+	 */
+
+	public Long getUserId() {
+
+		return userId;
+	}
+
+	/**
+	 * @param userId
+	 *            the userId to set
+	 */
+
+	public void setUserId(Long userId) {
+
+		this.userId = userId;
+	}
+
+	/**
+	 * @return the dynamicType
+	 */
+
+	public int getDynamicType() {
+
+		return dynamicType;
+	}
+
+	/**
+	 * @param dynamicType
+	 *            the dynamicType to set
+	 */
+
+	public void setDynamicType(int dynamicType) {
+
+		this.dynamicType = dynamicType;
+	}
+
+	/**
+	 * @return the latestIndex
+	 */
+	public long getLatestIndex() {
+		return latestIndex;
+	}
+
+	public void setLatestIndex(long latestIndex) {
+
+		this.latestIndex = latestIndex;
+	}
+
+	public Long getIndex() {
+		return latestIndex;
+	}
+
+}

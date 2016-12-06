@@ -1,0 +1,76 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: BusinessType.java 
+ * @Package saas.crm.dynamic 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年7月15日 下午3:06:25 
+ * @version 1.0 
+ */
+
+package saas.winbons.dynamic;
+
+/**
+ * @ClassName: BusinessType
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年7月15日 下午3:06:25
+ */
+
+public enum ItemTypeEnum {
+	Customer("客户", 0), 
+	Contact("联系人", 1), 
+	Scheduled("任务", 2), 
+	Document("文档", 3), 
+	Topic("话题", 4),
+	Project("项目",5),
+	Im("消息",6),
+	Edm("邮件营销",7),
+	Company_doc("公司资料",8),
+	Self_doc("个人资料",9),
+	Share_doc("共享资料",10),
+	Dynamic("动态",11),
+	Email("邮件",12),
+	Screen("截屏",13),
+	Opportunity("商机", 14),
+	Competitor("竞争对手", 15),
+	Contract("销售合同", 16),
+	Product("销售产品", 17),
+	Dashboard("仪表盘",18),
+	CrmUser("用户",19),
+	campaigns("邮件营销",20),
+	Templates("模板库",21),
+	Photos("图片库",22),
+	contactlist("联系人组",23),
+	Forecast("销售预测", 24),
+	Target("销售目标", 25),
+	Signin("签到",26),
+	Approve("审批",27),
+	Leads("线索",28),
+	Workreport("工作报告",29),
+	Callrecord("电话管理",30),
+	;
+
+	public final String value;
+
+	public final long dbValue;
+
+	private ItemTypeEnum(String value, int dbValue) {
+		this.value = value;
+		this.dbValue = dbValue;
+	}
+
+	public static ItemTypeEnum getByValue(int value) {
+		for (ItemTypeEnum businessType : values()) {
+			if (businessType.dbValue == value) {
+				return businessType;
+			}
+		}
+		return null;
+	}
+}

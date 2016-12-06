@@ -1,0 +1,73 @@
+package saas.winbons.provider.run;
+
+import java.io.IOException;
+
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import saas.winbons.dubbo.api.ApiService;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.framework.service.ServiceLocator;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.jfinal.JfinalCoreInit;
+
+public class StartUp {
+
+	private static volatile boolean running = true;
+
+	private static ContextDTO contextDTO = new ContextDTO();
+
+	public static void main(String[] args) throws IOException, InterruptedException {
+
+		ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring/*.xml");
+		ServiceLocator.setApplicationContext(applicationContext);
+		applicationContext.start();
+		new JfinalCoreInit();
+		contextDTO.setDbId(12053364L);
+		contextDTO.setUserId(100000101717L);
+		contextDTO.setAdmin(false);
+		contextDTO.setCurrentOwnerId(100000101717L);
+		contextDTO.setMobileRequest(false);
+		contextDTO.setServiceType(7);
+
+		convertToContract();
+
+		// System.exit(0);
+
+		// 本地调试
+		localDebug();
+	}
+
+	public static void localDebug() {
+
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				synchronized (StartUp.class) {
+					running = false;
+					StartUp.class.notify();
+				}
+			}
+		});
+
+		synchronized (StartUp.class) {
+			while (running) {
+				try {
+					StartUp.class.wait();
+				} catch (Throwable e) {
+				}
+			}
+		}
+	}
+
+	private static void convertToContract() {
+		ApiService service = (ApiService) ServiceLocator.getService("opportunityService");
+		RequestDTO requestDto = new RequestDTO(contextDTO, "convertToContract");
+		requestDto.put("id", 120534944261L);
+		// requestDto.getData().put("id", 140587876026L);
+		ResultDTO executeDto = service.executeDto(requestDto);
+		System.out.println("executeDto：" + ToolGson.GsonString(executeDto));
+		System.out.println("data：" + executeDto.getData());
+	}
+
+}

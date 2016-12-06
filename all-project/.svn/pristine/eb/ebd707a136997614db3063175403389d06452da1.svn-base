@@ -1,0 +1,78 @@
+package saas.data.dto;
+
+import java.io.Serializable;
+
+/**
+ * 与电话服务通讯线索DTO
+ * @author Administrator
+ *
+ */
+public class MergeLeadDTO implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private Long dbid;
+	private Long userId;	//用户id
+	private Long leadId;	//线索id
+	private String compTel;	//公司电话
+	private String tel;		//联系人电话
+	private String mobile;	//联系人手机
+	
+	private int operateType;//操作类型，0是添加，1是修改
+
+	public Long getDbid() {
+		return dbid;
+	}
+
+	public void setDbid(Long dbid) {
+		this.dbid = dbid;
+	}
+
+	public Long getUserId() {
+		return userId;
+	}
+
+	public void setUserId(Long userId) {
+		this.userId = userId;
+	}
+
+	public Long getLeadId() {
+		return leadId;
+	}
+
+	public void setLeadId(Long leadId) {
+		this.leadId = leadId;
+	}
+
+	public String getCompTel() {
+		return compTel;
+	}
+
+	public void setCompTel(String compTel) {
+		this.compTel = compTel;
+	}
+
+	public String getTel() {
+		return tel;
+	}
+
+	public void setTel(String tel) {
+		this.tel = tel;
+	}
+
+	public String getMobile() {
+		return mobile;
+	}
+
+	public void setMobile(String mobile) {
+		this.mobile = mobile;
+	}
+
+	public int getOperateType() {
+		return operateType;
+	}
+
+	public void setOperateType(int operateType) {
+		this.operateType = operateType;
+	}
+}

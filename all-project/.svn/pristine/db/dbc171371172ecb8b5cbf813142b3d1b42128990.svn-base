@@ -1,0 +1,847 @@
+package saas.monitor.tools;
+
+import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
+
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class FileUtils {
+
+	private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
+	
+	 public final static Map<String, String> FILE_TYPE_MAP = new HashMap<String, String>();     
+	  
+     static{     
+         getAllFileType(); //初始化文件类型信息     
+     } 
+
+	protected static final int BUFFER_SIZE = 4096;
+
+	// private static final int MAX_RENAME_TRIAL_COUNT = 500;
+	public static final String TYPE_RECURSIVE = "R";
+
+	public static final String TYPE_NON_RECURSIVE = "N";
+
+	public static void concatFile(File input1, File input2, File output) throws IOException {
+		copyFile(input1, output);
+		appendFile(input2, output);
+	}
+
+	public static void appendFile(String input, String output) throws IOException {
+		copyFile(new File(input), new File(output), true);
+	}
+
+	public static void appendFile(File input, File output) throws IOException {
+		copyFile(input, output, true);
+	}
+
+	public static void copyFile(String input, String output) throws IOException {
+		copyFile(new File(input), new File(output), false);
+	}
+
+	public static void copyFile(File input, File output) throws IOException {
+		copyFile(input, output, false);
+	}
+
+	protected static void copyFile(File input, File output, boolean append) throws IOException {
+		FileInputStream in = new FileInputStream(input);
+		FileOutputStream out = new FileOutputStream(output.getPath(), append);
+
+		byte[] buffer = new byte[BUFFER_SIZE];
+
+		int numRead = in.read(buffer);
+
+		while (numRead > 0) {
+			out.write(buffer, 0, numRead);
+			numRead = in.read(buffer);
+		}
+
+		out.close();
+		in.close();
+	}
+
+	public static void copyDir(String srcPath, String destPath) throws IOException {
+		copyDir(new File(srcPath), new File(destPath));
+	}
+
+	/**
+	 * Copy only the content of a directory into another directory.
+	 * 
+	 * @param srcPath
+	 *            the source directory
+	 * @param destinationPath
+	 *            the destination directory
+	 */
+	public static void copyDir(File srcDir, File destDir) throws IOException {
+
+		if (srcDir.isDirectory()) {
+			if (destDir.exists() != true)
+				destDir.mkdirs();
+
+			String list[] = srcDir.list();
+			for (int i = 0; i < list.length; i++) {
+				String src = srcDir.getAbsolutePath() + File.separator + list[i];
+				String dest = destDir.getAbsolutePath() + File.separator + list[i];
+				copyFile(src, dest);
+				copyDir(src, dest);
+			}
+		}
+	}
+
+	public static void purgeFiles(File purgeDir, String dirPurgeType) throws IOException {
+		purgeFiles(purgeDir, new Date(), 0, dirPurgeType);
+	}
+
+	public static void purgeFiles(String purgeDir, String dirPurgeType) throws IOException {
+		purgeFiles(purgeDir, new Date(), 0, dirPurgeType);
+	}
+
+	public static void purgeFiles(String purgeDir, Date currDate, int keepDay, String dirPurgeType) throws IOException {
+		purgeFiles(new File(purgeDir), currDate, keepDay, dirPurgeType);
+	}
+
+	public static void purgeFiles(File purgeDir, Date currDate, int keepDay, String dirPurgeType) throws IOException {
+
+		File[] fileList = purgeDir.listFiles();
+		SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
+
+		Calendar currCal = Calendar.getInstance();
+		currCal.setTime(currDate);
+		currCal.add(Calendar.DATE, -keepDay);
+		if (fileList != null && fileList.length > 0) {
+			for (int i = 0; i < fileList.length; i++) {
+				Date lastModifiedDate = new Date(fileList[i].lastModified());
+				Calendar lastModifiedCal = Calendar.getInstance();
+				lastModifiedCal.setTime(lastModifiedDate);
+
+				if (fileList[i].isFile()) {
+					if (currCal.after(lastModifiedCal)) {
+						fileList[i].delete();
+						logger.debug("  * Deleted file * " + fileList[i].toString() + " [Last modified: " + fmt.format(lastModifiedDate) + "]");
+					}
+				} else if (fileList[i].isDirectory() && TYPE_RECURSIVE.equals(dirPurgeType)) {
+					File subFolder = new File(fileList[i].toString());
+					purgeFiles(subFolder, currDate, keepDay, dirPurgeType);
+
+					if (fileList[i].delete())
+						logger.debug("  * Deleted directory * " + fileList[i].toString() + " [Last modified: " + fmt.format(lastModifiedDate) + "]");
+				}
+			}
+		}
+		purgeDir.delete();
+	}
+
+	public static String readFile(String filename) throws IOException {
+		return readFile(new File(filename));
+	}
+
+	public static String readFile(File inFile) throws IOException {
+		String str = null;
+		FileInputStream fis = null;
+
+		try {
+			int len = (int) (inFile.length());
+			fis = new FileInputStream(inFile);
+			byte buf[] = new byte[len];
+			fis.read(buf);
+
+			str = new String(buf,"utf-8");
+
+		} catch (FileNotFoundException fnfe) {
+			logger.error(""+fnfe);
+			throw fnfe;
+		} finally {
+			if (fis != null)
+				fis.close();
+		}
+		return str;
+	}
+
+	public static Properties readFile(InputStream ins, String fileName) throws IOException {
+		Properties prop = new Properties();
+		try {
+			prop.load(ins);
+			ins.close();
+		} catch (IOException ioe) {
+			logger.error(""+ioe);
+			throw ioe;
+		}
+		return prop;
+	}
+
+	public static void writeFile(String filename, String content) throws IOException {
+		writeFile(new File(filename), content);
+	}
+
+	public static void writeFile(File inFile, String content) throws IOException {
+		DataOutputStream dos = null;
+		try {
+
+			dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(inFile)));
+			dos.writeBytes(content);
+		} catch (IOException ioe) {
+			logger.error("" + ioe);
+			throw ioe;
+		} finally {
+			if (dos != null)
+				dos.close();
+		}
+	}
+
+	public static void writeFile(Properties props, String filename) throws IOException {
+		writeFile(props, new File(filename));
+	}
+
+	public static void writeFile(Properties props, File inFile) throws IOException {
+		FileOutputStream fos = null;
+
+		try {
+			fos = new FileOutputStream(inFile, false);
+			props.store(fos, null);
+			fos.flush();
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+			throw ioe;
+		} finally {
+			try {
+				if (fos != null)
+					fos.close();
+			} catch (IOException ioe) {
+			}
+		}
+	}
+
+	public static void writeFile(Map map, File inFile) throws IOException {
+		FileOutputStream fos = null;
+		BufferedOutputStream bos = null;
+		PrintWriter out = null;
+
+		try {
+			fos = new FileOutputStream(inFile);
+			bos = new BufferedOutputStream(fos);
+			out = new PrintWriter(bos);
+			for (Iterator it = map.keySet().iterator(); it.hasNext();) {
+				String key = (String) it.next();
+				out.println(key + "=" + map.get(key));
+			}
+			out.flush();
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+			throw ioe;
+		} finally {
+			try {
+				if (out != null)
+					out.close();
+
+				if (bos != null)
+					bos.close();
+
+				if (fos != null)
+					fos.close();
+			} catch (IOException ioe) {
+			}
+		}
+	}
+
+	public static String writeFile(InputStream instream, String saveFilePath, String fileName, boolean isReplace) throws IOException {
+		File savefile = null;
+		OutputStream bos = null;
+		try {
+			File path = new File(saveFilePath);
+			if (!path.exists()) {
+				path.mkdirs();
+			}
+			if (saveFilePath.endsWith("/"))
+				savefile = new File(saveFilePath + fileName);
+			else
+				savefile = new File(saveFilePath + "/" + fileName);
+			if (savefile.exists()) {
+				if (isReplace) {
+					savefile.delete();
+				} else {
+					savefile = new File(saveFilePath + fileName + "_2");
+				}
+			}
+
+			bos = new FileOutputStream(savefile);
+			int bytesRead = 0;
+			byte[] buffer = new byte[8192];
+			while ((bytesRead = instream.read(buffer, 0, 8192)) != -1) {
+				bos.write(buffer, 0, bytesRead);
+			}
+
+		} catch (FileNotFoundException ex) {
+			throw ex;
+		} catch (IOException ioe) {
+			throw ioe;
+		} finally {
+			if (null != bos) {
+				bos.close();
+				bos = null;
+			}
+			if (null != instream) {
+				instream.close();
+				instream = null;
+			}
+		}
+		return savefile.getName();
+	}
+
+	public static String getFileExt(String fileName) {
+		if (fileName != null) {
+			String fileExt = "";
+			int index = fileName.lastIndexOf(".");
+			if (index != -1){
+				fileExt = fileName.substring(index + 1, fileName.length());
+			}
+			return fileExt.toLowerCase(Locale.US);
+		} else {
+			return "";
+		}
+	}
+
+	public static String getFileName(String fullFileName) {
+		if (fullFileName != null) {
+			String fileName = "";
+			fullFileName = fullFileName.toLowerCase();
+			int index = fullFileName.lastIndexOf(File.separator);
+			if (index != -1)
+				fileName = fullFileName.substring(index + 1, fullFileName.length());
+			return fileName;
+		} else {
+			return "";
+		}
+	}
+
+	public static String getURLFileName(String fullFileName) {
+		if (fullFileName != null) {
+			String fileName = "";
+			fullFileName = fullFileName.toLowerCase();
+			int index = fullFileName.lastIndexOf("/");
+			if (index != -1)
+				fileName = fullFileName.substring(index + 1, fullFileName.length());
+			return fileName;
+		} else {
+			return "";
+		}
+	}
+
+	public static void appendFile(File inFile, String content) throws IOException {
+		FileWriter oFW = null;
+		BufferedWriter oBW = null;
+		PrintWriter out = null;
+
+		if (!inFile.getParentFile().exists())
+			inFile.getParentFile().mkdirs();
+
+		try {
+			oFW = new FileWriter(inFile, true);
+			oBW = new BufferedWriter(oFW);
+			out = new PrintWriter(oBW, true);
+			out.println(content);
+		} catch (IOException ioe) {
+			throw ioe;
+		} finally {
+			if (out != null)
+				out.close();
+			if (oBW != null)
+				oBW.close();
+			if (oFW != null)
+				oFW.close();
+		}
+	}
+
+	public static void zipFile(String inputFileName, String outputFileName) throws Exception {
+		ZipOutputStream out = new ZipOutputStream(new FileOutputStream(outputFileName));
+		zip(out, new File(inputFileName), "");
+		out.close();
+	}
+
+	private static void zip(ZipOutputStream out, File file, String base) throws Exception {
+		if (file.isDirectory()) {
+			File[] fl = file.listFiles();
+			base = base.length() == 0 ? "" : (base + File.separator);
+			for (int i = 0; i < fl.length; i++) {
+				zip(out, fl[i], base + fl[i].getName());
+			}
+		} else {
+			out.putNextEntry(new ZipEntry(base));
+			FileInputStream in = new FileInputStream(file);
+			int b;
+			while ((b = in.read()) != -1) {
+				out.write(b);
+			}
+			in.close();
+		}
+	}
+
+	/**
+	 * 
+	 * 解压zip文件
+	 * 
+	 * @param zipFileName
+	 *            待解压的zip文件路径，例如：c:\\a.zip
+	 * 
+	 * @param outputDirectory
+	 *            解压目标文件夹,例如：c:\\a\
+	 */
+
+	private static void createDirectory(String directory, String subDirectory) {
+		String dir[];
+		File fl = new File(directory);
+		try {
+			if (subDirectory == "" && fl.exists() != true) {
+				fl.mkdir();
+			} else if (subDirectory != "") {
+				dir = subDirectory.replace('\\', '/').split("/");
+				for (int i = 0; i < dir.length; i++) {
+					File subFile = new File(directory + File.separator + dir[i]);
+					if (subFile.exists() == false)
+						subFile.mkdir();
+					directory += File.separator + dir[i];
+				}
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	/**
+	 * Sanitizes a filename from certain chars.<br />
+	 * 
+	 * This method enforces the <code>forceSingleExtension</code> property and then replaces all occurrences of \, /, |, :, ?, *, &quot;, &lt;, &gt;, control chars by _ (underscore).
+	 * 
+	 * @param filename
+	 *            a potentially 'malicious' filename
+	 * @return sanitized filename
+	 */
+	public static String sanitizeFileName(final String filename) {
+
+
+		// Remove \ / | : ? * " < > 'Control Chars' with _
+		return filename.replaceAll("\\\\|/|\\||:|\\?|\\*|\"|<|>|\\p{Cntrl}", "_");
+	}
+
+	/**
+	 * Replaces all dots in a filename with underscores except the last one.
+	 * 
+	 * @param filename
+	 *            filename to sanitize
+	 * @return string with a single dot only
+	 */
+	public static String forceSingleExtension(final String filename) {
+		logger.debug("########## originalfilename: " + filename+" #############");
+		return filename.replaceAll("\\.(?![^.]+$)", "_");
+	}
+	
+	/**
+     * 拷贝文件夹中的所有文件到另外一个文件夹
+     * @param srcDirector 源文件夹
+     * @param desDirector 目标文件夹
+     */
+
+    public static void copyFileWithDirector(String srcDirector, String desDirector) throws IOException {
+    	(new File(desDirector)).mkdirs();
+        File[] file = (new File(srcDirector)).listFiles();
+        for (int i = 0; i < file.length; i++) {
+            if (file[i].isFile()) {
+                logger.debug("拷贝：" + file[i].getAbsolutePath() + "-->" + desDirector + "/" + file[i].getName());
+
+                FileInputStream input = new FileInputStream(file[i]);
+
+                FileOutputStream output = new FileOutputStream(desDirector + "/" + file[i].getName());
+
+                byte[] b = new byte[1024 * 5];
+
+                int len;
+
+                while ((len = input.read(b)) != -1) {
+                    output.write(b, 0, len);
+                }
+                
+                output.flush();
+                output.close();
+                input.close();
+            }
+
+            if (file[i].isDirectory()) {
+                logger.debug("拷贝：" + file[i].getAbsolutePath() + "-->" + desDirector + "/" + file[i].getName());
+                copyFileWithDirector(srcDirector + "/" + file[i].getName(), desDirector + "/" + file[i].getName());
+            }
+        }
+    }
+
+
+
+    /**
+     * 删除文件夹
+     * @param folderPath folderPath 文件夹完整绝对路径
+     */
+
+    public static void delFolder(String folderPath) throws Exception {
+
+        //删除完里面所有内容
+
+        delAllFile(folderPath);
+
+        String filePath = folderPath;
+
+        filePath = filePath.toString();
+
+        File myFilePath = new File(filePath);
+
+        //删除空文件夹
+        myFilePath.delete();
+    }
+
+
+
+    /**
+     * 删除指定文件夹下所有文件
+     * @param path 文件夹完整绝对路径
+     */
+
+    public static boolean delAllFile(String path) throws Exception {
+
+        boolean flag = false;
+
+        File file = new File(path);
+
+        if (!file.exists()) {
+            return flag;
+        }
+
+        if (!file.isDirectory()) {
+            return flag;
+        }
+
+        String[] tempList = file.list();
+
+        File temp = null;
+
+        for (int i = 0; i < tempList.length; i++) {
+            if (path.endsWith(File.separator)) {
+                temp = new File(path + tempList[i]);
+            } else {
+                temp = new File(path + File.separator + tempList[i]);
+            }
+
+            if (temp.isFile()) {
+                temp.delete();
+            }
+
+            if (temp.isDirectory()) {
+                //先删除文件夹里面的文件
+                delAllFile(path + "/" + tempList[i]);
+                //再删除空文件夹
+                delFolder(path + "/" + tempList[i]);
+                flag = true;
+            }
+        }
+        return flag;
+    }
+    
+    /**
+     * 解决IE和FF下载中文名称的文件文件名乱码的问题.
+     * @param request
+     * @param fileName
+     * @return
+     * @throws UnsupportedEncodingException
+     */
+     // 其中 Base64 类来自 org.apache.commons.codec 组件 一个40多k的jar 要比javamail里的那个简洁很多   
+	public static String encodeFileName(final HttpServletRequest request, String fileName) throws UnsupportedEncodingException {
+	     String agent = request.getHeader("USER-AGENT");
+	     //logger.debug("USER-AGENT: " + agent.toLowerCase());
+	     if(StringUtils.isEmpty(agent) || StringUtils.isEmpty(fileName)) return fileName;
+	     agent = agent.toLowerCase();
+	     if ((-1 != agent.indexOf("msie")) || (-1 != agent.indexOf("opera"))) {
+	    	 fileName = URLEncoder.encode(fileName, "UTF-8");
+	         fileName = StringUtils.replace(fileName, "+", "%20");
+		     fileName = StringUtils.replace(fileName, " ", "%20");
+		     return fileName;
+	     }else if ((-1 != agent.indexOf("mozilla"))) {
+	         return "=?UTF-8?B?"+(EncodeUtils.encodeBase64(fileName.getBytes("UTF-8")))+"?="; 
+	     } else {
+	         return fileName; 
+	     }
+     }
+     
+     // 通常，在WEB系统中，上传文件时都需要做文件的类型校验，大致有如下几种方法：
+     // 1. 通过后缀名，如exe,jpg,bmp,rar,zip等等。
+     // 2. 通过读取文件，获取文件的Content-type来判断。
+     // 3. 通过读取文件流，根据文件流中特定的一些字节标识来区分不同类型的文件。
+     // 4. 若是图片，则通过缩放来判断，可以缩放的为图片，不可以的则不是。
+     // 	然而，在安全性较高的业务场景中，1，2两种方法的校验会被轻易绕过。
+     // 1. 伪造后缀名，如图片的，非常容易修改。
+     // 2. 伪造文件的Content-type，这个稍微复杂点，为了直观，截图如下：
+     // 3.较安全，但是要读取文件，并有16进制转换等操作，性能稍差，但能满足一定条件下对安全的要求，所以建议使用。
+     // 	但是文件头的信息也可以伪造，截图如下，对于图片可以采用图片缩放或者获取图片宽高的方法避免伪造头信息漏洞。
+      
+     //本人建议可采用后缀名与读取文件的方式结合校验，毕竟攻击是少数，后缀名的校验能排除大多数用户，在后缀名获取不到时再通过获取文件真实类型校验，这样来适当提高性能.
+     /**   
+      * 
+      * <p>Discription:[getAllFileType,常见文件头信息]</p>   
+      * 
+      */     
+     private static void getAllFileType()     
+     {     
+         FILE_TYPE_MAP.put("jpg", "FFD8FF"); //JPEG (jpg)     
+         FILE_TYPE_MAP.put("png", "89504E47"); //PNG (png)     
+         FILE_TYPE_MAP.put("gif", "47494638"); //GIF (gif)     
+         FILE_TYPE_MAP.put("tif", "49492A00"); //TIFF (tif)     
+         FILE_TYPE_MAP.put("bmp", "424D"); //Windows Bitmap (bmp)     
+         FILE_TYPE_MAP.put("dwg", "41433130"); //CAD (dwg)     
+         FILE_TYPE_MAP.put("html", "68746D6C3E"); //HTML (html)     
+         FILE_TYPE_MAP.put("rtf", "7B5C727466"); //Rich Text Format (rtf)     
+         FILE_TYPE_MAP.put("xml", "3C3F786D6C");     
+         FILE_TYPE_MAP.put("zip", "504B0304");     
+         FILE_TYPE_MAP.put("rar", "52617221");     
+         FILE_TYPE_MAP.put("psd", "38425053"); //Photoshop (psd)     
+         FILE_TYPE_MAP.put("eml", "44656C69766572792D646174653A"); //Email [thorough only] (eml)     
+         FILE_TYPE_MAP.put("dbx", "CFAD12FEC5FD746F"); //Outlook Express (dbx)     
+         FILE_TYPE_MAP.put("pst", "2142444E"); //Outlook (pst)     
+         FILE_TYPE_MAP.put("xls", "D0CF11E0"); //MS Word     
+         FILE_TYPE_MAP.put("doc", "D0CF11E0"); //MS Excel 注意：word 和 excel的文件头一样     
+         FILE_TYPE_MAP.put("mdb", "5374616E64617264204A"); //MS Access (mdb)     
+         FILE_TYPE_MAP.put("wpd", "FF575043"); //WordPerfect (wpd)      
+         FILE_TYPE_MAP.put("eps", "252150532D41646F6265");     
+         FILE_TYPE_MAP.put("ps", "252150532D41646F6265");     
+         FILE_TYPE_MAP.put("pdf", "255044462D312E"); //Adobe Acrobat (pdf)     
+         FILE_TYPE_MAP.put("qdf", "AC9EBD8F"); //Quicken (qdf)     
+         FILE_TYPE_MAP.put("pwl", "E3828596"); //Windows Password (pwl)     
+         FILE_TYPE_MAP.put("wav", "57415645"); //Wave (wav)     
+         FILE_TYPE_MAP.put("avi", "41564920");     
+         FILE_TYPE_MAP.put("ram", "2E7261FD"); //Real Audio (ram)     
+         FILE_TYPE_MAP.put("rm", "2E524D46"); //Real Media (rm)     
+         FILE_TYPE_MAP.put("mpg", "000001BA"); //     
+         FILE_TYPE_MAP.put("mov", "6D6F6F76"); //Quicktime (mov)     
+         FILE_TYPE_MAP.put("asf", "3026B2758E66CF11"); //Windows Media (asf)     
+         FILE_TYPE_MAP.put("mid", "4D546864"); //MIDI (mid)     
+     }        
+      
+     /**   
+      * 
+      * <p>Discription:[getImageFileType,获取图片文件实际类型,若不是图片则返回null]</p>   
+      * @param File   
+      * @return fileType   
+      * 
+      */     
+     @Deprecated
+     public final static String getImageFileType(File f){     
+		if (isImage(f)) {
+			try {
+				ImageInputStream iis = ImageIO.createImageInputStream(f);
+				Iterator<ImageReader> iter = ImageIO.getImageReaders(iis);
+				if (!iter.hasNext()) {
+					return null;
+				}
+				ImageReader reader = iter.next();
+				iis.close();
+				return reader.getFormatName();
+			} catch (IOException e) {
+				return null;
+			} catch (Exception e) {
+				return null;
+			}
+		}
+		return null;  
+     }     
+      
+     /**   
+      * 
+      * <p>Discription:[getFileByFile,获取文件类型,包括图片,若格式不是已配置的,则返回null]</p>   
+      * @param file   
+      * @return fileType   
+      * 
+      */     
+     public final static String getFileByFile(File file){     
+		String filetype = null;
+		byte[] b = new byte[50];
+		try {
+			InputStream is = new FileInputStream(file);
+			is.read(b);
+			filetype = getFileTypeByStream(b);
+			is.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return filetype;     
+     }     
+          
+     /**   
+      * 
+      * <p>Discription:[getFileTypeByStream]</p>   
+      * @param b   
+      * @return fileType   
+      *
+      */     
+	public final static String getFileTypeByStream(byte[] b) {
+		String filetypeHex = String.valueOf(getFileHexString(b));
+		Iterator<Entry<String, String>> entryiterator = FILE_TYPE_MAP.entrySet().iterator();
+		while (entryiterator.hasNext()) {
+			Entry<String, String> entry = entryiterator.next();
+			String fileTypeHexValue = entry.getValue();
+			if (filetypeHex.toUpperCase().startsWith(fileTypeHexValue)) {
+				return entry.getKey();
+			}
+		}
+		return null;
+	} 
+          
+     /** 
+      * 
+      * <p>Discription:[isImage,判断文件是否为图片]</p> 
+      * @param file 
+      * @return true 是 | false 否 
+      * 
+      */ 
+	@Deprecated
+	public static final boolean isImage(File file) {
+		boolean flag = false;
+		try {
+			BufferedImage bufreader = ImageIO.read(file);
+			int width = bufreader.getWidth();
+			int height = bufreader.getHeight();
+			if (width == 0 || height == 0) {
+				flag = false;
+			} else {
+				flag = true;
+			}
+		} catch (IOException e) {
+			flag = false;
+		} catch (Exception e) {
+			flag = false;
+		}
+		return flag;
+	}
+        
+     /**   
+      * 
+      * <p>Discription:[getFileHexString]</p>   
+      * @param b   
+      * @return fileTypeHex   
+      * 
+      */     
+	public final static String getFileHexString(byte[] b) {
+		StringBuilder stringBuilder = new StringBuilder();
+		if (b == null || b.length <= 0) {
+			return null;
+		}
+		for (int i = 0; i < b.length; i++) {
+			int v = b[i] & 0xFF;
+			String hv = Integer.toHexString(v);
+			if (hv.length() < 2) {
+				stringBuilder.append(0);
+			}
+			stringBuilder.append(hv);
+		}
+		return stringBuilder.toString();
+	} 
+ 
+
+	public static boolean isFileEmpty(File file) {
+		FileInputStream fis = null;
+		boolean flag = true;
+		try {
+			fis = new FileInputStream(file);
+			if (fis.available() != 0) {
+				flag = false;
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (null != fis) {
+				try {
+					fis.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				} finally {
+					fis = null;
+				}
+			}
+		}
+
+		return flag;
+	}
+	
+	public static String sanitizePathByOS(String path){
+		if(SystemUtils.IS_OS_WINDOWS){
+			//TODO JACKY 工程需求  说客户模版别放到系统盘路径
+			//return System.getProperty("user.dir").toString().replaceAll("\\\\", "/") + path.substring(path.indexOf(":") + 1).replaceAll("\\\\", "/");
+			return path;
+		}else{
+			return "/winbonsdata1" + path.substring(path.indexOf(":") + 1).replaceAll("\\\\", "/");
+		}
+	}
+
+	/*public static void main(String argv[]) {
+		try {
+			 File f = new File("c:\\aaa.gif");     
+	         if (f.exists())     
+	         {     
+	             String filetype1 = getImageFileType(f);     
+	             System.out.println(filetype1);     
+	             String filetype2 = getFileByFile(f);     
+	             System.out.println(filetype2);     
+	         }     
+			
+			// backupDirByRename("C:\\temp\\backup", "20040216");
+			// clearDirectoryContent("d:/usr/smartics/ba/reo/prcheck");
+			// backupFileByRename("d:/usr/smartics/ba/reo/inbox",
+			// "daily_PR_in.txt", "_2004");
+			// deepCopyFiles("C:\\temp\\backup200402163",
+			// "C:\\temp\\backup200402161");
+			// removeDirectory("C:\\temp\\backup200402161");
+			// writeFile(new File("C:/temp/test.txt"), "testing");
+			
+			 * SimpleDateFormat fmt1 = new SimpleDateFormat("yyyyMMdd"); String purgeDir = "c:\\usr\\smartics\\ba\\logger"; String batchDate = "20070502"; int keepDay = 5; FilePurgeUtil.purgeFiles(new
+			 * File(purgeDir), fmt1.parse(batchDate), keepDay, TYPE_NON_RECURSIVE);
+			 
+			// purgeFiles("C:/Temp/MQ", "R");
+			appendFile(new File("/carson/temp/test.txt"), "testing");
+		} catch (IOException ie) {
+			ie.printStackTrace();
+		}
+
+	}*/
+}

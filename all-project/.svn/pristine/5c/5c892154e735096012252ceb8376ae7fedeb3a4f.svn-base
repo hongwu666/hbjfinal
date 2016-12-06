@@ -1,0 +1,45 @@
+package saas.winbons.mq;
+
+import java.io.Serializable;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import saas.framework.nosql.FileSystemEngine;
+import saas.winbons.framework.service.ServiceLocator;
+
+import com.jfinal.ext.plugin.jms.ReceiveResolver;
+
+public abstract class AbstractImportMq implements ReceiveResolver {
+	
+	@Autowired
+	private FileSystemEngine fileSystemEngine;
+	
+	@Override
+	public void resolve(Serializable objectMessage) throws Exception {
+		//todo ?
+		if(null == fileSystemEngine){
+			fileSystemEngine = (FileSystemEngine) ServiceLocator.getService("fileSysEngine");
+		}
+		resolve(objectMessage,fileSystemEngine);
+	}
+	
+	
+	public abstract void resolve(Serializable objectMessage,FileSystemEngine fileSystemEngine);
+
+	public ImportErrorDto getImportError(String result){
+		ImportErrorDto importErrorDto = new ImportErrorDto();
+		importErrorDto.setResult(result);
+		try{
+			String[] split = result.split(",");
+			if(split.length > 1){
+				importErrorDto.setStatus(Integer.parseInt(split[0]));
+				importErrorDto.setResult(split[1]);
+			}else{
+				importErrorDto.setStatus(0);
+			}
+		}catch(Exception e){
+			importErrorDto.setStatus(0);
+		}
+		return importErrorDto;
+	}
+}

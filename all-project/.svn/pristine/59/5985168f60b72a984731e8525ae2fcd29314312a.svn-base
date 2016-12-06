@@ -1,0 +1,80 @@
+package saas.monitor.mvc.base;
+
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
+import com.jfinal.ext.kit.KeyLabel;
+import com.jfinal.plugin.activerecord.Model;
+import com.jfinal.plugin.activerecord.TableMapping;
+
+public abstract class BaseModel<M extends Model<M>> extends Model<M> {
+
+	private static final long serialVersionUID = -8540153074809203963L;
+
+	protected final Logger LOG = LoggerFactory.getLogger(getLogClass());
+
+	private Class<? extends BaseModel<M>> clazz;
+
+	protected abstract Class<? extends BaseModel<M>> getLogClass();
+
+	@SuppressWarnings("unchecked")
+	public BaseModel() {
+		Type genericSuperclass = getClass().getGenericSuperclass();
+		clazz = (Class<? extends BaseModel<M>>) ((ParameterizedType) genericSuperclass)
+				.getActualTypeArguments()[0];
+	}
+
+	public List<M> findByColumns(List<String> columns, List<Object> values) {
+		Preconditions.checkArgument(columns.size() > 0, "columns is empty");
+		Preconditions.checkArgument(values.size() > 0, "values is empty");
+		Preconditions.checkArgument(values.size() == columns.size(),
+				"column size != values size");
+		String sql = "select * from " + tableName() + " where 1=1";
+		for (String column : columns) {
+			sql += " and " + column + " = ?";
+		}
+		return find(sql, values.toArray());
+	}
+
+	public List<M> findByColumns(Map<String, Object> map) {
+		Preconditions.checkArgument(map.size() > 0,"map is empty");
+		String sql = "select * from " + tableName() + " where 1=1";
+		Set<String> columns = map.keySet();
+		Object[] values = new Object[map.size()];
+		int i = 0;
+		for (String column : columns) {
+			sql += " and " + column + " = ?";
+			values[i++] = map.get(column);
+		}
+		return find(sql, values);
+	}
+
+	public List<M> findAll() {
+		String sql = "select * from " + tableName();
+		return find(sql);
+	}
+
+	public List<M> findByColumn(String column, Object value) {
+		String sql = "select * from " + tableName() + " where 1=1";
+		sql += " and " + column + " = ?";
+		return find(sql, value);
+	}
+	
+	public void putForUpdate(Map<String, Object> u){
+		for (String key : u.keySet()) {
+			this.set(key, u.get(key));
+		}
+	}
+
+	public String tableName() {
+		return TableMapping.me().getTable(clazz).getName();
+	}
+
+}

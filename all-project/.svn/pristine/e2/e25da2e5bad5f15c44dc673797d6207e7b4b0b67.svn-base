@@ -1,0 +1,39 @@
+package saas.winbons.data.model.contact;
+
+import java.util.Map;
+
+import saas.winbons.data.model.BaseModel;
+import saas.winbons.data.model.customer.Customer;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolString;
+
+public class CustomerContact extends BaseModel<CustomerContact> {
+
+	private static final long serialVersionUID = -129253767925099297L;
+	
+	public static final CustomerContact dao = new CustomerContact();
+	
+	
+	
+	public void saveObjByScan(ContextDTO contextDTO,CustomerContact customerContact,Customer customer,Map<Object, Object> data){
+		//Customer 添加客户, Contact
+		Object importStatus = data.get("importStatus");
+		
+		
+		
+		
+		
+		if(ToolString.toString(importStatus).equals("Customer")){
+			
+		}{
+			
+		}
+		
+	}
+	
+	
+	public void checkCustomerByScan(ContextDTO contextDTO,Customer customer){
+		
+	}
+
+}

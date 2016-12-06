@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--  
+	菜单sql
+-->
+<sql-statement namespace="winbons.systemProfile">
+	
+	<!-- 查询根菜单 -->
+	<sql id="getSystemProfile">
+		<![CDATA[ 
+			select fvalue from t_bs_systemprofile s where s.category=? and s.fkey=? and dbid=?
+    	]]>
+	</sql>
+	
+
+</sql-statement>

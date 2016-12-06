@@ -1,0 +1,17 @@
+package saas.monitor.mvc.security;
+
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+
+import saas.monitor.mvc.base.BaseController;
+
+
+@RequiresPermissions("0088")
+public class SecurityController extends BaseController {
+
+	@Override
+	protected Class<? extends BaseController> getLogClass() {
+		return SecurityController.class;
+	}
+
+
+}

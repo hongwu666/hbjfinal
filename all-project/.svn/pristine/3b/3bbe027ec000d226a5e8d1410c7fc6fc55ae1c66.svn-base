@@ -1,0 +1,495 @@
+package saas.winbons.run;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFDateUtil;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import saas.crm.dynamic.model.Content;
+import saas.crm.dynamic.model.Index;
+import saas.crm.dynamic.model.StreamDynamic;
+import saas.framework.nosql.FileSystemEngine;
+import saas.framework.nosql.domain.AttachmentObject;
+import saas.winbons.customer.job.CustomerBackToPoolsAlertJob;
+import saas.winbons.customer.job.CustomerBackToPoolsJob;
+import saas.winbons.customer.job.CustomerLastDateRepair;
+import saas.winbons.customer.job.CustomerPoolDefineJob;
+import saas.winbons.customer.job.CustomerRightUpgrade;
+import saas.winbons.customer.job.PublicCustomerRepair;
+import saas.winbons.data.model.calendar.CalendarInfoJob;
+import saas.winbons.data.model.workorder.WorkOrderModel;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.email.job.EmailContactsRepeatedRepair;
+import saas.winbons.email.job.EmailExport;
+import saas.winbons.email.job.EmailMonitorRepair;
+import saas.winbons.framework.nosql.BaseNosqlDaoImpl;
+import saas.winbons.framework.service.ServiceLocator;
+import saas.winbons.framework.tools.ToolFile;
+import saas.winbons.framework.tools.ToolString;
+import saas.winbons.jfinal.JfinalCoreInit;
+import saas.winbons.other.job.FiscalyearRepair;
+import saas.winbons.user.job.DepartRepairJob;
+import saas.winbons.user.job.PlatFormUserCompanyRepair;
+
+import com.alibaba.druid.filter.stat.StatFilter;
+import com.alibaba.druid.wall.WallConfig;
+import com.alibaba.druid.wall.WallFilter;
+import com.jfinal.ext.plugin.quartz.QuartzKit;
+import com.jfinal.ext.plugin.quartz.QuartzPlugin;
+import com.jfinal.kit.PathKit;
+import com.jfinal.kit.PropKit;
+import com.jfinal.plugin.activerecord.ActiveRecordPlugin;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.plugin.druid.DruidPlugin;
+
+public class StartUp {
+	
+	private static volatile boolean running = true;
+	
+	private static ContextDTO contextDTO = new ContextDTO();
+	
+	protected final static Logger logger = LoggerFactory.getLogger(StartUp.class);
+	
+	
+	//private static BaseNosqlDaoImpl baseNosqlDao;
+
+	public static void main(String[] args) throws IOException, InterruptedException {
+		
+		long currentTimeMillis = System.currentTimeMillis();
+		System.out.println(currentTimeMillis);
+		
+		ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring/*.xml");
+		ServiceLocator.setApplicationContext(applicationContext);
+		applicationContext.start();
+		new JfinalCoreInit();
+		
+		
+		/*
+		DruidPlugin druidPlugin2 = new DruidPlugin(PropKit.get("jdbcUrlSaas"), PropKit.get("userSaas"), PropKit.get("passwordSaas").trim());
+		druidPlugin2.addFilter(new StatFilter());
+		druidPlugin2.start();
+		ActiveRecordPlugin activeRecordPlugin2 = new ActiveRecordPlugin("jdbcUrlSaas",druidPlugin2);
+		activeRecordPlugin2.setShowSql(true);
+		activeRecordPlugin2.start();*/
+		
+		//连接非主数据库使用
+/*		PropKit.use("a_little_config.txt");
+		PathKit.setWebRootPath(PropKit.get("WebRootPath"));
+		DruidPlugin druidPlugin = new DruidPlugin(PropKit.get("jdbcUrl"), PropKit.get("user"), PropKit.get("password").trim());
+		druidPlugin.addFilter(new StatFilter());
+		WallFilter wall = new WallFilter();
+		wall.setDbType("mysql");
+		WallConfig wallConfig = new WallConfig("META-INF/druid/wall/mysql");
+		wallConfig.setCommentAllow(true);
+		wallConfig.setSelectWhereAlwayTrueCheck(false);
+		wallConfig.setConditionAndAlwayTrueAllow(true);
+		wallConfig.setMultiStatementAllow(true);
+		wallConfig.setNoneBaseStatementAllow(true);
+		wall.setConfig(wallConfig);
+		druidPlugin.addFilter(wall);
+		druidPlugin.start();
+		ActiveRecordPlugin activeRecordPlugin = new ActiveRecordPlugin(druidPlugin);
+		activeRecordPlugin.setShowSql(true);
+		activeRecordPlugin.start();
+		*/
+		
+		
+		contextDTO.setDbId(12053435L);
+		contextDTO.setUserId(100000098808L);
+		contextDTO.setAdmin(false);
+		contextDTO.setCurrentOwnerId(100000098808L);
+		contextDTO.setMobileRequest(false);
+		contextDTO.setUserName("15989339812");
+		contextDTO.setLoginId("15989339812");
+		
+		contextDTO.setServiceType(7);
+		
+		
+		
+		
+		
+/*		QuartzPlugin quartzPlugin = new QuartzPlugin("quartz.properties");
+		quartzPlugin.start();*/
+		
+		/*if(PropKit.use("other.txt").getBoolean("importDy.enable")){
+			try{
+				logger.warn("开始处理动态导入");
+				importDynamicXls();
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+			logger.warn("结束处理动态导入");
+
+		}*/
+		
+/*		if(PropKit.use("other.txt").getBoolean("customerRecovery.enable")){
+			try{
+				QuartzKit.addJob("customerPoolBack", CustomerBackToPoolsJob.class, PropKit.use("other.txt").get("customerRecovery.quartz"), new HashMap<>());
+				//CustomerBackToPoolsAlertJob customerBackToPoolsJob = (CustomerBackToPoolsAlertJob)ServiceLocator.getService("customerBackToPoolsAlertJob");
+				//customerBackToPoolsJob.execute();
+				
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+		}*/
+		
+		
+		/*if(PropKit.use("other.txt").getBoolean("customerRight.enable")){
+			try{
+				//CustomerRightUpgrade customerRightUpgrade = new CustomerRightUpgrade();
+				//customerRightUpgrade.rightUpgrade();
+				//CustomerBackToPoolsAlertJob customerBackToPoolsJob = (CustomerBackToPoolsAlertJob)ServiceLocator.getService("customerBackToPoolsAlertJob");
+				//customerBackToPoolsJob.execute();
+				
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+		}*/
+		
+		/*if(PropKit.use("other.txt").getBoolean("customerLastUpdate.enable")){
+			try{
+				CustomerLastDateRepair customerLastDateRepair = (CustomerLastDateRepair)ServiceLocator.getService("customerLastDateRepair");
+				customerLastDateRepair.execute();
+				
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+		}*/
+		
+		/*if(PropKit.use("other.txt").getBoolean("userDepartRepair.enable")){
+			long dbId = 1006912;
+			DepartRepairJob departRepairJob = new DepartRepairJob();
+			departRepairJob.repairUpgrade(dbId);
+		}*/
+		
+		/*if(PropKit.use("other.txt").getBoolean("emailContactsRepeatedRepair.enable")){
+			EmailContactsRepeatedRepair emailContactsRepeatedRepair = new EmailContactsRepeatedRepair();
+			emailContactsRepeatedRepair.repairUpgrade();
+		}*/
+		
+		/*if(PropKit.use("other.txt").getBoolean("platformUserCompanyRepeatedRepair.enable")){
+			PlatFormUserCompanyRepair platFormUserCompanyRepair = new PlatFormUserCompanyRepair();
+			platFormUserCompanyRepair.repairUpgrade();
+		}*/
+		
+/*		if(PropKit.use("other.txt").getBoolean("publicCustomerRepair.enable")){
+			PublicCustomerRepair platFormUserCompanyRepair = new PublicCustomerRepair();
+			platFormUserCompanyRepair.repairUpgrade();
+		}*/
+		
+		/*if(PropKit.use("other.txt").getBoolean("emailExport.enable")){
+			
+			
+			FileSystemEngine fileSystemService = (FileSystemEngine) ServiceLocator.getService("fileSysEngine");
+			AttachmentObject dbFile = fileSystemService.getFileById(AttachmentObject.class, "583e485f0cf2ab4c42f900b8");
+			InputStream ins = null;
+			String filePath = "E:\\emailExp";
+			try {
+				if (null != dbFile) {
+					ins = dbFile.getData();
+					try {
+						ToolFile.writeFile(ins, filePath, "1.eml", true);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}else{
+				}
+			} finally {
+				if (null != ins) {
+					ins = null;
+				}
+			}
+			
+			//EmailExport emailContactsRepeatedRepair = new EmailExport();
+			//emailContactsRepeatedRepair.repairUpgrade();
+		}*/
+
+		
+		/*if(PropKit.use("other.txt").getBoolean("fiscalyear.enable")){
+			FiscalyearRepair emailContactsRepeatedRepair = new FiscalyearRepair();
+			emailContactsRepeatedRepair.repairUpgrade();
+		}*/
+		
+		//CustomerPoolDefineJob CustomerPoolDefineJob = new CustomerPoolDefineJob();
+		//CustomerPoolDefineJob.repairUpgrade();
+		
+		//newImportUser();
+		//poiExecl();
+		
+/*		EmailMonitorRepair emailMonitorRepair = new EmailMonitorRepair();
+		emailMonitorRepair.repairUpgrade();*/
+		
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				synchronized (StartUp.class) {
+					running = false;
+					StartUp.class.notify();
+				}
+			}
+		});
+		synchronized (StartUp.class) {
+			while (running) {
+				try {
+					StartUp.class.wait();
+				} catch (Throwable e) {
+				}
+			}
+		}
+
+	}
+	
+	private static void  importDynamicXls() throws Exception {
+		String imUrl = PropKit.use("other.txt").get("importDy.url");
+		String failFileUrl = PropKit.use("other.txt").get("importDyError.url");
+		Long dbid = PropKit.use("other.txt").getLong("importDy.dbid");
+		ContextDTO contextDTO = new ContextDTO();
+		contextDTO.setDbId(dbid);
+		BaseNosqlDaoImpl baseNosqlDao = BaseNosqlDaoImpl.getInstance();
+		
+		int totalCount =0;
+		int success =0;
+		int fail=0;
+		
+		StreamDynamic streamDynamic = null;
+		File fileExist = new File(imUrl);
+		if(fileExist.exists()){
+			InputStream is = new FileInputStream(imUrl);
+			HSSFWorkbook hssfWorkbook = new HSSFWorkbook(is);
+			// 循环行Row
+			BufferedWriter bw = null;
+			File file = new File(failFileUrl);
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+			FileWriter fw = new FileWriter(file.getAbsoluteFile());
+			bw = new BufferedWriter(fw);
+			
+			// 循环工作表Sheet
+			try{
+				for (int numSheet = 0; numSheet < hssfWorkbook.getNumberOfSheets(); numSheet++) {
+					HSSFSheet hssfSheet = hssfWorkbook.getSheetAt(0);
+					if (hssfSheet == null) {
+						continue;
+					}
+					
+					for (int rowNum = 1; rowNum < hssfSheet.getLastRowNum(); rowNum++) {
+
+						HSSFRow hssfRow = hssfSheet.getRow(rowNum);
+						if (hssfRow != null) {
+							streamDynamic = new StreamDynamic();
+							Content content = new Content();
+							HSSFCell custName = hssfRow.getCell(0);// 客户名称
+							HSSFCell contentInfo = hssfRow.getCell(1);// 跟进内容
+							HSSFCell createBy = hssfRow.getCell(2);// 跟进人
+							HSSFCell itemTypeText = hssfRow.getCell(3);// 跟进类型
+							HSSFCell date = hssfRow.getCell(4);// 跟进时间
+		
+							Long custId = 0L;
+							String custNameStr = getValue(custName);
+							try{
+								totalCount ++;
+								custNameStr = "'" +custNameStr.trim()+"'";
+								String sqlCustName = "select id from t_crm_customer where dbid = "+dbid+" and name = "+ custNameStr + "";
+								List<Record> find = Db.find(contextDTO, sqlCustName);
+								List<Long> tempLong = new ArrayList<Long>();
+								for(Record r : find){
+									tempLong.add(r.getLong("id"));
+								}
+								List<Long> listCust = tempLong;
+								if (listCust != null && listCust.size() > 0) {
+									
+									try{
+										Long createId = 0L;
+										String createStr = getValue(createBy).replaceAll("\\s*", "");
+										createStr = "'" +createStr+"'";
+										String sqlCreate = "select user_id from t_crm_user where dbid="+dbid+" and display_name = "+ createStr + "";
+										List<Record> find2 = Db.find(contextDTO, sqlCreate);
+										List<Long> tempLong2 = new ArrayList<Long>();
+										for(Record r : find2){
+											tempLong2.add(r.getLong("user_id"));
+										}
+										
+										List<Long> listCreate = tempLong2;
+										
+										if (listCreate != null && listCreate.size() > 0) {
+											
+											try{
+												Long itemTypeId = 0L;
+												String itemTextStr = getValue(itemTypeText).replaceAll("\\s*", "");// 活动类型描述
+												if (StringUtils.isNotBlank(itemTextStr)) {
+													itemTextStr = "'" + handleSpecialString(itemTextStr) + "%'";
+												}
+												String sqlItem = "select id from t_crm_list_item where dbid="+dbid+" and list_id=7 and item_label like "+ itemTextStr + "";
+												List<Record> find3 = Db.find(contextDTO, sqlItem);
+												List<Long> tempLong3 = new ArrayList<Long>();
+												for(Record r : find3){
+													tempLong3.add(r.getLong("id"));
+												}
+												
+												List<Long> listItem = tempLong3;
+												
+												if (listItem != null && listItem.size() > 0) {
+													String contentMsg = getValue(contentInfo);
+													if(StringUtils.isNotBlank(contentMsg)){
+														itemTypeId = listItem.get(0);
+														createId = listCreate.get(0);
+														custId = listCust.get(0);
+														
+														final long index = findAndUpdateIndex(contextDTO);
+														streamDynamic.setIndex(index);
+														streamDynamic.setDbid(dbid);
+														streamDynamic.setGroupId(custId);
+														streamDynamic.setGroupTypeId(0L);
+														streamDynamic.setRelModuleId(custId);
+														streamDynamic.setGroupName(getValue(custName).replaceAll("\\s*", ""));
+														
+														content.setContent(getValue(contentInfo).replaceAll("\\s*", ""));
+														streamDynamic.setContent(content);
+								
+														streamDynamic.setCreateBy(createId);
+														streamDynamic.setItemTypeText(getValue(itemTypeText).replaceAll("\\s*", ""));
+														streamDynamic.setItemTypeId(itemTypeId);
+														
+														Date createD = null;
+														String createDate = "";
+														if(date == null || StringUtils.isBlank(date+"")){
+															streamDynamic.setCreateDate(new Date());
+														}else{
+															try {
+																
+																DateFormat df = new SimpleDateFormat(PropKit.use("other.txt").get("importDy.dtFommat"));
+																createDate = getValue(date);
+																createD = df.parse(createDate);
+																if(createD == null){
+																	createD = new Date();
+																}
+																streamDynamic.setCreateDate(createD);
+															} catch (ParseException e) {
+																e.printStackTrace();
+																streamDynamic.setCreateDate(new Date());
+															}
+														}
+														streamDynamic.setItemTypeValue("releaseDynamic");
+														baseNosqlDao.save(contextDTO,streamDynamic);
+														success++;
+														logger.info("import success info custName:"+custNameStr+"___createStr:"+createStr+"___itemTextStr:"+itemTextStr+"___createDate:"+createDate);
+													}else{
+														String msg = "the follow info is blank rowNum:"+rowNum+" ____custName:"+custNameStr+" ____contentInfo:"+contentInfo;
+														bw.write(msg);
+														bw.newLine();
+														fail++;
+													}
+												}else{
+													String msg = "the itemTypeId is not exist rowNum:"+rowNum+" ____custName:"+custNameStr+" ____itemTypeText:"+itemTextStr;
+													bw.write(msg);
+													bw.newLine();
+													fail++;
+												}
+											}catch (Exception ei) {
+												String msg = "the itemTypeId is not exist rowNum:"+rowNum+" ____custName:"+custNameStr+" ____errorMsg:"+ei.getMessage();
+												bw.write(msg);
+												bw.newLine();
+												fail++;
+											}
+										}else{
+											String msg = "the createPeople is not exist rowNum:"+rowNum+" ____custName:"+custNameStr+" ____createBy:"+createStr;
+											bw.write(msg);
+											bw.newLine();
+											fail++;
+										}
+									}catch(Exception ec){
+										String msg = "the createPeople is not exist rowNum:"+rowNum+" ____custName:"+custNameStr+" ____errorMsg:"+ec.getMessage();
+										bw.write(msg);
+										bw.newLine();
+										fail++;
+									}
+								} else {
+									String msg = "the customer is not exist rowNum:"+rowNum+" ____custName:"+custNameStr;
+									bw.write(msg);
+									bw.newLine();
+									fail++;
+								}
+							}catch(Exception ex){
+								ex.printStackTrace();
+								String msg = "the customer is not exist rowNum:"+rowNum+" ____custName:"+custNameStr+"____errorMsg:"+ex.getMessage();
+								bw.write(msg);
+								bw.newLine();
+								fail++;
+							}
+						}
+					}
+				}
+			}catch(Exception e){
+				e.printStackTrace();
+				String msg = "the customer import error____errorMsg:"+e.getMessage();
+				bw.write(msg);
+				bw.newLine();
+			}finally{
+				try {
+					String msg = "totalCount:"+totalCount+"___success:"+success+"___fail:"+fail;
+					bw.write(msg);
+					bw.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	
+	}
+	
+	private static String getValue(HSSFCell hssfCell) {
+		if (hssfCell.getCellType() == hssfCell.CELL_TYPE_BOOLEAN) {
+			// 返回布尔类型的值
+			return String.valueOf(hssfCell.getBooleanCellValue());
+		} else if (hssfCell.getCellType() == hssfCell.CELL_TYPE_NUMERIC) {
+			if(HSSFDateUtil.isCellDateFormatted(hssfCell)){
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+				return sdf.format(HSSFDateUtil.getJavaDate(hssfCell.getNumericCellValue())).toString();
+			}else{
+				// 返回数值类型的值
+				return String.valueOf(hssfCell.getNumericCellValue());
+			}
+		} else {
+			// 返回字符串类型的值
+			return String.valueOf(hssfCell.getStringCellValue());
+		}
+	}
+	
+	private static String handleSpecialString(String sourceStr) {
+		if (StringUtils.isBlank(sourceStr)) {
+			return sourceStr;
+		}
+		sourceStr = sourceStr.trim();
+		return sourceStr.replaceAll("%", "\\\\%").replaceAll("_", "\\\\_");
+	}
+	
+	public static long findAndUpdateIndex(ContextDTO contextDTO) {
+		BaseNosqlDaoImpl baseNosqlDao = BaseNosqlDaoImpl.getInstance();
+		Index index = baseNosqlDao
+				.updateIncValue(contextDTO,"dbid", Index.DEFAULT_ID, "indexValue", Index.class, Index.DEFAULT_ID);
+		return index.getIndexValue();
+	}
+	
+	
+
+}

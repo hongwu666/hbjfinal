@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+	xsi:schemaLocation="http://www.springframework.org/schema/context
+						http://www.springframework.org/schema/context/spring-context.xsd
+						http://www.springframework.org/schema/data/mongo
+						http://www.springframework.org/schema/data/mongo/spring-mongo.xsd
+						http://www.springframework.org/schema/beans
+						http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<!-- Default bean name is 'mongo' -->
+	<mongo:mongo-client id="mongo-client-prod-comet-trans-fs" 
+		host="${mongofs.ip}" port="${mongofs.port}"
+		>
+		
+	<mongo:client-options connections-per-host="${mongofs.connectionsPerHost}"
+			threads-allowed-to-block-for-connection-multiplier="10"
+			connect-timeout="20000"
+			socket-timeout="20000" />
+	</mongo:mongo-client>
+
+	<mongo:db-factory id="mongoFsFactory" dbname="${mongofs.name}"
+		mongo-ref="mongo-client-prod-comet-trans-fs" />
+
+	<!-- set the mapping converter to be used by the MongoTemplate -->
+	<bean id="gridFsTemplate" class="saas.winbons.framework.nosql.CustomGridFsTemplate">
+		<constructor-arg name="dbFactory" ref="mongoFsFactory" />
+		<constructor-arg name="converter" ref="mappingConverter" />
+	</bean>
+	
+</beans>

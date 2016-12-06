@@ -1,0 +1,122 @@
+package saas.winbons.data.model.contact;
+
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.jfinal.ext.kit.ModelKit;
+import com.jfinal.ext.plugin.jms.JmsKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.IAtom;
+
+import saas.crm.dynamic.Action;
+import saas.crm.dynamic.model.Stream;
+import saas.crm.dynamic.model.StreamDynamic;
+import saas.data.dto.MergeCustomerDTO;
+import saas.winbons.data.model.BaseModel;
+import saas.winbons.data.model.base.DynamicEvent;
+import saas.winbons.data.model.customer.Customer;
+import saas.winbons.data.model.customer.CustomerShareAclModel;
+import saas.winbons.data.model.tag.BizRelTag;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dynamic.ItemTypeEnum;
+import saas.winbons.framework.execption.ServiceException;
+import saas.winbons.framework.tools.ToolEvent;
+import saas.winbons.framework.tools.ToolSqlXml;
+import saas.winbons.framework.tools.ToolString;
+
+public class CustomerContact extends BaseModel<CustomerContact> {
+
+	private static final long serialVersionUID = -129253767925099297L;
+	
+	public static final CustomerContact dao = new CustomerContact();
+	
+	
+	public void saveObj(ContextDTO contextDTO,CustomerContact customerContact,BizRelTag[] bizRelTags){
+		Map<String,Object> params = new HashMap<String,Object>();
+		boolean isNew = null == customerContact.get("id");
+		params.put("contextDTO", contextDTO);
+		params.put("data", ModelKit.toMap(customerContact));
+		if(!Db.tx(new IAtom() {
+
+			@Override
+			public boolean run() throws SQLException {
+				checkObj(contextDTO,customerContact);
+				if(isNew){
+					customerContact.save(contextDTO);
+					if(null != bizRelTags){
+						for(BizRelTag bizRelTag : bizRelTags){
+							bizRelTag.put("itemid", customerContact.get("id"));
+							bizRelTag.put("module", ItemTypeEnum.Contract.name());
+							bizRelTag.put("userid", customerContact.get("ownerId"));
+							bizRelTag.put("tagid", bizRelTag.get("id"));
+							bizRelTag.save(contextDTO);
+						}
+					}
+				}else{
+					customerContact.update(contextDTO);
+					if(null != bizRelTags){
+						Db.update(contextDTO, "delete from t_crm_biz_rel_tag where module = ? and itemid = ? and userid = ?",ItemTypeEnum.Contact.name(),customerContact.get("id"),customerContact.get("ownerId"));
+						for(BizRelTag bizRelTag : bizRelTags){
+							bizRelTag.put("itemid", customerContact.get("id"));
+							bizRelTag.put("module", ItemTypeEnum.Contract.name());
+							bizRelTag.put("userid", customerContact.get("ownerId"));
+							bizRelTag.put("tagid", bizRelTag.get("id"));
+							bizRelTag.save(contextDTO);
+						}
+					}
+				}
+				
+				
+				return true;
+			}
+			
+		})){
+			throw new ServiceException("Sql执行异常");
+		}else{
+			//处理动态
+			if(isNew){
+				Map<String, Object> source2 = new HashMap<String,Object>();
+				source2.put("contextDTO", contextDTO);
+				StreamDynamic streamDynamic = new StreamDynamic();
+				streamDynamic.setGroupId(customerContact.getId());
+				streamDynamic.setGroupName(customerContact.getStr("name"));
+				streamDynamic.setGroupTypeId(ItemTypeEnum.Contact.dbValue);
+				streamDynamic.setStream(new Stream(Action.add, customerContact.getStr("name")));
+				streamDynamic.setItemId(customerContact.getId());
+				streamDynamic.setItemTypeId(ItemTypeEnum.Contact.dbValue);
+				streamDynamic.setItemTypeValue(Action.add.name() + "Contact");
+				streamDynamic.setItemTypeText("联系人");
+				source2.put("data", streamDynamic);
+				ToolEvent.multicastEvent(new DynamicEvent(source2));
+			}
+		}
+	}
+	
+	public void checkObj(ContextDTO contextDTO,CustomerContact customerContact){
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("contextDTO", contextDTO);
+		params.put("data", ModelKit.toMap(customerContact));
+		String custName = customerContact.get("name");
+		params.put("name", custName);
+		params.put("userId", customerContact.get("ownerId"));
+		params.put("id", customerContact.get("id"));
+		//验证自定义字段
+		String checkDefinedColumn = ToolSqlXml.getSql("winbons.contact.checkDefinedColumn",params);
+		String[] split = checkDefinedColumn.split(",");
+		if(!split[0].equals("1")){
+			if(split[0].equals("-1")){
+				throw new  ServiceException("5," + split[1] + "不能为空");
+			}else{
+				if(ToolString.isEmptyString(split[2])){
+					throw new  ServiceException(String.format("4,联系人(%s)的%s已被公共联系人(%s)使用", custName,split[1],custName));
+				}else{
+					throw new  ServiceException(String.format("3,联系人(%s)的%s已被用户(%s)使用", custName,split[1],split[2]));
+				}
+			}
+		}
+	}
+	
+	
+
+}

@@ -1,0 +1,31 @@
+package saas.framework.cache.redis.cmds;
+
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
+import saas.framework.cache.AbstractRedisCmd;
+
+@Component
+public class PopCmd extends AbstractRedisCmd {
+
+	public String getCmdId() {
+		return POP_CMD;
+	}
+
+	@Override
+	public Object execteBinary(byte[] key, List<byte[]> parmas,
+			Object[] extraParam) {
+		if (extraParam != null) {
+			List<byte[]> bytedata = getJedis().blpop((Integer) extraParam[0],
+					key);
+			if (bytedata != null && bytedata.size() > 0) {
+				return getCahceFromRedisReturn(bytedata.get(1));
+			}
+		} else {
+			return getCahceFromRedisReturn(getJedis().lpop(key));
+		}
+		return null;
+	}
+
+}

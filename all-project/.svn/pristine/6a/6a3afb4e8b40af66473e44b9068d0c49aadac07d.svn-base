@@ -1,0 +1,38 @@
+package saas.framework.cache;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.FactoryBean;
+
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.Protocol;
+
+public class JedisPoolFactoryBean extends AbstractPool implements FactoryBean<JedisPool> {
+	
+	private static final Logger logger = LoggerFactory.getLogger(JedisPoolFactoryBean.class);
+
+	@Override
+	public JedisPool getObject() throws Exception {
+		JedisPoolConfig config = new JedisPoolConfig();
+		config.setMaxTotal(maxTotalConnections);
+		config.setMaxIdle(maxIdle);
+		config.setMaxWaitMillis(maxWaitTime);
+		config.setTestOnBorrow(testOnBorrow);
+		JedisPool jedisPool = new JedisPool(config, ip, port, Protocol.DEFAULT_TIMEOUT + 3000);
+		
+		logger.info("成功连接到Redis：ip=" + ip + ", port=" + port);
+		
+		return jedisPool;
+	}
+
+	@Override
+	public Class<?> getObjectType() {
+		return JedisPool.class;
+	}
+
+	@Override
+	public boolean isSingleton() {
+		return true;
+	}
+}

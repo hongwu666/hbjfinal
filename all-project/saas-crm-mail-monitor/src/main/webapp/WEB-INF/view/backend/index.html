@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<!--[if IE 8]> <html lang="en" class="ie8 no-js"> <![endif]-->
+<!--[if IE 9]> <html lang="en" class="ie9 no-js"> <![endif]-->
+<!--[if !IE]><!-->
+<html lang="en">
+    <!--<![endif]-->
+    <!-- BEGIN HEAD -->
+
+    <head>
+        <meta charset="utf-8" />
+        <title>华邦云</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta content="width=device-width, initial-scale=1" name="viewport" />
+        <meta content="" name="description" />
+        <meta content="" name="author" />
+		<% include("/common/css.html"){} %>
+		<style>
+		.page-header.navbar .page-logo .logo-default{
+			margin: 5px 0 0;
+		}
+		.page-header.navbar .page-logo{
+			padding-left:0px;
+			background:#0092da;
+		}
+		.page-header.navbar .page-top{
+			background:#0092da;
+		}
+		</style>
+		<script type="text/javascript">
+		var initData = {};
+		 if($("#initData").val()){
+				initData = jQuery.parseJSON($("#initData").val());
+		 }
+		
+		</script>
+        </head>
+    <!-- END HEAD -->
+
+    <body class="page-header-fixed page-sidebar-closed-hide-logo page-container-bg-solid">
+    <input type="hidden" id="initData" value='${initData!}'>
+        <!-- BEGIN HEADER -->
+        <% include("/common/navbar-fixed-top.html"){} %>
+        <!-- END HEADER -->
+        <!-- BEGIN HEADER & CONTENT DIVIDER -->
+        <div class="clearfix"> </div>
+        <!-- END HEADER & CONTENT DIVIDER -->
+        <!-- BEGIN CONTAINER -->
+        <div class="page-container">
+            <!-- BEGIN SIDEBAR -->
+            <div class="page-sidebar-wrapper">
+                <div class="page-sidebar navbar-collapse collapse">
+                	  	<% include("/common/left-menu.html"){} %>
+                </div>
+                <!-- END SIDEBAR -->
+            </div>
+            <!-- END SIDEBAR -->
+            <!-- BEGIN CONTENT -->
+            <div class="page-content-wrapper">
+            <% include("/common/theme-panel.html"){} %>
+                <!-- BEGIN CONTENT BODY -->
+                <div class="page-content">
+                   <% include(htmlContent){} %>
+                    <!-- BEGIN PAGE HEADER-->
+                    <!-- BEGIN THEME PANEL -->
+                    <!-- END THEME PANEL -->
+                <!-- END CONTENT BODY -->
+            </div>
+            <!-- END CONTENT -->
+            <!-- BEGIN QUICK SIDEBAR -->
+            <a href="javascript:;" class="page-quick-sidebar-toggler">
+                <i class="icon-login"></i>
+            </a>
+            <!-- END QUICK SIDEBAR -->
+        </div>
+        <!-- END CONTAINER -->
+        <!-- BEGIN FOOTER -->
+        <% include("/common/foot.html"){} %>
+    </body>
+
+</html>

@@ -1,0 +1,54 @@
+package saas.monitor.mvc.security;
+
+import java.util.List;
+import java.util.Map;
+
+import saas.monitor.mvc.base.BaseModel;
+import saas.monitor.tools.ToolModel;
+import com.jfinal.ext.plugin.tablebind.TableBind;
+import com.jfinal.plugin.activerecord.Db;
+
+public class AuthorityResource extends BaseModel<AuthorityResource> {
+
+	private static final long serialVersionUID = 8156136234477069502L;
+	
+	public static final AuthorityResource dao = new AuthorityResource();
+
+	@Override
+	protected Class<? extends BaseModel<AuthorityResource>> getLogClass() {
+		return AuthorityResource.class;
+	}
+	
+	/**
+	 * 根据角色ID查询该用户所拥有的权限列表
+	 * @param roleId
+	 * @return
+	 */
+	public List<AuthorityResource> getAuthoritiesNameByRoleId(String userId ,Integer roleId) {
+		String sql = "select system_authority.* from system_authority INNER JOIN " + 
+					" (select acl.privilege_id from system_authority_acl acl LEFT JOIN  " + 
+					" [系统用户信息] as userInfo on acl.secure_id = userInfo.[用户ID] where acl.secure_type = 'U' and userInfo.[用户ID] = ? " +
+					" union  " +
+					" select acl.privilege_id from system_authority_acl acl LEFT JOIN  " +
+					" [角色信息] as roleInfo on acl.secure_id = roleInfo.[角色ID] where acl.secure_type = 'R' and roleInfo.[角色ID] = ?) as authority_acl  " +
+					" on system_authority.id = authority_acl.privilege_id ORDER BY displayOrder";
+		return AuthorityResource.dao.find(sql,userId,roleId);
+		
+		//return Db.query(sql, userId,roleId);
+	}
+/*	
+	public List<Map<String,Object>> getAuthorityResourceByPrivilegepPattern(List<String> pattern) {
+		
+		
+		String sql = "select icc_system_authority.* from icc_system_authority  " + 
+				" INNER JOIN icc_system_role_authority on icc_system_authority.id = icc_system_role_authority.authorityId " + 
+				" where icc_system_role_authority.roleId = ? and icc_system_authority.isMenu = 'Y' order by displayOrder";
+		List<AuthorityResource> find = AuthorityResource.dao.find(sql,roleId);
+		return ToolModel.modelListConvert(find);
+	}*/
+
+
+
+
+
+}

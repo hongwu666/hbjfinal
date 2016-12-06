@@ -1,0 +1,9 @@
+package saas.winbons.data.model.email;
+
+import saas.winbons.data.model.BaseModel;
+
+public class EmailContactBoxRelUser extends BaseModel<EmailContactBoxRelUser> {
+
+	private static final long serialVersionUID = -126619900503601808L;
+
+}

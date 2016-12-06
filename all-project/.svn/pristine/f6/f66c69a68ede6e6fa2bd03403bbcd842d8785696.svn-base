@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--  
+	商机sql
+-->
+<sql-statement namespace="winbons.opportunity">
+	
+	<!-- 查询所有商机的后半段-->
+	<sql id="searchOpportunity">
+		<![CDATA[
+		  FROM
+		t_crm_sales_opportunity t201
+		LEFT JOIN t_crm_customer t101 ON t101.id = t201.cust_id
+		AND t101.dbid = t201.dbid
+		LEFT JOIN t_crm_department d ON d.id = t201.dept_id
+		AND d.dbid = t201.dbid
+		LEFT JOIN t_crm_sales_opportunity_stage s ON s.id = t201.stage_id
+		AND s.dbid = t201.dbid
+		LEFT JOIN t_crm_list_item l1 ON l1.id = t201.oppo_type_id
+		AND l1.dbid = t201.dbid
+		LEFT JOIN t_crm_list_item l2 ON l2.id = t201.oppo_source_id
+		AND l2.dbid = t201.dbid
+		LEFT JOIN t_crm_list_item l3 ON l3.id = t201.lose_reason
+		AND l3.dbid = t201.dbid
+		LEFT JOIN t_crm_cust_contact t102 ON t102.id = t201.contact_id
+		AND t102.dbid = t201.dbid
+		  LEFT JOIN t_crm_user t101User ON t101.owner_id = t101User.user_id AND t101.dbid = t101User.dbid 
+		  LEFT JOIN t_crm_user t102User ON t102.ownerId = t102User.user_id AND t102.dbid = t102User.dbid  
+		  LEFT JOIN t_crm_user t201User ON t201.owner_id = t201User.user_id AND t201.dbid = t102User.dbid
+		WHERE
+		t201.dbid = ${contextDTO.dbId}  AND t101.owner_id IS NOT NULL 
+		<% data = setFn(data,"t201","tableAliases"); %>
+		and ${callTemplateFn("winbons.opportunity.getOpportunityExistsSqlByType",contextDTO,data)}
+		<% 
+			commonSql("winbons.common.params",filters!,sorts!);
+		%>
+    	]]>
+	</sql>
+	
+	
+	<!-- 优化客户查询-->
+	<sql id="getOpportunityExistsSqlByType">
+	<![CDATA[ 
+		EXISTS (
+		select 1 from 
+		t_crm_sales_opportunity_share_acl acl where acl.dbid = ${contextDTO.dbId} 
+		<% 
+		switch(selectType!){
+			case 1:
+			print(' AND acl.is_owner="N" and acl.secure_id =' +  contextDTO.userId);
+			break;
+			case 2:
+			print(' AND acl.is_owner="Y" and acl.secure_id =' +  contextDTO.userId);
+			break;
+			default :
+			if(!isEmpty(queryOwnerIds)){
+			%>
+				AND acl.user_id in ${inParse(strutil.split(queryOwnerIds,","))}
+			<%		
+			}else{
+				var queryOwnerIds = contextDTO.userId + "";
+				if(contextDTO.admin){
+					var sql = callTemplateFn("winbons.department.getBeManagerUserIdsByManagerId",contextDTO,{userId:contextDTO.userId},true);
+					var result = sqlFn(contextDTO,"list",sql);
+					if(!isEmpty(result)){
+						for(res in result){
+							queryOwnerIds = queryOwnerIds + "," + res.user_id;
+						}
+					}
+				}else{
+					queryOwnerIds = callTemplateFn("winbons.department.getManagerUserIdByAcl",contextDTO,{userId:contextDTO.userId,aclName:"Opportunity:query"},true);
+				}
+			%>
+				AND acl.user_id in ${inParse(strutil.split(queryOwnerIds,","))}
+			<%	
+			}
+			%>
+			
+			<%
+			break;
+		}
+		%>
+		 AND ${tableAliases}.dbid = acl.dbid
+	     AND ${tableAliases}.id = acl.opport_id
+		)
+		
+		
+	]]>
+	</sql>
+	
+	<sql id="getSharedUsersById">
+		<![CDATA[ 
+			SELECT
+				u.user_id AS id,
+				u.display_name AS username,
+				u.first_name AS firstname,
+				u.last_name AS lastname,
+				u.photo_url AS photoUrl,
+				t.is_owner AS isOwner,
+				t.is_middle AS isMiddle
+			FROM
+				t_crm_sales_opportunity_share_acl t
+			LEFT JOIN t_crm_user u ON (t.user_id = u.user_id)
+			AND u.dbid = t.dbid
+			WHERE  
+			t.opport_id =  ${opport_id}
+			AND u.is_deleted = 'N'
+		]]>
+	</sql>
+</sql-statement>

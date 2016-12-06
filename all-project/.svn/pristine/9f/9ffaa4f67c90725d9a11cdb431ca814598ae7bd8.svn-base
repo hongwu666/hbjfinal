@@ -1,0 +1,268 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: UserIntrestDynamicRel.java 
+ * @Package saas.crm.dynamic.model 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年8月12日 下午2:19:20 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.model;
+
+import java.util.Collection;
+import java.util.Date;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+
+/**
+ * @ClassName: UserIntrestDynamicRel
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年8月12日 下午2:19:20
+ */
+
+public class UserIntrestDynamicRel implements ISeq {
+
+	@Id
+	private String id;
+
+	private Long userId;
+
+	private String dynamicTitle;// 动态描述
+
+	@DBRef
+	private StreamDynamic streamDynamic;
+
+	private Date createDate;
+
+	private int deleted = 0;
+
+	private Long index;
+	
+	private Long dyCreateBy;//动态创建人
+	
+	private Long groupId;
+	
+	private Long depId;
+	
+	private Collection<DynamicTopicEn> topics;// 话题集合;//动态主题
+	
+	protected Content content;//动态内容
+	
+	/** 
+	 * @return the groupId 
+	 */
+	public Long getGroupId() {
+		return groupId;
+	}
+
+	/** 
+	 * @param groupId the groupId to set 
+	 */
+	
+	public void setGroupId(Long groupId) {
+	
+		this.groupId = groupId;
+	}
+
+	/** 
+	 * @return the depId 
+	 */
+	
+	public Long getDepId() {
+	
+		return depId;
+	}
+
+	/** 
+	 * @param depId the depId to set 
+	 */
+	
+	public void setDepId(Long depId) {
+	
+		this.depId = depId;
+	}
+
+	/** 
+	 * @return the dyCreateBy 
+	 */
+	public Long getDyCreateBy() {
+		return dyCreateBy;
+	}
+
+	/** 
+	 * @param dyCreateBy the dyCreateBy to set 
+	 */
+	
+	public void setDyCreateBy(Long dyCreateBy) {
+		this.dyCreateBy = dyCreateBy;
+	}
+
+
+	/** 
+	 * @return the topics 
+	 */
+	
+	public Collection<DynamicTopicEn> getTopics() {
+	
+		return topics;
+	}
+
+	/** 
+	 * @param topics the topics to set 
+	 */
+	
+	public void setTopics(Collection<DynamicTopicEn> topics) {
+	
+		this.topics = topics;
+	}
+
+	/** 
+	 * @return the content 
+	 */
+	
+	public Content getContent() {
+	
+		return content;
+	}
+
+	/** 
+	 * @param content the content to set 
+	 */
+	
+	public void setContent(Content content) {
+	
+		this.content = content;
+	}
+
+	/** 
+	 * @param index the index to set 
+	 */
+	public void setIndex(Long index) {
+		this.index = index;
+	}
+
+	/**
+	 * @return the deleted
+	 */
+	public int getDeleted() {
+		return deleted;
+	}
+
+	/**
+	 * @param deleted
+	 *            the deleted to set
+	 */
+
+	public void setDeleted(int deleted) {
+
+		this.deleted = deleted;
+	}
+
+	/**
+	 * @return the userId
+	 */
+
+	public Long getUserId() {
+
+		return userId;
+	}
+
+	/**
+	 * @param userId
+	 *            the userId to set
+	 */
+
+	public void setUserId(Long userId) {
+
+		this.userId = userId;
+	}
+
+	/**
+	 * @return the dynamicTitle
+	 */
+
+	public String getDynamicTitle() {
+
+		return dynamicTitle;
+	}
+
+	/**
+	 * @param dynamicTitle
+	 *            the dynamicTitle to set
+	 */
+
+	public void setDynamicTitle(String dynamicTitle) {
+
+		this.dynamicTitle = dynamicTitle;
+	}
+
+	/**
+	 * @return the id
+	 */
+
+	public String getId() {
+
+		return id;
+	}
+
+	/**
+	 * @param id
+	 *            the id to set
+	 */
+
+	public void setId(String id) {
+
+		this.id = id;
+	}
+
+	/**
+	 * @return the streamDynamic
+	 */
+
+	public StreamDynamic getStreamDynamic() {
+
+		return streamDynamic;
+	}
+
+	/**
+	 * @param streamDynamic
+	 *            the streamDynamic to set
+	 */
+
+	public void setStreamDynamic(StreamDynamic streamDynamic) {
+
+		this.streamDynamic = streamDynamic;
+	}
+
+	/**
+	 * @return the createDate
+	 */
+
+	public Date getCreateDate() {
+
+		return createDate;
+	}
+
+	/**
+	 * @param createDate
+	 *            the createDate to set
+	 */
+
+	public void setCreateDate(Date createDate) {
+
+		this.createDate = createDate;
+	}
+
+
+	public Long getIndex() {
+		return index;
+	}
+}

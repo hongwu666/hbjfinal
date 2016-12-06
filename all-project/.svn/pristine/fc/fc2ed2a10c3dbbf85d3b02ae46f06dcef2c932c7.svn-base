@@ -1,0 +1,102 @@
+package saas.winbons.customer.job;
+
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.framework.mutitenant.TenantConstant;
+import saas.winbons.dubbo.api.ContextDTO;
+
+
+@Component
+public class CustomerLastDateRepair {
+	
+	protected final static Logger logger = LoggerFactory.getLogger(CustomerLastDateRepair.class);
+	
+	public void execute() {
+		if(1 == 1)return;//这个已经执行过了,无需再执行
+		String sql = TenantConstant.NON_PARSER + "SELECT dbid FROM t_crm_cust_public_pool group by dbid";
+		List<Record> find = Db.find(null, sql);
+		for(Record r : find){
+			ContextDTO contextDTO = new ContextDTO();
+			contextDTO.setDbId(r.getLong("dbid"));
+			List<Record> findCustomer = Db.find(contextDTO, "select * from t_crm_customer where owner_id IS NOT NULL and dbid = ?",r.getLong("dbid"));
+			//通过客户的创建或者修改时间建立
+			for(Record customer : findCustomer){
+				long created_date = toLong(customer.get("created_date"));
+				long updated_date = toLong(customer.get("updated_date"));
+				long lastcontact_date = toLong(customer.get("lastcontact_date"));
+				boolean needChange = false;
+				if(lastcontact_date < updated_date || lastcontact_date < created_date){
+					needChange = true;
+					if(updated_date > created_date){
+						lastcontact_date = updated_date;
+					}else{
+						lastcontact_date = created_date;
+					}
+				}
+				if(needChange){
+					logger.warn("通过最后编辑更新时间");
+					Db.update(contextDTO, "update t_crm_customer set lastcontact_date = ? where id = ? and dbid = ?",lastcontact_date,customer.get("id"),r.getLong("dbid"));
+				}
+			}
+			
+			//通过邮件获取最近时间
+			List<Record> findLastEmail = Db.find(contextDTO, "select customer_Id,max(sent_date) as lastSentDate from t_crm_email_info where is_deleted='N' and customer_Id is not null and customer_box_id is not null and email_folder_id<>9 GROUP BY customer_id ");
+			for(Record email : findLastEmail){
+				List<Record> findC = Db.find(contextDTO, "select * from t_crm_customer where owner_id IS NOT NULL and id = ? and dbid = ?",email.get("customer_Id"),r.getLong("dbid"));
+				for(Record fc : findC){
+					long lastSentDate = toLong(email.get("lastSentDate"));
+					long lastcontact_date = toLong(fc.get("lastcontact_date"));
+					boolean needChange = false;
+					if(lastSentDate > lastcontact_date){
+						needChange = true;
+						lastcontact_date = lastSentDate;
+					}
+					if(needChange){
+						logger.warn("通过最近邮件更新时间");
+						Db.update(contextDTO, "update t_crm_customer set lastcontact_date = ? where id = ? and dbid = ?",lastcontact_date,fc.get("id"),r.getLong("dbid"));
+					}
+				}
+			}
+			
+			//获取订单审批通过时间
+			List<Record> findContract = Db.find(contextDTO, "select customerid,max(wfsubmit_date) as wfsubmit_date,max(enddate) as enddate from t_crm_contract where dbid = ? group by customerid",r.getLong("dbid"));
+			for(Record contract : findContract){
+				List<Record> findC = Db.find(contextDTO, "select * from t_crm_customer where owner_id IS NOT NULL and id = ? and dbid = ?",contract.get("customerid"),r.getLong("dbid"));
+				for(Record fc : findC){
+					long wfsubmit_date = toLong(contract.get("wfsubmit_date"));
+					long enddate = toLong(contract.get("enddate"));
+					long lastcontract_endDate = toLong(contract.get("lastcontract_endDate"));
+					long lastcontract_submitDate = toLong(contract.get("lastcontract_submitDate"));
+					
+					if(lastcontract_endDate < enddate){
+						lastcontract_endDate = enddate;
+					}
+					if(lastcontract_submitDate < wfsubmit_date){
+						lastcontract_submitDate = wfsubmit_date;
+					}
+					
+					logger.warn("通过最近合同相关时间");
+					Db.update(contextDTO, "update t_crm_customer set lastcontract_endDate = ?,lastcontract_submitDate = ? where id = ? and dbid = ?",lastcontract_endDate,lastcontract_submitDate,fc.get("id"),r.getLong("dbid"));
+					
+				}
+			}
+
+		}
+		
+	}
+	
+	
+	
+	private long toLong(Object o ){
+		if(null == o)return 0;
+		return Long.parseLong(o.toString());
+	}
+
+}

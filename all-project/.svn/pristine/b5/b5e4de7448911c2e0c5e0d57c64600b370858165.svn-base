@@ -1,0 +1,47 @@
+package saas.winbons.user.job;
+
+import java.util.List;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+public class DepartRepairJob {
+	
+	public void repairUpgrade(long dbId){
+		
+		
+		String sql = "select * from t_crm_department where dbid = ? and is_valid = ? and id <> ?";
+		String update = "update t_crm_department set code = ? where dbid = ? and id = ?";
+		List<Record> find = Db.find(null, sql,dbId,"Y",-1);
+		
+		
+		int code = 1;
+		for(Record r :  find){
+			if(r.getLong("parent_id").longValue() == -1){
+				Db.update(null, update,"00" + toCodeString(code),dbId,r.getLong("id"));
+				updateSub(r.getLong("id"),dbId,"00" + toCodeString(code));
+				code++;
+			}
+		}
+	}
+	
+	
+	private String toCodeString(int i){
+		if(i<10){
+			return "0" + i;
+		}
+		return String.valueOf(i);
+	}
+	
+	private void updateSub(long id,long dbId,String parentCode){
+		int code = 1;
+		List<Record> find = Db.find(null, "select * from t_crm_department where dbid = ? and is_valid = ? and parent_id = ?",dbId,"Y",id);
+		for(Record r :  find){
+			Db.update(null, "update t_crm_department set code = ? where dbid = ? and id = ?",parentCode + toCodeString(code),dbId,r.getLong("id"));
+			code++;
+			updateSub(r.getLong("id"),dbId,parentCode + toCodeString(code));
+		}
+		
+	}
+
+}

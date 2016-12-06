@@ -1,0 +1,25 @@
+package saas.winbons.data.constant;
+
+public class DataConstantCache {
+	
+	/**
+	 * 缓存类型ehcache
+	 */
+	public static final String cache_type_ehcache = "ehcache";
+	
+	/**
+	 * 缓存类型redis
+	 */
+	public static final String cache_type_redis = "redis";
+	
+	/**
+	 * 系统缓存，主要是权限和数据字典等
+	 */
+	public static final String cache_name_ehcache_system = "system";
+
+	/**
+	 * 系统缓存，主要是权限和数据字典等
+	 */
+	public static final String cache_name_redis_system = "system";
+
+}

@@ -1,0 +1,23 @@
+package saas.framework.cache.redis.cmds;
+
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
+import saas.framework.cache.AbstractRedisCmd;
+
+@Component
+public class SetEntryCmd extends AbstractRedisCmd {
+
+	@Override
+	public String getCmdId() {
+		return SET_ENTRY;
+	}
+
+	@Override
+	public Object execteBinary(byte[] key, List<byte[]> parmas,
+			Object[] extraParam) {
+		return getJedis().keys(key);
+	}
+
+}

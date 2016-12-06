@@ -1,0 +1,157 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: AbstractDyManager.java 
+ * @Package saas.crm.dynamic.manager 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年8月11日 下午5:29:51 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.manager;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.locks.Lock;
+
+import org.redisson.Redisson;
+import org.redisson.core.RMap;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import saas.crm.base.utils.LockUtils;
+import saas.crm.dynamic.model.Index;
+import saas.crm.dynamic.model.LocationMap;
+import saas.crm.dynamic.model.StreamDynamic;
+import saas.crm.dynamic.model.UserIntrestDynamicRel;
+import saas.framework.dao.PageDataContext;
+import saas.framework.dao.PageVO;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.nosql.BaseNosqlDao;
+
+/**
+ * @ClassName: AbstractDyManager
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年8月11日 下午5:29:51
+ */
+@Component
+public class CommonDyManager implements ICommonDyManager {
+
+	@Autowired
+	private BaseNosqlDao baseNosqlDao;
+
+	@Autowired
+	private Redisson redisson;
+
+	private RMap<String, Integer> getFaverite(ContextDTO contextDTO,Long userID) {
+		return redisson.getMap(userID + "_" + contextDTO.getDbId() + "_userFavrite");
+	}
+
+	public long findAndUpdateIndex(ContextDTO contextDTO) {
+		Index index = baseNosqlDao.updateIncValue(contextDTO,"dbid", Index.DEFAULT_ID, "indexValue", Index.class, Index.DEFAULT_ID);
+		return index.getIndexValue();
+	}
+
+	private Integer getFaveriteFromCache(ContextDTO contextDTO,Long userId, String dyId) {
+		return getFaverite(contextDTO,userId).get(dyId);
+	}
+
+	@Override
+	public String intrestDy(ContextDTO contextDTO,Long userId, String dyId) {
+		StreamDynamic streamDynamic = baseNosqlDao.get(StreamDynamic.class, dyId);
+		if (streamDynamic != null) {
+			Lock lock = LockUtils.getLock(redisson, userId + "_" + contextDTO.getDbId() + "_instretLock");
+			try {
+				lock.lock();
+				Integer favorites = findUserInstret(contextDTO,userId, dyId);
+				if (favorites.intValue() == 1) {
+					throw new IllegalArgumentException("动态已收藏");
+				}
+				UserIntrestDynamicRel userIntrestDynamicRel = new UserIntrestDynamicRel();
+				userIntrestDynamicRel.setUserId(userId);
+				userIntrestDynamicRel.setStreamDynamic(streamDynamic);
+				userIntrestDynamicRel.setIndex(streamDynamic.getIndex());
+				userIntrestDynamicRel.setTopics(streamDynamic.getTopics());
+				userIntrestDynamicRel.setGroupId(streamDynamic.getGroupId());
+				userIntrestDynamicRel.setDepId(streamDynamic.getDepId());
+				baseNosqlDao.save(contextDTO,userIntrestDynamicRel);
+				getFaverite(contextDTO,userId).put(dyId, 1);// 添加缓存
+				return userIntrestDynamicRel.getId();
+			} catch (Exception ex) {
+				throw new IllegalArgumentException("动态已收藏", ex);
+			} finally {
+				lock.unlock();
+			}
+		}
+		throw new IllegalArgumentException("动态已删除");
+	}
+
+	@Override
+	public void delInestret(ContextDTO contextDTO,Long userId, String id) {
+		saas.winbons.framework.sql.FilterItemList filterItemList = saas.winbons.framework.sql.FilterItemListBuilder.createFilterItems();
+		filterItemList.addFilterItem(new saas.winbons.framework.sql.FilterItem("userId", userId, saas.winbons.framework.sql.FilterType.EQ));
+		filterItemList.addFilterItem(new saas.winbons.framework.sql.FilterItem("streamDynamic", id, saas.winbons.framework.sql.FilterType.EQ));
+		baseNosqlDao.deleteByFilter(contextDTO,filterItemList, UserIntrestDynamicRel.class);
+		getFaverite(contextDTO,userId).remove(id);
+	}
+
+	protected int getMaxData() {
+		return 20;
+	}
+
+	@Override
+	public Integer findUserInstret(ContextDTO contextDTO,Long userId, String dynamicId) {
+		Integer value = getFaveriteFromCache(contextDTO,userId, dynamicId);
+		if (value == null) {
+			saas.winbons.framework.sql.FilterItemList filterItemList = saas.winbons.framework.sql.FilterItemListBuilder.createFilterItems();
+			filterItemList.addFilterItem(new saas.winbons.framework.sql.FilterItem("userId", userId, saas.winbons.framework.sql.FilterType.EQ));
+			filterItemList.addFilterItem(new saas.winbons.framework.sql.FilterItem("streamDynamic", dynamicId, saas.winbons.framework.sql.FilterType.EQ));
+			UserIntrestDynamicRel userIntrestDynamicRel = baseNosqlDao.findByOne(contextDTO,UserIntrestDynamicRel.class, filterItemList);
+			value = userIntrestDynamicRel == null ? 0 : 1;
+			getFaverite(contextDTO,userId).put(dynamicId, value);
+		}
+		return value;
+	}
+
+	@Override
+	public List<StreamDynamic> findUserInterst(ContextDTO contextDTO,Long userId, Long index) {
+		saas.winbons.framework.sql.FilterItemList filterItemList = saas.winbons.framework.sql.FilterItemListBuilder.createFilterItems();
+		filterItemList.addFilterItem(new saas.winbons.framework.sql.FilterItem("userId", userId, saas.winbons.framework.sql.FilterType.EQ));
+		filterItemList.addFilterItem(new saas.winbons.framework.sql.FilterItem("deleted", 0, saas.winbons.framework.sql.FilterType.EQ));
+		PageVO pageVO = PageDataContext.getCurrentPageVO();
+		pageVO.setLimit(getMaxData());// 默认取20条
+		pageVO.setCurrentPage(1);
+		if (index != null) {
+			filterItemList.addFilterItem(new saas.winbons.framework.sql.FilterItem("index", index, saas.winbons.framework.sql.FilterType.LT));
+		}
+		filterItemList.addOrderItem(new saas.winbons.framework.sql.OrderItem("index", true));
+		List<UserIntrestDynamicRel> userIntrestDynamicRels = baseNosqlDao.findByQuery(contextDTO,filterItemList, UserIntrestDynamicRel.class);
+		if (userIntrestDynamicRels != null) {
+			List<StreamDynamic> streamDynamics = new ArrayList<StreamDynamic>(userIntrestDynamicRels.size());
+			for (UserIntrestDynamicRel userIntrestDynamicRel : userIntrestDynamicRels) {
+				StreamDynamic streamDynamic = userIntrestDynamicRel.getStreamDynamic();
+				if (streamDynamic != null)
+					streamDynamics.add(streamDynamic);
+			}
+			return streamDynamics;
+		}
+		return Collections.emptyList();
+	}
+
+	@Override
+	public String findByAddress(ContextDTO contextDTO,String adderss) {
+		LocationMap locationMap = baseNosqlDao.get(LocationMap.class, adderss);
+		if (locationMap != null) {
+			return locationMap.getLocaltionUrl();
+		}
+		return null;
+	}
+
+}

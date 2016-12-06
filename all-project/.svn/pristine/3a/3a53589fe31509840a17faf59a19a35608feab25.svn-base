@@ -1,0 +1,13 @@
+package saas.winbons.data.model.base;
+
+import org.springframework.context.ApplicationEvent;
+
+public class UserImportEvent extends ApplicationEvent {
+
+	private static final long serialVersionUID = 6956902345939205518L;
+
+	public UserImportEvent(Object source) {
+		super(source);
+	}
+
+}

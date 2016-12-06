@@ -1,0 +1,99 @@
+package saas.winbons.market.contant;
+
+import saas.winbons.enumtype.BaseEnum;
+
+public enum CopyOfLeadsColumnConvertor implements BaseEnum<String> {
+	compName("leads.comp_name"),
+	ownerId("leads.owner_id"),
+	name("leads.name"),
+	compTel("leads.comp_tel"),
+	mobile("leads.mobile"),
+	compFax("leads.comp_fax"),
+	status("leads.status"),
+	source("leads.source"),
+	dept("leads.dept"),
+	gender("leads.gender"),
+	job("leads.job"),
+	country("leads.country"),
+	province("leads.province"),
+	city("leads.city"),
+	address("leads.address"),
+	tel("leads.tel"),
+	website("leads.website"),
+	weibo("leads.weibo"),
+	wechat("leads.wechat"),
+	zip("leads.zip"),
+	email("leads.email"),
+	qq("leads.qq"),
+	tag("leads.tag"),
+	weixin("leads.weixin"),
+	createdDate("leads.created_date"),
+	createdBy("leads.created_by"),
+	updatedDate("leads.updated_date"),
+	updatedBy("leads.updated_by"),
+	textField01("leads.text_field01"),
+	textField02("leads.text_field02"),
+	textField03("leads.text_field03"),
+	textField04("leads.text_field04"),
+	textField05("leads.text_field05"),
+	textField06("leads.text_field06"),
+	textField07("leads.text_field07"),
+	textField08("leads.text_field08"),
+	textField09("leads.text_field09"),
+	textField10("leads.text_field10"),
+	textField11("leads.text_field11"),
+	textField12("leads.text_field12"),
+	textField13("leads.text_field13"),
+	textField14("leads.text_field14"),
+	textField15("leads.text_field15"),
+	textField16("leads.text_field16"),
+	textField17("leads.text_field17"),
+	textField18("leads.text_field18"),
+	textField19("leads.text_field19"),
+	textField20("leads.text_field20"),
+	textField21("leads.text_field21"),
+	textField22("leads.text_field22"),
+	textField23("leads.text_field23"),
+	textField24("leads.text_field24"),
+	textField25("leads.text_field25"),
+	textField26("leads.text_field26"),
+	textField27("leads.text_field27"),
+	textField28("leads.text_field28"),
+	textField29("leads.text_field29"),
+	textField30("leads.text_field30"),
+	numField01("leads.num_field01"),
+	numField02("leads.num_field02"),
+	numField03("leads.num_field03"),
+	numField04("leads.num_field04"),
+	numField05("leads.num_field05"),
+	numField06("leads.num_field06"),
+	numField07("leads.num_field07"),
+	numField08("leads.num_field08"),
+	numField09("leads.num_field09"),
+	numField10("leads.num_field10"),
+	dateField01("leads.date_field01"),
+	dateField02("leads.date_field02"),
+	dateField03("leads.date_field03"),
+	dateField04("leads.date_field04"),
+	dateField05("leads.date_field05"),
+	dateField06("leads.date_field06"),
+	dateField07("leads.date_field07"),
+	dateField08("leads.date_field08"),
+	dateField09("leads.date_field09"),
+	dateField10("leads.date_field10")
+	;
+	
+	
+	
+	private CopyOfLeadsColumnConvertor(String dbValue){
+		this.dbValue = dbValue;
+	}
+	
+	private String dbValue;
+
+	@Override
+	public String getDbValue() {
+		return dbValue;
+	}
+	
+}

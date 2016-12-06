@@ -1,0 +1,23 @@
+package saas.framework.cache.redis.cmds;
+
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
+import saas.framework.cache.AbstractRedisCmd;
+@Component
+public class PushCmd extends AbstractRedisCmd {
+
+	@Override
+	public String getCmdId() {
+		return PUSH_CMD;
+	}
+
+	@Override
+	public Object execteBinary(byte[] key, List<byte[]> parmas,
+			Object[] extraParam) {
+		long size = getJedis().rpush(key, parmas.toArray(new byte[][] {}));
+		return size > 0;
+	}
+
+}

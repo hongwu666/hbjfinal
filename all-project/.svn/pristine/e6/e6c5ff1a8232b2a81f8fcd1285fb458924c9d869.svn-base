@@ -1,0 +1,19 @@
+package saas.winbons.beetl.func;
+
+import org.apache.log4j.Logger;
+import org.beetl.core.Context;
+import org.beetl.core.Function;
+
+public class DebugFn implements Function {
+	
+	private static Logger log = Logger.getLogger(DebugFn.class);
+
+	@Override
+	public Object call(Object[] paras, Context ctx) {
+		for(Object o : paras){
+			log.debug(o);
+		}
+		return "";
+	}
+
+}

@@ -1,0 +1,87 @@
+package saas.winbons.dubbo.api;
+
+public class FilterDTO implements java.io.Serializable {
+
+	private static final long serialVersionUID = 1L;
+	
+	private java.lang.String fieldType;
+
+	private int operationType;
+	
+	private java.lang.String operation;
+
+	private java.lang.String property;
+
+	private java.lang.Object value;
+
+	private java.lang.Object[] values;
+	
+	
+	
+	
+	public FilterDTO(){}	
+	
+	public FilterDTO(String property,Object value){
+		this.property = property;
+		this.value = value;
+		this.operation = "=";
+	}	
+	
+	public FilterDTO(String property,Object value,String operation){
+		this.property = property;
+		this.value = value;
+		this.operation = operation;
+	}	
+
+	public java.lang.String getFieldType() {
+		return fieldType;
+	}
+
+	public void setFieldType(java.lang.String fieldType) {
+		this.fieldType = fieldType;
+	}
+
+	public int getOperationType() {
+		return operationType;
+	}
+
+	public void setOperationType(int operationType) {
+		this.operationType = operationType;
+	}
+
+	public java.lang.String getProperty() {
+		return property;
+	}
+
+	public void setProperty(java.lang.String property) {
+		this.property = property;
+	}
+
+	public java.lang.Object getValue() {
+		return value;
+	}
+
+	public void setValue(java.lang.Object value) {
+		this.value = value;
+	}
+
+	public java.lang.Object[] getValues() {
+		return values;
+	}
+
+	public void setValues(java.lang.Object[] values) {
+		this.values = values;
+	}
+
+	public java.lang.String getOperation() {
+		return operation;
+	}
+
+	public void setOperation(java.lang.String operation) {
+		this.operation = operation;
+	}
+	
+	
+	
+
+}

@@ -1,0 +1,150 @@
+/**
+ * 
+ */
+package saas.winbons.framework.nosql;
+
+import java.io.InputStream;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.mongodb.MongoDbFactory;
+import org.springframework.data.mongodb.core.convert.MongoConverter;
+import org.springframework.data.mongodb.core.convert.QueryMapper;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.gridfs.GridFsTemplate;
+import org.springframework.util.Assert;
+
+
+
+
+import saas.winbons.dubbo.api.ContextDTO;
+
+import com.mongodb.DB;
+import com.mongodb.DBObject;
+import com.mongodb.gridfs.GridFS;
+import com.mongodb.gridfs.GridFSDBFile;
+import com.mongodb.gridfs.GridFSFile;
+import com.mongodb.gridfs.GridFSInputFile;
+
+/**
+ * 
+ * @ClassName: CustomGridFsTemplate
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年7月7日 上午11:15:13
+ */
+public class CustomGridFsTemplate extends GridFsTemplate {
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	private final MongoDbFactory dbFactory;
+	private final String bucket;
+	private final QueryMapper queryMapper;
+
+	/**
+	 * @see {@link org.springframework.data.mongodb.gridfs.GridFsTemplate}
+	 * 
+	 * @param dbFactory
+	 * @param converter
+	 */
+	public CustomGridFsTemplate(MongoDbFactory dbFactory, MongoConverter converter) {
+		this(dbFactory, converter, null);
+	}
+
+	/**
+	 * @see {@link org.springframework.data.mongodb.gridfs.GridFsTemplate}
+	 * 
+	 * @param dbFactory
+	 * @param converter
+	 * @param bucket
+	 */
+	public CustomGridFsTemplate(MongoDbFactory dbFactory, MongoConverter converter, String bucket) {
+		super(dbFactory, converter, bucket);
+		this.dbFactory = dbFactory;
+		this.bucket = bucket;
+
+		this.queryMapper = new QueryMapper(converter);
+	}
+
+	public void delete(ContextDTO contextDTO,Query query) {
+		super.delete(decorateQuery(contextDTO,query));
+	}
+
+	public List<GridFSDBFile> find(ContextDTO contextDTO,Query query) {
+		return super.find(decorateQuery(contextDTO,query));
+	}
+
+	public GridFSDBFile findOne(ContextDTO contextDTO,Query query) {
+		return super.findOne(query);
+	}
+
+	public GridFSFile store(ContextDTO contextDTO,InputStream content, String filename, String contentType, DBObject metadata) {
+		Assert.notNull(content);
+		Assert.hasText(filename);
+		Assert.notNull(metadata);
+
+		GridFSInputFile file = getGridFs().createFile(content);
+		file.setFilename(filename);
+		// this are the additional lines we have to add the content type
+		contentType = (String) metadata.removeField("contentType");
+		// and..very important id
+		String id = null;
+		try {
+			id = (String) metadata.removeField("_id");
+		} catch (Exception ex) {
+			logger.error("Error removing id", ex);
+			throw new RuntimeException("Error removing id from meta data", ex);
+		}
+		if (StringUtils.isNotBlank(contentType)) {
+			file.setContentType(contentType);
+		}
+		if (StringUtils.isNotBlank(id)) {
+			file.put("_id", id);
+		}
+		// also if the meta data has only one key _class then remove that
+		// as that became irrelevant because of removal of a value
+		Set<String> keys = metadata.keySet();
+		if ((keys.size() == 1) && metadata.containsField("_class")) {
+			metadata.removeField("_class");
+		}
+		// metadata.put("dbid", SecurityUtils.getTenantId());
+		file.setMetaData(metadata);
+		file.save();
+
+		return file;
+	}
+
+	public int count(ContextDTO contextDTO,Query query) {
+		return getGridFs().getFileList(getMappedQuery(contextDTO,query)).count();
+	}
+
+	protected Query decorateQuery(ContextDTO contextDTO,Query query) {
+		if (contextDTO.getDbId() != null) {
+			if (query == null) {
+				query = new Query();
+			}
+			if (!query.getQueryObject().containsField("dbid")) {
+				query.addCriteria(Criteria.where("dbid").is(contextDTO.getDbId()));
+			}
+		}
+		return query;
+	}
+
+	private DBObject getMappedQuery(ContextDTO contextDTO,Query query) {
+		if (query == null) {
+			query = new Query();
+		}
+		decorateQuery(contextDTO,query);
+
+		return queryMapper.getMappedObject(query.getQueryObject(), null);
+	}
+
+	private GridFS getGridFs() {
+		DB db = dbFactory.getDb();
+		return bucket == null ? new GridFS(db) : new GridFS(db, bucket);
+	}
+}

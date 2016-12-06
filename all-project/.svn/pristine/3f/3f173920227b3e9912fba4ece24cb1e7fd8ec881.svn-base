@@ -1,0 +1,81 @@
+package saas.framework.cache.impl;
+
+import net.sf.ehcache.Ehcache;
+import net.sf.ehcache.Element;
+import saas.framework.cache.EhCacheVO;
+import saas.framework.cache.ICache;
+import saas.framework.cache.ICacheListener;
+
+/**
+ * ehcahe 二级缓存类，减少网络开销
+ * 
+ * @author Administrator
+ * @param <K>
+ * @param <V>
+ */
+public class EhcacheSecondCache<K, V> implements ICache<K, V> {
+
+	private Ehcache ehcache;
+
+	private RedisCache<K, V> redisCache = null;
+
+	private ICacheListener cacheListener;
+
+	private static final byte[] EMPTY_OBJECT = new byte[0];
+
+	public void setCacheListener(ICacheListener cacheListener) {
+		this.cacheListener = cacheListener;
+	}
+
+	public void setEhcache(Ehcache ehcache) {
+		this.ehcache = ehcache;
+	}
+
+	public void setRedisCache(RedisCache<K, V> redisCache) {
+		this.redisCache = redisCache;
+	}
+
+	@SuppressWarnings("unchecked")
+	public V get(K key) {
+		Element element = ehcache.get(key);
+		if (element == null) {
+			V value = redisCache.get(key);
+			if (value != null) {
+				element = new Element(key, value);
+			} else {
+				element = new Element(key, EMPTY_OBJECT);
+			}
+			ehcache.put(element);
+			return value;
+		} else {
+			Object value = element.getValue();
+			if (value == EMPTY_OBJECT) {
+				return null;
+			}
+			return (V) element.getValue();
+		}
+	}
+
+	public V put(K key, V value) {
+		ehcache.put(new Element(key, value));
+		redisCache.put(key, value);
+		cacheListener.update(new EhCacheVO(ICacheListener.FINAL_CACHE_KEY, String.valueOf(key)));
+		return value;
+	}
+
+	public V remove(K key) {
+		ehcache.remove(key);
+		redisCache.remove(key);
+		cacheListener.update(new EhCacheVO(ICacheListener.FINAL_CACHE_KEY, String.valueOf(key)));
+		return null;
+	}
+
+	public int size() {
+		return ehcache.getSize();
+	}
+
+	public void clear() {
+		ehcache.removeAll();
+		redisCache.clear();
+	}
+}

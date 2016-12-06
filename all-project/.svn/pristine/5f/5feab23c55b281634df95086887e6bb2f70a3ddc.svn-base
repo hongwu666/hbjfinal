@@ -1,0 +1,70 @@
+package saas.winbons.customer.job;
+
+import java.util.List;
+
+import saas.winbons.dubbo.api.ContextDTO;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+public class PublicCustomerRepair {
+	
+	
+	public void repairUpgrade(){
+		String sql = "select id from t_crm_customer WHERE dbid=1000141 AND owner_id=100000010297 AND cust_pool_id=100020524330";
+		
+		List<Record> find = Db.find(null, sql);
+		int count = find.size();
+		ContextDTO contextDTO = new ContextDTO();
+		contextDTO.setDbId(1000141L);
+		int i = 1;
+		for(Record record : find){
+			long customerId = record.getLong("id");
+			// 删除关联数据
+			sql = "UPDATE t_crm_customer SET lastpublic_userId=?,lastpublic_date=?,owner_id=null,receive_date=null,expire_date=null,locked=0 WHERE id=?";
+			Db.update(contextDTO, sql,-1,System.currentTimeMillis(),customerId);
+			
+			sql = "delete from t_crm_cust_share_acl where cust_id = ?";
+			Db.update(contextDTO, sql,customerId);
+			
+					
+			// 删除联系人关联数据
+			sql = "select id from t_crm_cust_contact where dbid = ? and cust_id = ?";
+			List<Record> find2 = Db.find(contextDTO, sql,contextDTO.getDbId(),customerId);
+			sql = "delete from t_crm_contact_share_acl where contact_id = ?";
+			for(Record r2 : find2){
+				Db.update(contextDTO,sql, r2.getLong("id"));
+			}
+			//获取对应客户的联系人
+			
+			System.out.println(i++ + "/" + count);
+		}
+		
+		sql = "select id from t_crm_customer WHERE dbid=1000141 AND owner_id=100000010297 AND cust_pool_id=100022312590";
+		find = Db.find(null, sql);
+		count = find.size();
+		i = 1;
+		for(Record record : find){
+			long customerId = record.getLong("id");
+			// 删除关联数据
+			sql = "UPDATE t_crm_customer SET lastpublic_userId=?,lastpublic_date=?,owner_id=null,receive_date=null,expire_date=null,locked=0 WHERE id=?";
+			Db.update(contextDTO, sql,-1,System.currentTimeMillis(),customerId);
+			
+			sql = "delete from t_crm_cust_share_acl where cust_id = ?";
+			Db.update(contextDTO, sql,customerId);
+			
+					
+			// 删除联系人关联数据
+			sql = "select id from t_crm_cust_contact where dbid = ? and cust_id = ?";
+			List<Record> find2 = Db.find(contextDTO, sql,contextDTO.getDbId(),customerId);
+			sql = "delete from t_crm_contact_share_acl where contact_id = ?";
+			for(Record r2 : find2){
+				Db.update(contextDTO,sql, r2.getLong("id"));
+			}
+			//获取对应客户的联系人
+			
+			System.out.println(i++ + "/" + count);
+		}
+	}
+
+}

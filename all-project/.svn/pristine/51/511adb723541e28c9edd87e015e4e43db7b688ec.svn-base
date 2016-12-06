@@ -1,0 +1,33 @@
+package saas.framework.dao;
+
+import saas.framework.thread.ContextUtils;
+
+public class PageDataContext {
+
+	private static final String KEY = PageDataContext.class.getName();
+
+	public static PageVO getCurrentPageVO() {
+		PageVO pageVO = ContextUtils.get(KEY);
+		if (pageVO == null) {
+			pageVO = new PageVO();
+			ContextUtils.set(KEY, pageVO);
+		}
+		return pageVO;
+	}
+
+	public static void setCurrentPage(int page) {
+		getCurrentPageVO().setCurrentPage(page);
+	}
+
+	public static void setTotalCount(int totalCount) {
+		getCurrentPageVO().setTotalCount(totalCount);
+	}
+
+	public static void setlimit(int limit) {
+		getCurrentPageVO().setLimit(limit);
+	}
+
+	public static void clear() {
+		ContextUtils.remove(KEY);
+	}
+}

@@ -1,0 +1,280 @@
+package saas.winbons.mq;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import saas.framework.nosql.FileSystemEngine;
+import saas.framework.nosql.domain.AttachmentObject;
+import saas.winbons.data.model.base.ImportLogDetailModel;
+import saas.winbons.data.model.base.ImportLogModel;
+import saas.winbons.data.model.defined.DefinedFeildModel;
+import saas.winbons.data.model.security.User;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.framework.service.ServiceLocator;
+import saas.winbons.framework.tools.ToolEvent;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolNumber;
+import saas.winbons.framework.tools.ToolString;
+import saas.winbons.provider.CrmRightServiceImpl;
+import saas.winbons.provider.UiSettingServiceImpl;
+
+import com.jfinal.ext.plugin.jms.ReceiveResolver;
+
+public class ContactImportMq implements ReceiveResolver {
+	
+	private static Logger LOG = Logger.getLogger(ContactImportMq.class);
+	
+	@Autowired
+	private FileSystemEngine fileSystemEngine;
+
+	@Override
+	public void resolve(Serializable objectMessage) throws Exception {
+		
+		ImportLogModel importLogModel = null;
+		ContextDTO contextDTO = null;
+		int index = 0;
+		try{
+			//todo ?
+			if(null == fileSystemEngine){
+				fileSystemEngine = (FileSystemEngine) ServiceLocator.getService("fileSysEngine");
+			}
+			
+			RequestDTO requestDTO = ToolGson.GsonToBean(objectMessage.toString(), RequestDTO.class);
+			contextDTO = requestDTO.getContextDTO();
+			Long id = Long.parseLong(new BigDecimal(ToolString.toString(requestDTO.get("id"))).toPlainString());
+			importLogModel = ImportLogModel.dao.findById(contextDTO, requestDTO.getContextDTO().getDbId(),id);
+			User owner = User.dao.findById(contextDTO, contextDTO.getDbId(),importLogModel.getLong("ownerId")); 
+			importLogModel.set("status", 1);
+			importLogModel.set("begin_date", System.currentTimeMillis());
+			importLogModel.update(contextDTO);
+			AttachmentObject fileById = fileSystemEngine.getFileById(AttachmentObject.class, requestDTO.get("importfile"));
+			Workbook workbook=null;
+			workbook = WorkbookFactory.create(fileById.getData());
+			Sheet sheet = workbook.getSheetAt(0);				
+			int lastRowNum = sheet.getLastRowNum();
+			//获取联系人模块的列
+			requestDTO.putFitler(new FilterDTO("table_name", "t_crm_cust_contact"));
+			List<Map<String, Object>> definitionField = UiSettingServiceImpl.service.getDefinitionField(requestDTO);
+			Row headRow = sheet.getRow(0);
+			Iterator<Cell> headIter = headRow.cellIterator();
+			Map<Integer,Map<String, Object>> headMap = new HashMap<Integer,Map<String, Object>>();
+			String customerName = "";
+			while(headIter.hasNext()){
+				Cell headCell = headIter.next();
+				int columnIndex = headCell.getColumnIndex();
+				if(ToolString.isEmptyString(headCell.getStringCellValue())){
+					continue;
+				}
+				for(Map<String, Object> df : definitionField){
+					if(ToolString.toString(df.get("field_label")).equals(headCell.getStringCellValue())){
+						headMap.put(columnIndex, df);
+						definitionField.remove(df);
+						break;
+					}
+				}
+			}
+			
+			List<Long> beManagerUsersByPermission = CrmRightServiceImpl.service.getBeManagerUsersByPermission(contextDTO, "Contact:update", importLogModel.getLong("ownerId"));
+			List<Map<String,Object>> listTemp = new ArrayList<Map<String,Object>>();
+			for(int rowIdx = 1; rowIdx <= lastRowNum; rowIdx++){
+				Row currRow = sheet.getRow(rowIdx);
+				index = rowIdx + 1;
+				if (currRow==null){
+					ImportLogDetailModel importLogDetailModel = new ImportLogDetailModel();
+					importLogDetailModel.set("rowId", index);
+					importLogDetailModel.set("importLogId", importLogModel.get("id"));
+					importLogDetailModel.set("status", ImportErrorTypeEnum.inputError.getDbValue());//status 0:系统错误,1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+					importLogDetailModel.set("result", String.format("第%s行无法读取该行数据",index));
+					importLogDetailModel.save(contextDTO);
+					continue;
+				}
+				Iterator<Cell> iter = currRow.cellIterator();
+				Map<String,Object> customerMap = new HashMap<String,Object>();
+				boolean success = true;
+				while(iter.hasNext()){
+					Cell cell = iter.next();
+					cell.setCellType(Cell.CELL_TYPE_STRING);
+					String stringCellValue = cell.getStringCellValue();
+					int columnIndex = cell.getColumnIndex();
+					LOG.info(columnIndex + ":" + stringCellValue);
+					if((!ToolString.isEmptyString(stringCellValue)) && null != headMap.get(columnIndex)){
+						try{
+							DefinedFeildModel.dao.buildMapByDefinedFeildByExecl(customerMap, headMap.get(columnIndex), stringCellValue);
+						}catch(Exception e){
+							success =false;
+							e.printStackTrace();
+							ImportErrorDto importError = getImportError(e.getMessage());
+							ImportLogDetailModel importLogDetailModel = new ImportLogDetailModel();
+							importLogDetailModel.set("rowId", index);
+							importLogDetailModel.set("importLogId", importLogModel.get("id"));
+							importLogDetailModel.set("status", importError.getStatus());//status 0:系统错误,1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+							importLogDetailModel.set("result", String.format("第%s行" + importError.getResult(),index,"联系人(" + ToolString.sub(ToolString.toString(customerMap.get("name")), 150) + ")的"));
+							importLogDetailModel.save(contextDTO);
+							break;
+						}
+
+					}
+				}
+				
+				if(success){
+					
+					if(success && ToolString.isEmptyString(customerMap.get("cust_id"))){
+						ImportLogDetailModel importLogDetailModel = new ImportLogDetailModel();
+						importLogDetailModel.set("rowId", index);
+						importLogDetailModel.set("importLogId", importLogModel.get("id"));
+						importLogDetailModel.set("status", ImportErrorTypeEnum.inputError.getDbValue());//status 0:系统错误,1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+						importLogDetailModel.set("result", String.format("第%s行，客户名称不能为空", index));
+						importLogDetailModel.save(contextDTO);
+						success = false;
+					}
+					
+					if(success && ToolString.isEmptyString(customerMap.get("name"))){
+						ImportLogDetailModel importLogDetailModel = new ImportLogDetailModel();
+						importLogDetailModel.set("rowId", index);
+						importLogDetailModel.set("importLogId", importLogModel.get("id"));
+						importLogDetailModel.set("status", ImportErrorTypeEnum.inputError.getDbValue());//status 0:系统错误,1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+						importLogDetailModel.set("result", String.format("第%s行，联系人名称不能为空", index));
+						importLogDetailModel.save(contextDTO);
+						success = false;
+					}
+					
+					// todo 为了兼容老系统,这个应该要彻底修改下
+					if(success && !ToolString.isEmptyString(customerMap.get("tel"))){
+						customerMap.put("tel", ToolNumber.replaceNumber(customerMap.get("tel").toString()));
+						if(!ToolNumber.checkIsNumber(ToolString.toString(customerMap.get("tel")))){
+							ImportLogDetailModel importLogDetailModel = new ImportLogDetailModel();
+							importLogDetailModel.set("importLogId", importLogModel.get("id"));
+							importLogDetailModel.set("rowId", index);
+							importLogDetailModel.set("status", 5);//status 0:系统错误,1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+							importLogDetailModel.set("result", String.format("第%s行，联系人(%s)的电话非数字", index,ToolString.sub(ToolString.toString(customerMap.get("name")), 150)));
+							importLogDetailModel.save(contextDTO);
+							success = false;
+						}
+					}
+					// todo 为了兼容老系统,这个应该要彻底修改下
+					if(success && !ToolString.isEmptyString(customerMap.get("fax"))){
+						customerMap.put("fax", ToolNumber.replaceNumber(customerMap.get("fax").toString()));
+						if(!ToolNumber.checkIsNumber(ToolString.toString(customerMap.get("fax")))){
+							ImportLogDetailModel importLogDetailModel = new ImportLogDetailModel();
+							importLogDetailModel.set("importLogId", importLogModel.get("id"));
+							importLogDetailModel.set("rowId", index);
+							importLogDetailModel.set("status", 5);//status 0:系统错误,1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+							importLogDetailModel.set("result", String.format("第%s行，联系人(%s)的传真非数字", index,ToolString.sub(ToolString.toString(customerMap.get("name")), 150)));
+							importLogDetailModel.save(contextDTO);
+							success = false;
+						}
+					}
+					
+					if(success && !ToolString.isEmptyString(customerMap.get("mobile"))){
+						customerMap.put("mobile", ToolNumber.replaceNumber(customerMap.get("mobile").toString()));
+						if(!ToolNumber.checkIsNumber(ToolString.toString(customerMap.get("mobile")))){
+							ImportLogDetailModel importLogDetailModel = new ImportLogDetailModel();
+							importLogDetailModel.set("importLogId", importLogModel.get("id"));
+							importLogDetailModel.set("rowId", index);
+							importLogDetailModel.set("status", 5);//status 0:系统错误,1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+							importLogDetailModel.set("result", String.format("第%s行，联系人(%s)的手机非数字", index,ToolString.sub(ToolString.toString(customerMap.get("name")), 150)));
+							importLogDetailModel.save(contextDTO);
+							success = false;
+						}
+					}
+					
+					if(success && !ToolString.isEmptyString(customerMap.get("email"))){
+						customerMap.put("email", ToolNumber.replaceNumber(customerMap.get("email").toString()));
+						if(!ToolString.isEmail(ToolString.toString(customerMap.get("email")))){
+							ImportLogDetailModel importLogDetailModel = new ImportLogDetailModel();
+							importLogDetailModel.set("importLogId", importLogModel.get("id"));
+							importLogDetailModel.set("rowId", index);
+							importLogDetailModel.set("status", 5);//status 0:系统错误,1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+							importLogDetailModel.set("result", String.format("第%s行，联系人(%s)的邮箱格式不正确", index,ToolString.sub(ToolString.toString(customerMap.get("name")), 150)));
+							importLogDetailModel.save(contextDTO);
+							success = false;
+						}
+					}
+					
+					
+					
+				}
+				if(success){
+					if(listTemp.size() > 200){
+						Map<String, Object> source = new HashMap<String,Object>();
+						source.put("data", listTemp.toArray(new Map[0]));
+						source.put("owner", owner);
+						source.put("beManagerUsersByPermission", beManagerUsersByPermission.toArray(new Long[0]));
+						source.put("rowIdx", index - 200 - 1);
+						source.put("importLogModel", importLogModel);
+						source.put("contextDTO", contextDTO);
+						ContactImportEvent contactImportEvent = new ContactImportEvent(source);
+						ToolEvent.multicastEvent(contactImportEvent);
+						listTemp.clear();
+					}
+					customerMap.put("rowIndex", index);
+					listTemp.add(customerMap);
+				}
+			
+			}
+			
+			
+			Map<String, Object> source = new HashMap<String,Object>();
+			source.put("data", listTemp.toArray(new Map[0]));
+			source.put("owner", owner);
+			source.put("beManagerUsersByPermission", beManagerUsersByPermission.toArray(new Long[0]));
+			if(index < 200){
+				source.put("rowIdx", index );	
+			}else{
+				source.put("rowIdx", (index / 200) * 200 - 1);	
+			}
+			source.put("importLogModel", importLogModel);
+			source.put("contextDTO", contextDTO);
+			ContactImportEvent contactImportEvent = new ContactImportEvent(source);
+			ToolEvent.multicastEvent(contactImportEvent);
+			
+			
+			
+			
+			
+			
+		}catch(Exception e){
+			e.printStackTrace();
+			if(null != importLogModel){
+				importLogModel.set("status", -1);
+				importLogModel.update(contextDTO);
+			}
+		}finally{
+		}
+		
+	}
+	
+	
+	private ImportErrorDto getImportError(String result){
+		ImportErrorDto importErrorDto = new ImportErrorDto();
+		importErrorDto.setResult(result);
+		try{
+			String[] split = result.split(",");
+			if(split.length > 1){
+				importErrorDto.setStatus(Integer.parseInt(split[0]));
+				importErrorDto.setResult(split[1]);
+			}else{
+				importErrorDto.setStatus(0);
+			}
+		}catch(Exception e){
+			importErrorDto.setStatus(0);
+		}
+		return importErrorDto;
+	}
+
+}

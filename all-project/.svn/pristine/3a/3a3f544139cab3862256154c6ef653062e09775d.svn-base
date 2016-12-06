@@ -1,0 +1,7 @@
+package saas.winbons.dubbo.api.workreport;
+
+import saas.winbons.dubbo.api.ApiService;
+
+public interface IWorkreportService extends ApiService {
+
+}

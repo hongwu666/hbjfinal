@@ -1,0 +1,577 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: AttentionManager.java 
+ * @Package saas.crm.dynamic.manager 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年8月11日 下午4:14:34 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.manager;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.redisson.Redisson;
+import org.redisson.core.RDeque;
+import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.crm.base.utils.LockUtils;
+import saas.crm.data.vo.dynamic.AttentionNumVO;
+import saas.crm.data.vo.security.UserPhotoVO;
+import saas.crm.dynamic.AttentionType;
+import saas.crm.dynamic.model.AttentionRel;
+import saas.crm.dynamic.model.StreamDynamic;
+import saas.framework.dao.PageDataContext;
+import saas.framework.dao.PageVO;
+import saas.winbons.framework.sql.FilterItem;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.sql.FilterItemListBuilder;
+import saas.winbons.framework.sql.FilterType;
+import saas.winbons.framework.sql.OrderItem;
+import saas.framework.utils.SecurityUtils;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.nosql.BaseNosqlDao;
+
+/**
+ * @ClassName: AttentionManager
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年8月11日 下午4:14:34
+ */
+
+@Component
+public class AttentionManager implements IAttentionManager {
+
+	private static final Logger logger = org.slf4j.LoggerFactory.getLogger(AttentionManager.class);
+	
+	@Autowired
+	private BaseNosqlDao baseNosqlDao;
+
+	@Autowired
+	private ICommonDyManager commonDyManager;
+
+	@Autowired
+	private Redisson redisson;
+	
+	// 用户动态类型
+	private static final Integer[] USER_ATTENTION_TYPE = new Integer[]{AttentionType.User.typeValue};
+	
+	// 部门动态类型
+	private static final Integer[] DEPT_ATTENTION_TYPE = new Integer[]{AttentionType.Dep.typeValue};
+		
+	// 用户分组动态类型
+	private static final Integer[] USERGROUP_ATTENTION_TYPE = new Integer[]{AttentionType.UserGroup.typeValue};
+	
+//	// 部门与分组类型
+//	private static final Integer[] DEPT_AND_USERGROUP_ATTENTION_TYPE = new Integer[] {
+//		AttentionType.Dep.typeValue, AttentionType.UserGroup.typeValue
+//	};
+	
+	// 业务动态类型
+	private static final Integer[] BUSINESS_ATTENTION_TYPE = new Integer[] {
+		AttentionType.Contact.typeValue, AttentionType.Customer.typeValue, 
+		AttentionType.DOCUMENT.typeValue, AttentionType.OPPORTUNITY.typeValue,
+		AttentionType.LEADS.typeValue, AttentionType.WORKREPORT.typeValue
+	};
+	
+	// 所有的
+	private static final Integer[] ALL_ATTENTION_TYPE = new Integer[] {
+		AttentionType.User.typeValue, AttentionType.Dep.typeValue, AttentionType.UserGroup.typeValue,
+		AttentionType.Contact.typeValue, AttentionType.Customer.typeValue, AttentionType.DOCUMENT.typeValue, 
+		AttentionType.OPPORTUNITY.typeValue, AttentionType.LEADS.typeValue, AttentionType.WORKREPORT.typeValue
+	};
+	
+	// 构建关注队列主键
+	protected String buildQueueKey(ContextDTO contextDTO,Long userId){
+		return contextDTO.getDbId() + "_" + userId + "_userAttention_dequeue";
+	}
+	
+	
+	/**
+	 * 构建关注队列主键
+	 * @param userId			用户ID
+	 * @param typeName			关注类型名称，对以下值有效：user、dept、group、business
+	 * @param attentionType		关注类型对应的枚举值
+	 * @return
+	 */
+	protected String buildQueueKey(ContextDTO contextDTO,Long userId, String typeName, int attentionType){
+		String attentionKey = "_";
+		if(ArrayUtils.contains(USER_ATTENTION_TYPE, attentionType) || "user".equals(typeName)){
+			attentionKey += StringUtils.join(USER_ATTENTION_TYPE, "_");
+		} else if(ArrayUtils.contains(DEPT_ATTENTION_TYPE, attentionType) || "dept".equals(typeName)){
+			attentionKey += StringUtils.join(DEPT_ATTENTION_TYPE, "_");
+		} else if(ArrayUtils.contains(USERGROUP_ATTENTION_TYPE, attentionType) || "group".equals(typeName)){
+			attentionKey += StringUtils.join(USERGROUP_ATTENTION_TYPE, "_");
+		} 
+//		else if(ArrayUtils.contains(DEPT_AND_USERGROUP_ATTENTION_TYPE, attentionType) || "deptAndGroup".equals(typeName)){
+//			attentionKey += StringUtils.join(DEPT_AND_USERGROUP_ATTENTION_TYPE, "_");
+//		} 
+		else if(ArrayUtils.contains(BUSINESS_ATTENTION_TYPE, attentionType) || "business".equals(typeName)){
+			attentionKey += StringUtils.join(BUSINESS_ATTENTION_TYPE, "_");
+		}
+		return contextDTO.getDbId() + "_" + userId + attentionKey + "_userAttention_dequeue";
+	}
+
+	private RDeque<Long> getAttentionQueue(ContextDTO contextDTO,Long userId, String typeName) {
+		return redisson.getDeque(buildQueueKey(contextDTO,userId, typeName, -100));
+	}
+	
+	private RDeque<Long> getAttentionQueue(ContextDTO contextDTO,Long userId, int attentionType) {
+		return redisson.getDeque(buildQueueKey(contextDTO,userId, null, attentionType));
+	}
+
+	private void addDataToSet(ContextDTO contextDTO,Long toId, RDeque<Long> set) {
+		set.addFirst(toId);
+	}
+
+	public List<AttentionRel> findByTo(ContextDTO contextDTO,Long toId) {
+		FilterItemList filterItemList = FilterItemListBuilder.createFilterItems();
+		filterItemList.addFilterItem(new FilterItem("attentionId", toId, FilterType.EQ));
+		return baseNosqlDao.findByQuery(contextDTO,filterItemList, AttentionRel.class);
+	}
+	
+	@Override
+	public void attentionObj(ContextDTO contextDTO,Long toId, Long userId, int type, long index) {
+		boolean isAttention = isAttention(contextDTO,toId, userId, AttentionType.getAttentionType(type));
+		if (!isAttention) {
+			//long startTime = System.currentTimeMillis();
+			AttentionRel attentionRel = new AttentionRel();
+			attentionRel.setItemclassid(type);// 用户或者业务
+			attentionRel.setUserId(userId);
+			attentionRel.setAttentionId(toId);
+			attentionRel.setLatestIndex(index);
+			if (type == AttentionType.User.typeValue) {
+				StreamDynamic streamDynamic = baseNosqlDao.getMaxValue(contextDTO,StreamDynamic.class, "index",
+						contextDTO.getDbId());
+				if (streamDynamic != null) {
+					attentionRel.setLatestIndex(streamDynamic.getIndex());
+				}
+				
+			}
+			/*long endTime = System.currentTimeMillis();
+			long costTime = (endTime - startTime) / 1000;
+			logger.info("-----------------------save mongodb cost time ^^^^^^^^^^^^^^^^" + costTime);
+			logger.info("-----------------------save mongodb cost time ^^^^^^^^^^^^^^^^" + costTime);
+			logger.info("-----------------------save mongodb cost time ^^^^^^^^^^^^^^^^" + costTime);
+			logger.info("-----------------------save mongodb cost time ^^^^^^^^^^^^^^^^" + costTime);
+			logger.info("-----------------------save mongodb cost time ^^^^^^^^^^^^^^^^" + costTime);
+			startTime = System.currentTimeMillis();*/
+			addDataToSet(contextDTO,toId, getAttentionQueue(contextDTO,userId, type));
+			baseNosqlDao.save(contextDTO,attentionRel);
+			/*endTime = System.currentTimeMillis();
+			costTime = (endTime - startTime) / 1000;
+			logger.info("-----------save mysql cost time ^^^^^^^^^^^^^^^^" + costTime);
+			logger.info("-----------save mysql cost time ^^^^^^^^^^^^^^^^" + costTime);
+			logger.info("-----------save mysql cost time ^^^^^^^^^^^^^^^^" + costTime);
+			logger.info("-----------save mysql cost time ^^^^^^^^^^^^^^^^" + costTime);
+			logger.info("-----------save mysql cost time ^^^^^^^^^^^^^^^^" + costTime);*/
+		}
+	}
+
+	private boolean checkIsNotEmpty(RDeque<Long> ids) {
+		return ids != null && ids.size() > 0;
+	}
+
+	private Long[] getAttentionIdFromCache(ContextDTO contextDTO,Long userId, Integer[] attentionTypeArray) {
+		RDeque<Long> ids = getAttentionQueue(contextDTO,userId, attentionTypeArray[0]);
+		if (checkIsNotEmpty(ids)) {
+			return ids.toArray(new Long[] {});
+		} else {
+			Lock lock = LockUtils.getLock(redisson, contextDTO.getDbId() + "_" + userId + "_lock");
+			Long[] data = null;
+			try {
+				lock.lock();
+				if (checkIsNotEmpty(ids)) {
+					return ids.toArray(new Long[] {});
+				}
+				data = findDataFromDb(contextDTO,userId, attentionTypeArray);
+				if (data.length > 0) {
+					for (Long id : data) {
+						addDataToSet(contextDTO,id, ids);
+					}
+				}
+				return data;
+			} finally {
+				lock.unlock();
+			}
+		}
+	}
+
+	public void unAttentionObj(ContextDTO contextDTO,Long[] toId, Long userId, int type) {
+		RDeque<Long> rSet = getAttentionQueue(contextDTO,userId, type);
+		FilterItemList filterItemList = FilterItemListBuilder.createFilterItems();
+		filterItemList.addFilterItem(new FilterItem("attentionId", toId, FilterType.IN));
+		filterItemList.addFilterItem(new FilterItem("itemclassid", type, FilterType.EQ));
+		filterItemList.addFilterItem(new FilterItem("userId", userId, FilterType.EQ));
+		baseNosqlDao.deleteByFilter(contextDTO,filterItemList, AttentionRel.class);
+		for (Long id : toId) {
+			rSet.remove(id);
+		}
+	}
+
+	public void unAttentionObjUsers(ContextDTO contextDTO,Long[] toId, int type){
+		FilterItemList filterItemList = FilterItemListBuilder.createFilterItems();
+		filterItemList.addFilterItem(new FilterItem("attentionId", toId, FilterType.IN));
+		filterItemList.addFilterItem(new FilterItem("itemclassid", type, FilterType.EQ));
+		baseNosqlDao.deleteByFilter(contextDTO,filterItemList, AttentionRel.class);
+	}
+	
+	/**
+	 * 
+	 * @Title: delAttentionObj
+	 * @Description: TODO(这里用一句话描述这个方法的作用)
+	 * @param @param toId 设定文件
+	 * @return void 返回类型
+	 * @throws
+	 * @date 2014年8月13日 下午12:04:08
+	 */
+	/*
+	 * public void delAttentionObj(Long toId) { FilterItemList filterItemList =
+	 * FilterItemListBuilder.createFilterItems();
+	 * filterItemList.addFilterItem(new FilterItem("attentionId", toId,
+	 * FilterType.EQ)); baseNosqlDao.deleteByFilter(filterItemList,
+	 * AttentionRel.class);
+	 * getAttentionQueue(contextDTO.getUserId()).remove(toId); }
+	 */
+
+	private Long[] findDataFromDb(ContextDTO contextDTO,Long userId, Integer[] itemClassIds) {
+		FilterItemList filterItemList = FilterItemListBuilder.createFilterItems();
+		filterItemList.addFilterItem(new FilterItem("userId", userId, FilterType.EQ));
+		filterItemList.addFilterItem(new FilterItem("itemclassid", itemClassIds, FilterType.IN));
+		
+		setDefaultPageInfo(null, filterItemList);
+		List<AttentionRel> attentionRels = baseNosqlDao.findByQuery(contextDTO,filterItemList, AttentionRel.class);
+		if (attentionRels != null) {
+			int size = attentionRels.size();
+			Long[] ids = new Long[size];
+			for (int i = 0; i < size; i++) {
+				ids[i] = attentionRels.get(i).getAttentionId();
+			}
+			return ids;
+		}
+		return new Long[] {};
+	}
+
+	@Override
+	public Collection<Long> findByUserId(ContextDTO contextDTO,Long userId) {
+		Object[] types = ArrayUtils.addAll(BUSINESS_ATTENTION_TYPE, USER_ATTENTION_TYPE);
+		Integer[] rangs = new Integer[types.length];
+		int i = 0;
+		for(Object obj : types){
+			rangs[i] = (Integer) obj;
+			i++;
+		}
+		Long[] ids = findDataFromDb(contextDTO,userId, rangs);
+		Set<Long> attentionIds = new HashSet<Long>();
+		for (Long id : ids) {
+			attentionIds.add(id);
+		}
+		attentionIds.add(contextDTO.getUserId());
+		return attentionIds;
+	}
+	
+	@Override
+	public Collection<Long> findByUserIdAndAttentionType(ContextDTO contextDTO,Long userId, String attentionType){
+		
+		Integer[] attentionTypeArray = new Integer[0];
+		
+//		if("deptAndGroup".equals(attentionType)){
+//			attentionTypeArray = DEPT_AND_USERGROUP_ATTENTION_TYPE;
+//		} 
+		if("dept".equals(attentionType)){
+			attentionTypeArray = DEPT_ATTENTION_TYPE;
+		} else if("group".equals(attentionType)){
+			attentionTypeArray = USERGROUP_ATTENTION_TYPE;
+		} else if("business".equals(attentionType)){
+			attentionTypeArray = BUSINESS_ATTENTION_TYPE;
+		} else if("user".equals(attentionType)){
+			attentionTypeArray = USER_ATTENTION_TYPE;
+		} else if("all".equals(attentionType)){
+			attentionTypeArray = ALL_ATTENTION_TYPE;
+		}
+		
+		Long[] ids = getAttentionIdFromCache(contextDTO,userId, attentionTypeArray);
+		Set<Long> attentionIds = new HashSet<Long>();
+		for (Long id : ids) {
+			attentionIds.add(id);
+		}
+		if("business".equals(attentionType) || "all".equals(attentionType)){
+			attentionIds.add(userId);
+		}
+		return attentionIds;
+	}
+
+	private void setDefaultPageInfo(Long lastIndex, FilterItemList filterItemList) {
+		PageVO pageVO = PageDataContext.getCurrentPageVO();
+		if (!pageVO.isPageInfo()) {
+			pageVO.setLimit(1000);// 默认取200条
+			pageVO.setCurrentPage(1);
+		}
+		if (lastIndex != null) {
+			filterItemList.addFilterItem(new FilterItem("latestIndex", lastIndex, FilterType.LT));
+		}
+		filterItemList.addOrderItem(new OrderItem("latestIndex", true));
+	}
+
+	public void updateLatestIndex(ContextDTO contextDTO,Long attentionId, Long lastestIndex) {
+		FilterItemList filterItemList = FilterItemListBuilder.createFilterItems();
+		filterItemList.addFilterItem(new FilterItem("attentionId", attentionId, FilterType.EQ));
+		Map<String, Object> map = new HashMap<String, Object>(4);
+		map.put("latestIndex", lastestIndex);
+		baseNosqlDao.updateMuti(contextDTO,filterItemList, map, AttentionRel.class);
+		
+		// 这个方法暂时只供客户/联系人使用，所以直接归为“business”，后续有需要再调整
+		RDeque<Long> queue = getAttentionQueue(contextDTO,contextDTO.getUserId(), "business");
+		boolean flag = queue.remove(attentionId);
+		if (flag) {
+			queue.addFirst(attentionId);
+		}
+	}
+
+	@Override
+	public boolean isAttention(ContextDTO contextDTO,Long groupId, Long userId, AttentionType attentionType) {
+		if (groupId.equals(contextDTO.getUserId())) {// its is owner,return
+														// true
+			return true;
+		}
+		RDeque<Long> ids = getAttentionQueue(contextDTO,userId, attentionType.typeValue);
+		Boolean flag = ids.contains(groupId);
+		if (flag == false) {
+			FilterItemList filterItemList = FilterItemListBuilder.createFilterItems();
+			filterItemList.addFilterItem(new FilterItem("itemclassid", attentionType.typeValue, FilterType.EQ));
+			filterItemList.addFilterItem(new FilterItem("userId", userId, FilterType.EQ));
+			filterItemList.addFilterItem(new FilterItem("attentionId", groupId, FilterType.EQ));
+			AttentionRel attentionRel = baseNosqlDao.findByOne(contextDTO,AttentionRel.class, filterItemList);
+			flag = attentionRel != null;
+			if (flag) {
+				addDataToSet(contextDTO,groupId, ids);
+			}
+		}
+		return flag;
+	}
+	
+	/**
+	 *  查找我关注的
+	 *  
+	 */
+	private List<AttentionRel> findMyAttention(ContextDTO contextDTO,Long index){
+		FilterItemList filterItemList = FilterItemListBuilder.createFilterItems();
+		filterItemList.addFilterItem(new FilterItem("userId", contextDTO.getUserId(), FilterType.EQ));
+		filterItemList.addFilterItem(new FilterItem("itemclassid", AttentionType.User.typeValue, FilterType.EQ));
+		setDefaultPageInfo(index, filterItemList);
+		return baseNosqlDao.findByQuery(contextDTO,filterItemList, AttentionRel.class);
+	}
+	
+	/**
+	 * 查询某个用户关注的人
+	 */
+	public List<UserPhotoVO> findAttentionsByUserId(ContextDTO contextDTO,Long userId, Long index) {
+	/*	// 查找关注的人
+		FilterItemList filterItemList = FilterItemListBuilder.createFilterItems();
+		filterItemList.addFilterItem(new FilterItem("userId", userId, FilterType.EQ));
+		//过滤attentionId异常的数据
+		filterItemList.addFilterItem(new FilterItem("attentionId", 0, FilterType.NEQ));
+		filterItemList.addFilterItem(new FilterItem("itemclassid", AttentionType.User.typeValue, FilterType.EQ));
+		setDefaultPageInfo(index, filterItemList);
+		List<AttentionRel> attentionRels = baseNosqlDao.findByQuery(filterItemList, AttentionRel.class);
+		
+		if (attentionRels != null && attentionRels.size() > 0) {
+			Set<Long> userIds = new HashSet<Long>();
+			List<Long> indexs = new ArrayList<Long>();
+			for (AttentionRel attentionRel : attentionRels) {
+				userIds.add(attentionRel.getAttentionId());
+				indexs.add(attentionRel.getLatestIndex());
+			}
+			List<UserPhotoVO> users = userInfoManager.getUserInfos(userIds);
+			
+			// 如果是查找当前用户关注的人，那么将关注状态统一设为已关注即可
+			if(userId.equals(contextDTO.getUserId())){
+				int i = 0;
+				for(UserPhotoVO vo : users){
+					vo.setSelfAttention(true);
+					vo.setLatestIndex(indexs.get(i));
+					i++;
+				}
+			}
+			// 如果是查找别的用户关注的人，那么需要查找当前用户是否关注了这些人
+			else {
+				List<AttentionRel> selfRels = findMyAttention(index);
+					int j = 0;
+					
+					comp:
+					for(UserPhotoVO user : users){
+						user.setLatestIndex(indexs.get(j));
+						user.setSelfAttention(false);
+						j++;
+						for (AttentionRel rel : selfRels) {
+							if(user.getUserId().equals(rel.getAttentionId())){
+								user.setSelfAttention(true);
+								continue comp;
+							}
+						}
+					}
+			}
+			return users;
+		}*/
+		return Collections.emptyList();
+	}
+
+	/**
+	 * 查找某个用户的粉丝
+	 */
+	public List<UserPhotoVO> findAttentionsBy(ContextDTO contextDTO,Long userId, Long index) {
+		/*// 查找粉丝
+		FilterItemList filterItemList = FilterItemListBuilder.createFilterItems();
+		filterItemList.addFilterItem(new FilterItem("attentionId", userId, FilterType.EQ));
+		filterItemList.addFilterItem(new FilterItem("itemclassid", AttentionType.User.typeValue, FilterType.EQ));
+		setDefaultPageInfo(index, filterItemList);
+		List<AttentionRel> attentionRels = baseNosqlDao.findByQuery(filterItemList, AttentionRel.class);
+		
+		if (attentionRels != null && attentionRels.size() > 0) {
+			Set<Long> userIds = new HashSet<Long>();
+			List<Long> indexs = new ArrayList<Long>();
+			
+			for (AttentionRel attentionRel : attentionRels) {
+				userIds.add(attentionRel.getUserId());
+				indexs.add(attentionRel.getLatestIndex());
+			}
+			List<UserPhotoVO> users = userInfoManager.getUserInfos(userIds);
+			
+			List<AttentionRel> selfRels = findMyAttention(index);
+			if(!selfRels.isEmpty()){
+				int j = 0;
+				
+				comp:
+				for(UserPhotoVO user : users){
+					user.setLatestIndex(indexs.get(j));
+					user.setSelfAttention(false);
+					j++;
+					for (AttentionRel rel : selfRels) {
+						if(user.getUserId().equals(rel.getAttentionId())){
+							user.setSelfAttention(true);
+							continue comp;
+						}
+					}
+				}
+			}
+			return users;
+		}*/
+		return Collections.emptyList();
+	}
+
+	@Override
+	public Collection<Long> findAttentionIdsByUserId(ContextDTO contextDTO,Long userId, int type) {
+		FilterItemList filterItemList = FilterItemListBuilder.createFilterItems();
+		filterItemList.addFilterItem(new FilterItem("userId", userId, FilterType.EQ));
+		filterItemList.addFilterItem(new FilterItem("itemclassid", type, FilterType.EQ));
+
+		List<AttentionRel> attentionRels = baseNosqlDao.findByQuery(contextDTO,filterItemList, AttentionRel.class);
+		if (attentionRels != null && attentionRels.size() > 0) {
+			Set<Long> deptids = new HashSet<Long>();
+			for (AttentionRel rel : attentionRels) {
+				deptids.add(rel.getAttentionId());
+			}
+			return deptids;
+		}
+		return Collections.emptyList();
+	}
+
+	@Override
+	public AttentionNumVO findAttentionsNum(ContextDTO contextDTO,Long userId) {
+
+		AttentionNumVO vo = new AttentionNumVO();
+
+		// 关注我的
+		FilterItemList filterItemList1 = FilterItemListBuilder.createFilterItems();
+		filterItemList1.addFilterItem(new FilterItem("attentionId", userId, FilterType.EQ));
+		filterItemList1.addFilterItem(new FilterItem("itemclassid", AttentionType.User.typeValue, FilterType.EQ));
+		setDefaultPageInfo(null, filterItemList1);
+
+//		Long attenMeNum = baseNosqlDao.countByQuery(filterItemList1, AttentionRel.class);
+		List<AttentionRel> attentionRels1 = baseNosqlDao.findByQuery(contextDTO,filterItemList1, AttentionRel.class);
+		//此处为修正bug同一个人对同一个人多次关注在数据库产生多条记录导致的粉丝或关注数与实际不符，此处自动滤去重复的。20151222
+		Long attenMeNum = 0L;
+		if (attentionRels1 != null && attentionRels1.size() > 0) {
+			Set<Long> userIds = new HashSet<Long>();
+			for (AttentionRel attentionRel : attentionRels1) {
+				userIds.add(attentionRel.getUserId());
+			}
+			attenMeNum = Long.valueOf(userIds.size());
+		}
+		vo.setAttenMe(attenMeNum);
+		// 我关注的
+		FilterItemList filterItemList2 = FilterItemListBuilder.createFilterItems();
+		filterItemList2.addFilterItem(new FilterItem("userId", userId, FilterType.EQ));
+		//添加对attentionId的校验
+		filterItemList2.addFilterItem(new FilterItem("attentionId", 0, FilterType.NEQ));
+		filterItemList2.addFilterItem(new FilterItem("itemclassid", AttentionType.User.typeValue, FilterType.EQ));
+		setDefaultPageInfo(null, filterItemList2);
+
+//		Long myAttenNum = baseNosqlDao.countByQuery(filterItemList2, AttentionRel.class);
+		List<AttentionRel> attentionRels2 = baseNosqlDao.findByQuery(contextDTO,filterItemList2, AttentionRel.class);
+		
+		Long myAttenNum = 0L;
+		if (attentionRels2 != null && attentionRels2.size() > 0) {
+			Set<Long> userIds2 = new HashSet<Long>();
+			for (AttentionRel attentionRel : attentionRels2) {
+				userIds2.add(attentionRel.getAttentionId());
+			}
+			myAttenNum = Long.valueOf(userIds2.size());
+		}
+		vo.setMyAtten(myAttenNum);
+
+		return vo;
+	}
+
+	@Override
+	public void attentionDeptPeople(ContextDTO contextDTO,Long deptId) {
+		List<Number> userIds = getUseridFromDeptid(contextDTO,deptId);
+		Long currUserid = contextDTO.getUserId();
+		for(Number uid : userIds){
+			attentionObj(contextDTO,uid.longValue(), currUserid, AttentionType.User.typeValue, -1L);
+		}
+	}
+
+	@Override
+	public void unAttentionDeptPeople(ContextDTO contextDTO,Long deptId) {
+		List<Number> userIds = getUseridFromDeptid(contextDTO,deptId);
+		Long[] uids = new Long[userIds.size()];
+		for(int i = 0; i < userIds.size(); i++){
+			uids[i] = userIds.get(i).longValue();
+		}
+		unAttentionObj(contextDTO,uids, contextDTO.getUserId(), AttentionType.User.typeValue);
+	}
+	
+	private List<Number> getUseridFromDeptid(ContextDTO contextDTO,Long deptId){
+		String sql = " select user_id from t_crm_user where department_id = ? ";
+		List<Record> find = Db.find(contextDTO, sql,deptId);
+		List<Number> userIds = new ArrayList<Number>();
+		for(Record r : find){
+			
+		}
+		//List<Number> userIds = baseDao.executeNativeSQL(sql, deptId);
+		return userIds;
+	}
+
+}

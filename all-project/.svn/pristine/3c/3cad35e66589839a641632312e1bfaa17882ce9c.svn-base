@@ -1,0 +1,33 @@
+package saas.winbons.data.model.customer;
+
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.enumtype.BaseEnum;
+import saas.winbons.format.IEnumFormat;
+
+public enum CustomerConvertor2 implements BaseEnum<String>,IEnumFormat{
+	valid("valid",DataConstant.EnumFormatCallBack.Boolean);
+
+	private CustomerConvertor2(String dbValue,int formatType){
+		this.formatType = formatType;
+		this.dbValue = dbValue;
+	}
+	
+	private String dbValue;
+	private int formatType;
+
+	@Override
+	public String getDbValue() {
+		return dbValue;
+	}
+
+	@Override
+	public String getColumnName() {
+		return dbValue;
+	}
+
+	@Override
+	public int getCallbackFormatType() {
+		return formatType;
+	}
+
+}

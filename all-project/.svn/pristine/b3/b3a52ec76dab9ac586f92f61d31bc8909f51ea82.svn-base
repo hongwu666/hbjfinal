@@ -1,0 +1,6 @@
+package saas.winbons.base.manager;
+
+public interface IBaseManager {
+	
+
+}

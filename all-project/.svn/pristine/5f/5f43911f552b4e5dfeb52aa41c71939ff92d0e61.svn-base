@@ -1,0 +1,294 @@
+package saas.winbons.data.model.security;
+
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.IAtom;
+import com.jfinal.plugin.activerecord.ICallback;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.crm.Constant;
+import saas.data.api.IPlatFormService;
+import saas.data.model.UserDTO;
+import saas.data.model.UserServiceDTO;
+import saas.winbons.data.model.BaseModel;
+import saas.winbons.data.model.customer.CustomerOwnerAcl;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.execption.ServiceException;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSpring;
+import saas.winbons.framework.tools.ToolSqlXml;
+import saas.winbons.framework.tools.ToolString;
+
+public class User extends BaseModel<User> {
+
+	private static final long serialVersionUID = 1L;
+
+	public static final User dao = new User();
+	
+	private static final Logger logger = LoggerFactory.getLogger(User.class);
+
+	public List<Map<String, Object>> getSimpleUserInfoByUserIds(ContextDTO contextDTO, Long[] ids) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("ids", ids);
+		String sql = ToolSqlXml.getSql("winbins.user.getSimpleUserInfoByUserIds", map);
+		List<Record> find = Db.find(contextDTO, sql);
+		return ToolModel.recordListConvert(find);
+
+	}
+
+	public void addUser(ContextDTO contextDTO, Map<Object, Object> map) {
+		IPlatFormService platFormService = ToolSpring.getPlatFormService();
+		Long[] returnUserId = new Long[1];
+		if (Db.tx(new IAtom() {
+
+			@Override
+			public boolean run() throws SQLException {
+				try {
+					Map<String, Object> userMap = ToolModel.mapToModelMap(map, "user");
+					Map<String, Object> loginMap = ToolModel.mapToModelMap(map, "login");
+					Map<String, Object> contactMap = ToolModel.mapToModelMap(map, "contact");
+					Map<String, Object> map = new HashMap<String, Object>();
+					map.put("contextDTO", contextDTO);
+					map.put("userMap", userMap);
+					String checkUser = ToolSqlXml.getSql("winbins.user.checkUser", map);
+					Long userId = null;
+					// 用户是否同步到平台
+					boolean isSynToPlatFrom = false;
+
+					/** 用户服务信息是否同步到平台 */
+					boolean isSynToPlatform_Service = false;
+
+					// 是否同步到t_bs_user表中
+					boolean isSynBsUser = false;
+					switch (Integer.parseInt(checkUser)) {
+					case 0:// CRM已经存在;
+						throw new ServiceException("用户编号已经存在");
+					case 1:// 平台存在
+						UserDTO userDTO = platFormService.getByUserno(contextDTO.getLoginId());
+						userId = userDTO.getUserId();
+						isSynToPlatform_Service = true;
+						break;
+					case 2:
+						//
+						if (platFormService.checkUserno(contextDTO.getLoginId())) {
+							UserDTO userDTO1 = platFormService.getByUserno(contextDTO.getLoginId());
+							userId = userDTO1.getUserId();
+							isSynToPlatform_Service = true;
+							break;
+						} else {
+							userId = platFormService.generateRemoteUserId();
+							isSynToPlatFrom = true;
+							isSynBsUser = true;
+							break;
+						}
+					default:
+						break;
+					}
+					// 需要优先往平台提交，检测是否用户数已经超
+					BsUserModel bsUserModel = new BsUserModel();
+					String userName = contextDTO.getLoginId();
+					String realName = userMap.get("display_name").toString();
+					bsUserModel.set("username", userName);
+					bsUserModel.set("firstname", realName);
+					bsUserModel.set("id", userId);
+					returnUserId[0] = userId;
+					addCommonUser(contextDTO,bsUserModel,isSynToPlatFrom,isSynToPlatform_Service,isSynBsUser);
+					//用户初始密码
+					platFormService.updateUserPwd(userName, loginMap.get("password").toString());
+					UserContactModel userContactModel = new UserContactModel();
+					userContactModel.put(contactMap);
+					userContactModel.save(contextDTO);
+					/**step1:添加crm用户*/
+					User user = new User();
+					user.put(map);
+					user.set("user_id", userId);
+					user.save(contextDTO);
+					/**step2:设置用户保留数**/
+					CustomerOwnerAcl acl = new CustomerOwnerAcl();
+					acl.set("secure_id",userId);
+					acl.save(contextDTO);
+					
+					/**step3:同步平台的用户和服务*/
+					addCommonUserNoFlat(contextDTO,bsUserModel,isSynBsUser);
+					
+					/*******step4:初始化个人预设数据****** 初始化仪表预设数据信息  *********/
+				    logger.info("=====add user init user data");
+				    Long dbid  = contextDTO.getDbId();
+				    Long userId1 = userId;
+				    Db.execute(new ICallback() {
+						@Override
+						public Object call(Connection conn) throws SQLException {
+							CallableStatement callableStatement = conn.prepareCall("{call p_crm_userdatainit(?,?)}");
+							callableStatement.setLong(1, dbid);
+							callableStatement.setLong(2, userId1);
+							ResultSet resultSet = callableStatement.executeQuery();
+							resultSet.next();
+							long long1 = resultSet.getLong(1);
+							return long1;
+						}
+					});
+				    
+				    
+					//crmRedisCache.removeAllManageredUserCacheByDeptId(entity.getDeptId());
+				    
+					
+
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new ServiceException(e.getMessage());
+				}
+				return true;
+			}
+
+		})){
+			Map<String, Object> source = new HashMap<String,Object>();
+			
+			source.put("data", returnUserId[0]);
+			source.put("contextDTO", contextDTO);
+			UserAddEvent userAddEvent = new UserAddEvent(source);
+			ToolSpring.multicastEvent(userAddEvent);
+		}
+	}
+
+	public void updateUser(ContextDTO contextDTO, Map<Object, Object> map) {
+		if (Db.tx(new IAtom() {
+
+			@Override
+			public boolean run() throws SQLException {
+				try {
+					Map<String, Object> userMap = ToolModel.mapToModelMap(map, "user");
+					Map<String, Object> loginMap = ToolModel.mapToModelMap(map, "login");
+					Map<String, Object> contactMap = ToolModel.mapToModelMap(map, "contact");
+					Map<String, Object> map = new HashMap<String, Object>();
+					map.put("contextDTO", contextDTO);
+					
+					User u = User.dao.findFirst(contextDTO, "select * from t_crm_user where dbid = ? and login_id = ?", contextDTO.getDbId(),userMap.get("login_id"));
+					u.putForUpdate(userMap);
+					u.update(contextDTO);
+					
+					Long userId = u.getLong("user_id");
+					
+					UserLoginModel l = UserLoginModel.dao.findFirst(contextDTO, "select * from t_crm_user_login_info where dbid = ? and user_id = ?", contextDTO.getDbId(),userId);
+					l.putForUpdate(loginMap);
+					l.update(contextDTO);
+					
+					UserContactModel c = UserContactModel.dao.findFirst(contextDTO, "select * from t_crm_user_contact_info where dbid = ? and user_id = ?", contextDTO.getDbId(),userId);
+					c.putForUpdate(contactMap);
+					c.update(contextDTO);
+					
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new ServiceException(e.getMessage());
+				}
+				return true;
+			}
+		}));
+	}
+
+	public void addCommonUser(ContextDTO contextDTO, BsUserModel bsUserModel, boolean isSynToFlatfrom, boolean isSynToPlatform_Service, boolean isSynBsUser) {
+		IPlatFormService platFormService = ToolSpring.getPlatFormService();
+		if (Db.tx(new IAtom() {
+
+			@Override
+			public boolean run() throws SQLException {
+				
+				UserDTO userDTO = new UserDTO();
+				Long currentDbId = contextDTO.getDbId();
+				userDTO.setOwnerId(contextDTO.getUserId());
+				userDTO.setUserId(bsUserModel.getId());
+				userDTO.setDbId(currentDbId);
+				userDTO.setUserName(bsUserModel.getStr("username"));
+				userDTO.setRealName(bsUserModel.getStr("firstname"));
+				userDTO.setRole(1);
+				try {
+					if(isSynToFlatfrom){//如果用户需要同步到平台，则服务是一起同步的
+						platFormService.add(userDTO);
+					}
+					if(isSynToPlatform_Service){//只同步用户服务到平台
+						platFormService.addService(bsUserModel.getId(), currentDbId);
+					}
+				} catch (Exception e) {
+					throw new ServiceException(e.getMessage(), e);
+				}
+				return true;
+			}
+			
+		}));
+	}
+	
+	public void addCommonUserNoFlat(ContextDTO contextDTO,BsUserModel bsUserModel, boolean isSynBsUser){
+		IPlatFormService platFormService = ToolSpring.getPlatFormService();
+		if (Db.tx(new IAtom() {
+
+			@Override
+			public boolean run() throws SQLException {
+				UserDTO userDTO = new UserDTO();
+				Long currentDbId = contextDTO.getDbId();
+				userDTO.setOwnerId(contextDTO.getUserId());
+				userDTO.setUserId(bsUserModel.getId());
+				userDTO.setDbId(currentDbId);
+				userDTO.setUserName(bsUserModel.getStr("username"));
+				userDTO.setRealName(bsUserModel.getStr("firstname"));
+				userDTO.setRole(1);
+				bsUserModel.set("password", Constant.DEFAULT_PWD);
+				bsUserModel.set("companyid", contextDTO.getCompanyId());
+				if(isSynBsUser){
+					bsUserModel.dao.save(contextDTO);// 保存数据user
+				}
+				addUserServiceAsso(contextDTO,currentDbId,bsUserModel.getStr("username"),false);
+				//boolean isNIM = Boolean.parseBoolean(Env.getInstatnce().getConfigProperty("is_nim_server", "false"));
+				Map<String, Object> source = new HashMap<String,Object>();
+				source.put("data", bsUserModel.getId());
+				source.put("contextDTO", contextDTO);
+				IMUserEvent imUserEvent = new IMUserEvent(source);
+				ToolSpring.multicastEvent(imUserEvent);
+				return true;
+			}
+			
+		}));
+		
+		
+	}
+	
+	public UserServiceAssoModel addUserServiceAsso(ContextDTO contextDTO,Long dbId, String userno, boolean isAdmin){
+		UserServiceAssoModel userServiceAsso = new UserServiceAssoModel();
+		if (Db.tx(new IAtom() {
+
+			@Override
+			public boolean run() throws SQLException {
+				userServiceAsso.set("dbid", dbId);
+				if(isAdmin){
+					userServiceAsso.set("isadmin", 1);
+				}else{
+					userServiceAsso.set("isadmin", 0);
+				}
+				userServiceAsso.set("userno", userno);
+				if (isAdmin)
+					userServiceAsso.set("roleid", Constant.ROLE_OWER);
+				else {
+					userServiceAsso.set("roleid", Constant.ROLE_COMMON);
+				}
+				userServiceAsso.set("createby", userno);
+				userServiceAsso.set("createid", contextDTO.getUserId());
+				userServiceAsso.save(contextDTO);				
+				return true;
+			}
+			
+		}));
+		return userServiceAsso;
+	}
+
+}

@@ -1,0 +1,130 @@
+<div class="page-footer">
+            <div class="page-footer-inner"> Copyright©
+                <a href="#" title="广东华邦云 " >广东华邦云</a>
+            </div>
+            <div class="scroll-to-top" style="display: block;">
+                <i class="icon-arrow-up"></i>
+            </div>
+        </div>
+  <script type="text/javascript">
+  
+  if (jQuery().datepicker) {
+      $('.date-picker').datepicker({
+          rtl: App.isRTL(),
+          orientation: "left",
+          autoclose: true
+      });
+  }
+  
+	jQuery.extend(jQuery.validator.messages, {
+        required: "必选字段",
+		remote: "请修正该字段",
+		email: "请输入正确格式的电子邮件",
+		url: "请输入合法的网址",
+		date: "请输入合法的日期",
+		dateISO: "请输入合法的日期 (ISO).",
+		number: "请输入合法的数字",
+		digits: "只能输入整数",
+		creditcard: "请输入合法的信用卡号",
+		equalTo: "请再次输入相同的值",
+		accept: "请输入拥有合法后缀名的字符串",
+		maxlength: jQuery.validator.format("请输入一个长度最多是 {0} 的字符串"),
+		minlength: jQuery.validator.format("请输入一个长度最少是 {0} 的字符串"),
+		rangelength: jQuery.validator.format("请输入一个长度介于 {0} 和 {1} 之间的字符串"),
+		range: jQuery.validator.format("请输入一个介于 {0} 和 {1} 之间的值"),
+		max: jQuery.validator.format("请输入一个最大为 {0} 的值"),
+		min: jQuery.validator.format("请输入一个最小为 {0} 的值")
+});
+	
+	  toastr.options = {
+			  "closeButton": true,
+			  "debug": false,
+			  "positionClass": "toast-top-center",
+			  "onclick": null,
+			  "showDuration": "1000",
+			  "hideDuration": "1000",
+			  "timeOut": "5000",
+			  "extendedTimeOut": "1000",
+			  "showEasing": "swing",
+			  "hideEasing": "linear",
+			  "showMethod": "fadeIn",
+			  "hideMethod": "fadeOut"
+			}
+	  
+	  
+	  
+	  var FormiCheck = function () {
+		    return {
+		        //main function to initiate the module
+		        init: function () {  
+
+		            $('.icheck-colors li').click(function() {
+		              var self = $(this);
+
+		              if (!self.hasClass('active')) {
+		                  self.siblings().removeClass('active');
+
+		                var skin = self.closest('.skin'),
+		                  color = self.attr('class') ? '-' + self.attr('class') : '',
+		                  colorTmp = skin.data('color') ? '-' + skin.data('color') : '-grey',
+		                  colorTmp = (colorTmp === '-black' ? '' : colorTmp);
+
+		                  checkbox_default = 'icheckbox_minimal',
+		                  radio_default = 'iradio_minimal',
+		                  checkbox = 'icheckbox_minimal' + colorTmp,
+		                  radio = 'iradio_minimal' + colorTmp;
+
+		                if (skin.hasClass('skin-square')) {
+		                  checkbox_default = 'icheckbox_square';
+		                  radio_default = 'iradio_square';
+		                  checkbox = 'icheckbox_square' + colorTmp;
+		                  radio = 'iradio_square'  + colorTmp;
+		                };
+
+		                if (skin.hasClass('skin-flat')) {
+		                  checkbox_default = 'icheckbox_flat';
+		                  radio_default = 'iradio_flat';
+		                  checkbox = 'icheckbox_flat' + colorTmp;
+		                  radio = 'iradio_flat'  + colorTmp;
+		                };
+
+		                if (skin.hasClass('skin-line')) {
+		                  checkbox_default = 'icheckbox_line';
+		                  radio_default = 'iradio_line';
+		                  checkbox = 'icheckbox_line' + colorTmp;
+		                  radio = 'iradio_line'  + colorTmp;
+		                };
+
+		                skin.find('.icheck').each(function() {
+		                  var element = $(this).hasClass('state') ? $(this) : $(this).parent();
+		                  var element_class = element.attr('class').replace(checkbox, checkbox_default + color).replace(radio, radio_default + color);
+		                  element.attr('class', element_class);
+		                });
+
+		                skin.data('color', self.attr('class') ? self.attr('class') : 'black');
+		                self.addClass('active');
+		              };
+		            });
+		        }
+		    };
+		}();
+
+		jQuery(document).ready(function() {
+		    FormiCheck.init();
+		});
+	  
+	
+  </script>
+  
+  <script>
+  //左侧导航
+var _contentHtmlUrl = "jf${htmlContent!}".replace(".html","");
+var _a = $(".page-sidebar-menu").find("a[href*='" + _contentHtmlUrl + "']");
+$(_a).append('<span class="selected"></span>');
+$(_a).parent().addClass("active open");
+var _ap = $(_a).parent().parent().parent().addClass("active open");
+_ap.find("a:first").addClass("active open").append('<span class="selected"></span><span class="arrow open"></span>');
+if(_a.find("span").length > 0){
+	$(".caption-subject").html(_a.find("span")[0].innerHTML);
+}
+  </script>

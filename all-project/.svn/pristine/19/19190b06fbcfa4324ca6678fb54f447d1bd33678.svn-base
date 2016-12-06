@@ -1,0 +1,539 @@
+/**
+ * 
+ */
+package saas.winbons.framework.nosql;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.domain.Sort.Order;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.mapreduce.GroupBy;
+import org.springframework.data.mongodb.core.mapreduce.GroupByResults;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.mongodb.core.query.Update.Position;
+import org.springframework.stereotype.Repository;
+
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.PageDto;
+import saas.winbons.framework.service.ServiceLocator;
+import saas.winbons.framework.sql.FilterItem;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.sql.OrderItem;
+import saas.winbons.framework.utils.CrmContext;
+
+/**
+ * @author Santanu
+ * 
+ */
+@Repository("baseNosqlDao")
+public class BaseNosqlDaoImpl implements BaseNosqlDao {
+	
+
+	private CustomMongoTemplate mongoTemplate;
+	
+	private static BaseNosqlDaoImpl baseNosqlDaoImpl;
+	
+	
+	public static BaseNosqlDaoImpl getInstance(){
+		if(null == baseNosqlDaoImpl){
+			baseNosqlDaoImpl = (BaseNosqlDaoImpl) ServiceLocator.getService("baseNosqlDao");
+		}
+		return baseNosqlDaoImpl;
+	}
+
+	public <T> T findAndUpdateById(ContextDTO contextDTO,String selectKey, Update update, Class<T> entityClass) {
+		Query query = new Query();
+		query.addCriteria(Criteria.where("_id").is(selectKey));
+		return mongoTemplate.findAndModify(contextDTO,query, update, FindAndModifyOptions.options().returnNew(true), entityClass);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.digitnexus.core.nosql.dao.BaseNosqlDao#get(java.lang.Class,
+	 * java.lang.Object)
+	 */
+	@Override
+	public <T> T get(Class<T> entityClass, Object id) {
+		return mongoTemplate.findById(id, entityClass);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.digitnexus.core.nosql.dao.BaseNosqlDao#getAll(java.lang.Class)
+	 */
+	@Override
+	public <T> List<T> getAll(ContextDTO contextDTO,Class<T> entityClass) {
+		return mongoTemplate.findAll(contextDTO,entityClass);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.digitnexus.core.nosql.dao.BaseNosqlDao#save(java.lang.Object)
+	 */
+	@Override
+	public void save(ContextDTO contextDTO,Object entity) {
+		try{
+			CrmContext.setContext(contextDTO);
+			mongoTemplate.save(contextDTO,entity);
+		}catch(Exception e){
+			e.printStackTrace();
+		}finally{
+			CrmContext.clear();
+		}
+		
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.digitnexus.core.nosql.dao.BaseNosqlDao#findAndUpdate(java.lang.String
+	 * , java.lang.Object, java.lang.String, java.lang.Object, java.lang.Class)
+	 */
+	@Override
+	public <T> T findAndUpdate(ContextDTO contextDTO,String selectKey, Object selectValue, String updateKey, Object updateValue, Class<T> entityClass) {
+		// this method will be replaced with search criteria integration
+		Query query = new Query();
+		query.addCriteria(Criteria.where(selectKey).is(selectValue));
+		T t = mongoTemplate.findAndModify(query, Update.update(updateKey, updateValue), entityClass);
+		return t;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.digitnexus.core.nosql.dao.BaseNosqlDao#delete(java.lang.Object)
+	 */
+	@Override
+	public void delete(ContextDTO contextDTO,Object entity) {
+		mongoTemplate.remove(entity);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.digitnexus.core.nosql.dao.BaseNosqlDao#findAndDelete(java.lang.String
+	 * , java.lang.Object, java.lang.Class)
+	 */
+	@Override
+	public <T> T findAndDelete(ContextDTO contextDTO,String selectKey, Object selectValue, Class<T> entityClass) {
+		// this method will be replaced with search criteria integration
+		Query query = new Query();
+		query.addCriteria(Criteria.where(selectKey).is(selectValue));
+		T t = mongoTemplate.findAndRemove(query, entityClass);
+		return t;
+	}
+
+	@Override
+	public <T> void dropCollection(ContextDTO contextDTO,Class<T> entityClass) {
+		mongoTemplate.dropCollection(entityClass);
+	}
+
+	/**
+	 * 
+	 * @param entityClass
+	 * @param query
+	 * @param firstResult
+	 * @param maxResult
+	 * @return
+	 */
+	protected <T> List<T> executeQuery(ContextDTO contextDTO,Class<T> entityClass, Query query, int firstResult, int maxResult) {
+		if (firstResult >= 0 && maxResult >= 0) {
+			query.skip(firstResult).limit(maxResult);
+		}
+		return mongoTemplate.find(query, entityClass);
+	}
+
+	/**
+	 * @param mongoTemplate
+	 *            the mongoTemplate to set
+	 */
+	@Autowired
+	public void setMongoTemplate(CustomMongoTemplate mongoTemplate) {
+		this.mongoTemplate = mongoTemplate;
+	}
+
+	public <T> void batchSave(ContextDTO contextDTO,Collection<T> objectsToSave) {
+		mongoTemplate.insertAll(objectsToSave);
+	}
+
+	private Query buildQueryByFilterItems(FilterItemList filterItemList) {
+		if (filterItemList == null) {
+			return new Query();
+		} else {
+			Query query = new Query();
+			int size = filterItemList.filerItemSize();
+			for (int i = 0; i < size; i++) {
+				FilterItem filterItem = filterItemList.getFilterItem(i);
+				addFilter(filterItem, query);
+			}
+			size = filterItemList.orderItems();
+			List<Order> orders = new ArrayList<Sort.Order>();
+			for (int i = 0; i < size; i++) {
+				OrderItem orderItem = filterItemList.getOrederItem(i);
+				Order order = new Order(orderItem.isDesc() ? Direction.DESC : Direction.ASC, orderItem.getPropertyName());
+				orders.add(order);
+			}
+			if (orders.size() > 0) {
+				query.with(new Sort(orders));
+			} else {
+				orders = null;
+			}
+			return query;
+		}
+	}
+
+	@Override
+	public <T> List<T> findByQuery(ContextDTO contextDTO,FilterItemList filterItemList, Class<T> entityClass) {
+		Query query = buildQueryByFilterItems(filterItemList);
+		PageDto page = filterItemList.getPage();
+		long count = mongoTemplate.count(query, entityClass);
+		if (null != page) {
+			query.skip(page.getRowStart());
+			query.limit(page.getLimit());
+		}
+		if (count > 0)
+			return mongoTemplate.find(query, entityClass);
+		else {
+			return Collections.emptyList();
+		}
+	}
+
+	public <T> Long countByQuery(ContextDTO contextDTO,FilterItemList filterItemList, Class<T> entityClass) {
+		Query query = buildQueryByFilterItems(filterItemList);
+		return mongoTemplate.count(query, entityClass);
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked", "static-access" })
+	private void addFilter(FilterItem filterItem, Criteria criteria) {
+		Collection collection = null;
+		Object value = filterItem.getValue();
+		switch (filterItem.getFileFilterType()) {
+		case NEQ:
+			criteria.and(filterItem.getPropertyName()).ne(value);
+			break;
+		case EQ:
+			criteria.and(filterItem.getPropertyName()).is(value);
+			break;
+		case GT:
+			criteria.and(filterItem.getPropertyName()).gt(value);
+			break;
+		case GTE:
+			criteria.and(filterItem.getPropertyName()).gte(value);
+			break;
+		case EXIST:
+			criteria.and(filterItem.getPropertyName()).exists(true);
+			break;
+		case NEXIST:
+			criteria.and(filterItem.getPropertyName()).exists(false);
+			break;
+		case LT:
+			criteria.and(filterItem.getPropertyName()).lt(value);
+			break;
+		case LTE:
+			criteria.and(filterItem.getPropertyName()).lte(value);
+			break;
+		case IN:
+			if (value instanceof Collection) {
+				// 这里有个陷阱，如果把collection集合当作object传进来的话，将生成$in :
+				// [[1,2,3]]这样的数据结构，导致最终结果查询有问题
+				// 所以用in或者nin的时候，应该使用数组作为传参
+				criteria.and(filterItem.getPropertyName()).in(value);
+			} else if (value.getClass().isArray()) {
+				Object[] obj = (Object[]) value;
+				collection = new ArrayList(obj.length);
+				for (int i = 0; i < obj.length; i++) {
+					collection.add(obj[i]);
+				}
+				criteria.and(filterItem.getPropertyName()).in(collection);
+			} else {
+				throw new IllegalArgumentException("must a array or collections");
+			}
+			break;
+		case LIKE:
+			Pattern pattern = Pattern.compile("^.*" + filterItem.getValue() + ".*$", Pattern.CASE_INSENSITIVE);
+			criteria.and(filterItem.getPropertyName()).regex(pattern);
+			break;
+		case NIN:
+			if (value instanceof Collection) {
+				criteria.where(filterItem.getPropertyName()).nin(value);
+			} else if (value.getClass().isArray()) {
+				Object[] obj = (Object[]) value;
+				collection = new ArrayList(obj.length);
+				for (int i = 0; i < obj.length; i++) {
+					collection.add(obj[i]);
+				}
+				criteria.and(filterItem.getPropertyName()).nin(collection);
+			} else {
+				throw new IllegalArgumentException("must a array or collections");
+			}
+			break;
+		case BETWEEN:
+			criteria.and(filterItem.getPropertyName()).gte(value).lte(filterItem.getSuffixValue());
+		default:
+			break;
+		}
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private void addFilter(FilterItem filterItem, Query query) {
+		Collection collection = null;
+		Object value = filterItem.getValue();
+		switch (filterItem.getFileFilterType()) {
+		case NEQ:
+			query.addCriteria(Criteria.where(filterItem.getPropertyName()).ne(value));
+			break;
+		case EQ:
+			query.addCriteria(Criteria.where(filterItem.getPropertyName()).is(value));
+			break;
+		case GT:
+			query.addCriteria(Criteria.where(filterItem.getPropertyName()).gt(value));
+			break;
+		case GTE:
+			query.addCriteria(Criteria.where(filterItem.getPropertyName()).gte(value));
+			break;
+		case EXIST:
+			query.addCriteria(Criteria.where(filterItem.getPropertyName()).exists(true));
+			break;
+		case NEXIST:
+			query.addCriteria(Criteria.where(filterItem.getPropertyName()).exists(false));
+			break;
+		case LT:
+			query.addCriteria(Criteria.where(filterItem.getPropertyName()).lt(value));
+			break;
+		case LTE:
+			query.addCriteria(Criteria.where(filterItem.getPropertyName()).lte(value));
+			break;
+		case IN:
+			if (value instanceof Collection) {
+				// 这里有个陷阱，如果把collection集合当作object传进来的话，将生成$in :
+				// [[1,2,3]]这样的数据结构，导致最终结果查询有问题
+				// 所以用in或者nin的时候，应该使用数组作为传参
+				query.addCriteria(Criteria.where(filterItem.getPropertyName()).in(value));
+			} else if (value.getClass().isArray()) {
+				Object[] obj = (Object[]) value;
+				collection = new ArrayList(obj.length);
+				for (int i = 0; i < obj.length; i++) {
+					collection.add(obj[i]);
+				}
+				query.addCriteria(Criteria.where(filterItem.getPropertyName()).in(collection));
+			} else {
+				throw new IllegalArgumentException("must a array or collections");
+			}
+			break;
+		case LIKE:
+			Pattern pattern = Pattern.compile("^.*" + filterItem.getValue() + ".*$", Pattern.CASE_INSENSITIVE);
+			query.addCriteria(Criteria.where(filterItem.getPropertyName()).regex(pattern));
+			break;
+		case NIN:
+			if (value instanceof Collection) {
+				query.addCriteria(Criteria.where(filterItem.getPropertyName()).nin(value));
+			} else if (value.getClass().isArray()) {
+				Object[] obj = (Object[]) value;
+				collection = new ArrayList(obj.length);
+				for (int i = 0; i < obj.length; i++) {
+					collection.add(obj[i]);
+				}
+				query.addCriteria(Criteria.where(filterItem.getPropertyName()).nin(collection));
+			} else {
+				throw new IllegalArgumentException("must a array or collections");
+			}
+			break;
+		case BETWEEN:
+			query.addCriteria(Criteria.where(filterItem.getPropertyName()).gte(value).lte(filterItem.getSuffixValue()));
+		default:
+			break;
+		}
+	}
+
+	@Override
+	public <T> List<T> findByQuery(ContextDTO contextDTO,Class<T> entityClass, Query query) {
+		return mongoTemplate.find(query, entityClass);
+	}
+
+	public <T> void pullArrayByKey(ContextDTO contextDTO,String id, String property, String pullProperty, Object value, Class<T> entityClass) {
+		updateArrayByKey(contextDTO,id, property, pullProperty, value, entityClass, true);
+	}
+
+	private <T> void updateArrayByKey(ContextDTO contextDTO,String id, String property, String pullProperty, Object value, Class<T> entityClass, boolean delete) {
+		Query query = new Query();
+		query.addCriteria(Criteria.where("_id").is(id));
+		Update update = new Update();
+		if (delete) {
+			if (pullProperty == null) {
+				update.pull(property, value);
+			} else {
+				Criteria criteria = new Criteria(pullProperty);
+				criteria.is(value);
+				update.pull(property, criteria.getCriteriaObject());
+			}
+		} else {
+			update.push(property, value);
+		}
+		mongoTemplate.findAndModify(query, update, entityClass);
+	}
+
+	@Override
+	public <T> void updateArrayByKey(ContextDTO contextDTO,String id, String property, Object value, Class<T> entityClass) {
+		updateArrayByKey(contextDTO,id, property, null, value, entityClass, false);
+	}
+
+	@Override
+	public <T> T findByOne(ContextDTO contextDTO,Class<T> entityClass, FilterItemList filterItemList) {
+		return mongoTemplate.findOne(buildQueryByFilterItems(filterItemList), entityClass);
+	}
+
+	private Update createByMap(Map<String, Object> dataMap) {
+		Update update = new Update();
+		for (String key : dataMap.keySet()) {
+			if (key.startsWith(INC_PRE)) {
+				update.inc(key.substring(3), (Number) dataMap.get(key));
+			} else {
+				update.set(key, dataMap.get(key));
+			}
+		}
+		return update;
+	}
+
+	public <T> T updateValue(ContextDTO contextDTO,String selectKey, Object selectVal, Map<String, Object> updateValue, Class<T> entityClass) {
+		Query query = new Query();
+		query.addCriteria(Criteria.where(selectKey).is(selectVal));
+		return mongoTemplate.findAndModify(query, createByMap(updateValue), FindAndModifyOptions.options().returnNew(true), entityClass);
+	}
+
+	public <T> void updateValue(ContextDTO contextDTO,String selectKey, Object selectVal, Map<String, Object> updateValue, Class<T> entityClass, long dbid) {
+		Query query = new Query();
+		query.addCriteria(Criteria.where(selectKey).is(selectVal));
+		query.addCriteria(Criteria.where("dbid").is(dbid));
+		mongoTemplate.findAndModify(query, createByMap(updateValue), FindAndModifyOptions.options().returnNew(true), entityClass);
+	}
+
+	@Override
+	public <T> List<T> findByQuery(ContextDTO contextDTO,FilterItemList filterItemList, String collectionName, Class<T> entityClass) {
+		Query query = buildQueryByFilterItems(filterItemList);
+		return mongoTemplate.find(query, entityClass, collectionName);
+	}
+
+	@Override
+	public <T> T updateArrayByKey(ContextDTO contextDTO,String id, String property, Object value, Map<String, Object> updateValue, Class<T> entityClass) {
+		Query query = new Query();
+		query.addCriteria(Criteria.where("_id").is(id));
+		Update update = createByMap(updateValue);
+		update.push(property, value);
+		return mongoTemplate.findAndModify(query, update, FindAndModifyOptions.options().returnNew(true), entityClass);
+	}
+
+	public <T> T pullArrayByKey(ContextDTO contextDTO,String id, String property, Map<String, Object> updateValue, String pullProperty, Object value, Class<T> entityClass) {
+		Query query = new Query();
+		query.addCriteria(Criteria.where("_id").is(id));
+		Update update = createByMap(updateValue);
+		Criteria criteria = new Criteria(pullProperty);
+		criteria.is(value);
+		update.pull(property, criteria.getCriteriaObject());
+		return mongoTemplate.findAndModify(query, update, FindAndModifyOptions.options().returnNew(true), entityClass);
+	}
+
+	@Override
+	public <T> T getMaxValue(ContextDTO contextDTO,Class<T> entityClass, String property) {
+		Query query = new Query();
+		Order order = new Order(Direction.DESC, property);
+		query.with(new Sort(order));
+		query.limit(1);
+		return mongoTemplate.findOne(query, entityClass);
+	}
+
+	public <T> T getMaxValue(ContextDTO contextDTO,Class<T> entityClass, String property, Long dbid) {
+		Query query = new Query();
+		query.addCriteria(Criteria.where("dbid").is(dbid));
+		Order order = new Order(Direction.DESC, property);
+		query.with(new Sort(order));
+		query.limit(1);
+		return mongoTemplate.findOne(query, entityClass);
+	}
+
+	@Override
+	public <T> T pullArrayByKey(ContextDTO contextDTO,String id, String property, Map<String, Object> updateValue, String pullProperty, Class<T> entityClass, Position position) {
+		Query query = new Query();
+		query.addCriteria(Criteria.where("_id").is(id));
+		Update update = createByMap(updateValue);
+		update.pop(pullProperty, position);
+		return mongoTemplate.findAndModify(query, update, FindAndModifyOptions.options().returnNew(true), entityClass);
+	}
+
+	public <T> T updateIncValue(ContextDTO contextDTO,String selectKey, Object selectVal, String propName, Class<T> entityClass, long dbid) {
+		Query query = new Query();
+		query.addCriteria(Criteria.where(selectKey).is(selectVal));
+		Update update = new Update();
+		update.inc(propName, 1);
+		return mongoTemplate.findAndModify(query, update, FindAndModifyOptions.options().returnNew(true), entityClass);
+	}
+
+	public <T> void popData(ContextDTO contextDTO,Class<T> entityClass, String key, String propName, Position position) {
+		Query query = new Query();
+		query.addCriteria(Criteria.where("_id").is(key));
+		Update update = new Update();
+		update.pop(propName, position);
+		mongoTemplate.findAndModify(query, update, entityClass);
+	}
+
+	public <T> void deleteByFilter(ContextDTO contextDTO,FilterItemList filterItemList, Class<T> entityClass) {
+		Query query = buildQueryByFilterItems(filterItemList);
+		mongoTemplate.remove(query, entityClass);
+	}
+
+	@Override
+	public <T> void updateMuti(ContextDTO contextDTO,FilterItemList filterItemList, Map<String, Object> upData, Class<T> entityClass) {
+		Query query = buildQueryByFilterItems(filterItemList);
+		Update update = new Update();
+		for (String key : upData.keySet()) {
+			update.set(key, upData.get(key));
+		}
+		mongoTemplate.updateMulti(query, update, entityClass);
+	}
+
+	public <T> T findAndUpdate(ContextDTO contextDTO,String selectKey, Update update, Class<T> entityClass) {
+		Query query = new Query();
+		query.addCriteria(Criteria.where("_id").is(selectKey));
+		return mongoTemplate.findAndModify(query, update, FindAndModifyOptions.options().returnNew(true), entityClass);
+	}
+
+	@Override
+	public <T> GroupByResults<T> groupByQuery(ContextDTO contextDTO,FilterItemList filterItemList, String inputCollectionName, Class<T> entityClass, String... keys) {
+		String reduceFunction = " function(obj, result){result.count+=1;}";
+		GroupBy groupBy = GroupBy.key(keys).initialDocument("{count:0}").reduceFunction(reduceFunction);
+		Criteria criteria = buildCriteriaByFilterItems(filterItemList);
+		GroupByResults<T> r = mongoTemplate.group(criteria, inputCollectionName, groupBy, entityClass);
+		return r;
+
+	}
+
+	private Criteria buildCriteriaByFilterItems(FilterItemList filterItemList) {
+		if (filterItemList == null) {
+			return new Criteria();
+		} else {
+			Criteria criteria = new Criteria();
+			int size = filterItemList.filerItemSize();
+			for (int i = 0; i < size; i++) {
+				FilterItem filterItem = filterItemList.getFilterItem(i);
+				addFilter(filterItem, criteria);
+			}
+			return criteria;
+		}
+	}
+
+}

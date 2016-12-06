@@ -1,0 +1,116 @@
+package saas.winbons.data.model.report;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+public class ReportModule {
+ private static Map<String,String> moduleNameToInt =  new HashMap<String,String>();
+ private static Map<String,String> moduleIntToName =  new HashMap<String,String>();
+ private static Map<String,Object> moduleTable =  new HashMap<String,Object>();
+ private static Map<String,Object> moduleBaseFields =  new HashMap<String,Object>();
+ private static Map<String,String> tableName =  new HashMap<String,String>();
+ private static Map<String,String> otherTableName =  new HashMap<String,String>();
+ //有些类似id字段与其他name业务意义重复，不要显示
+ public static Set<String> noneSelectIds = new HashSet<>();
+ static{
+		noneSelectIds.addAll(Arrays.asList(new String[] { "t101.id", "t101.dbid","t101.receive_date", "t102.id", "t102.dbid",
+				"t102.cust_id", "t201.id", "t201.dbid", "t201.contact_avatar_id", "t201.cust_id", "t201.contact_id",
+				"t301.id", "t301.dbid", "t301.customerid","t301.productid" }));
+	 /**表名与对应的别名**/
+	 otherTableName.put("t_crm_customer", "t101");
+	 otherTableName.put("t_crm_cust_contact", "t102");
+	 otherTableName.put("t_crm_sales_opportunity", "t201");
+	 otherTableName.put("t_crm_contract", "t301");
+	 
+	 
+	 /**字符串与int对应**/
+	 moduleNameToInt.put("客户", "101");
+	 moduleNameToInt.put("客户联系人", "102");
+	 moduleNameToInt.put("商机", "201");
+	 moduleNameToInt.put("合同", "301");
+	 
+	 /**反过来**/
+	 moduleIntToName.put("101","客户");
+	 moduleIntToName.put("102","客户联系人");
+	 moduleIntToName.put("201","商机");
+	 moduleIntToName.put("301","合同");
+	 
+	 //表名的匹配
+	 tableName.put("t_crm_customer", "客户");
+	 tableName.put("t_crm_cust_contact", "联系人");
+	 tableName.put("t_crm_sales_opportunity", "商机");
+	 tableName.put("t_crm_contract", "合同");
+	 tableName.put("t101", "客户");
+	 tableName.put("t102", "联系人");
+	 tableName.put("t201", "商机");
+	 tableName.put("t301", "合同");
+
+	 
+	 //报表模型各自需要的关联表
+	 moduleTable.put("101", new String[]{"t_crm_customer"});
+	 moduleTable.put("102", new String[]{"t_crm_cust_contact","t_crm_customer"});
+	 moduleTable.put("201", new String[]{"t_crm_sales_opportunity","t_crm_customer","t_crm_cust_contact"});
+	 moduleTable.put("301", new String[]{"t_crm_contract","t_crm_customer"});
+	 
+	 //报表模型各自初始化的基本字段,只在新建的时候使用
+	 //客户基本模板
+	 moduleBaseFields.put("101", new String[]{"t101.name","t101.owner_id","t101.c_status","t101.type","t101.source","t101.industry","t101.tel","t101.addr","t101.created_date"});
+	 //客户联系人基本模板
+	 moduleBaseFields.put("102", new String[]{"t102.name","t101.name","t102.gender","t102.title","t102.tel","t102.mobile","t102.email","t102.created_date"});
+	 //商机基本模板
+	 moduleBaseFields.put("201", new String[]{"t201.name","t101.name","t201.owner_id","t201.sales_amount","t201.stage_id","t201.win_rate","t201.finish_date"});
+	 //合同基本模板,"t301.total-t301.payments",
+	 moduleBaseFields.put("301", new String[]{"t301.subject","t101.name","t301.ownerId","t301.type","t301.total","t301.payments","t301.invoice_pay","t301.begindate","t301.enddate"});
+ }
+ 
+ //获取对应的module数字
+ public static String getModuleInt(String str){
+	return moduleNameToInt.get(str);
+ }
+ 
+//获取对应的module字符
+ public static String getModuleString(String str){
+	return moduleIntToName.get(str);
+ }
+ 
+//获取对应的表名
+public static String getTableName(String str){
+	return tableName.get(str);
+}
+
+ //获取moduleNameToInt的方法
+ public static Map<String, String> getModuleNameToInt(){
+	 return moduleNameToInt;
+ }
+ 
+ //获取moduleIntToName的方法
+ public static Map<String, String> getModuleIntToName(){
+	 return moduleIntToName;
+ }
+ 
+ //获取表的别名的方法
+ public static String getOtherTableName(String str){
+	 return otherTableName.get(str);
+ }
+ 
+ //获取相关所有表名的方法
+ public static String[] getTableNames(String module){
+	 Object obj = moduleTable.get(module);
+	 if(null!=obj){
+		 return (String[]) obj;
+	 }
+	 return null;
+ }
+ 
+ //获取相关所有预设字段的方法
+ public static String[] getBaseFields(String module){
+	 Object obj = moduleBaseFields.get(module);
+	 if(null!=obj){
+		 return (String[]) obj;
+	 }
+	 return null;
+ }
+ }

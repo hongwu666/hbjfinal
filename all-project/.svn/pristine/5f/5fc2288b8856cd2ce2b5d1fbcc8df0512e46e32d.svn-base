@@ -1,0 +1,11 @@
+package saas.winbons.data.model.calendar;
+
+import saas.winbons.data.model.BaseModel;
+
+public class CalendarRelUser extends BaseModel<CalendarRelUser> {
+
+	private static final long serialVersionUID = -4264714399887864565L;
+	
+	public static final CalendarRelUser dao = new CalendarRelUser();
+
+}

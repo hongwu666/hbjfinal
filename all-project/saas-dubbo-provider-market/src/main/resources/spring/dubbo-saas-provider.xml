@@ -1,0 +1,2279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- - Copyright 1999-2011 Alibaba Group. - - Licensed under the Apache License, 
+	Version 2.0 (the "License"); - you may not use this file except in compliance 
+	with the License. - You may obtain a copy of the License at - - http://www.apache.org/licenses/LICENSE-2.0 
+	- - Unless required by applicable law or agreed to in writing, software - 
+	distributed under the License is distributed on an "AS IS" BASIS, - WITHOUT 
+	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the 
+	License for the specific language governing permissions and - limitations 
+	under the License. -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+	http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>classpath:dubbo.properties</value>
+			</list>
+		</property>
+	</bean>
+
+	<dubbo:application name="market-provider" owner="programmer" organization="dubbox" />
+
+	<dubbo:registry address="${registryAddr}" />
+
+	<dubbo:protocol id="dubbo1" name="dubbo" port="${dubbo1Port}" serialization="kryo" optimizer="saas.winbons.dubbo.serialize.SerializationOptimizerImpl" />
+	<dubbo:protocol id="dubbo2" name="dubbo" port="${dubbo2Port}" serialization="compactedjava" />
+
+	<!-- use tomcat server -->
+	<!-- <dubbo:protocol name="rest" port="8888" threads="500" contextpath="services" 
+		server="tomcat" accepts="500" extension="com.alibaba.dubbo.rpc.protocol.rest.support.LoggingFilter"/> 
+		<dubbo:service interface="saas.winbons.dubbo.api.market.IMarketRestService" 
+		ref="marketRestService" protocol="rest" /> <bean id="marketRestService" class="saas.winbons.provider.rest.MarketRestServiceImpl"> 
+		<property name="marketService" ref="marketService"/> </bean> -->
+
+	<!-- <dubbo:service interface="saas.winbons.dubbo.api.ApiService" ref="marketService" group="marketService" protocol="dubbo1" />
+	<bean id="marketService" class="saas.winbons.provider.MarketServiceImpl" />
+
+	<dubbo:service interface="saas.winbons.dubbo.api.ApiService" ref="marketMinaService" group="marketMinaService" protocol="dubbo2" />
+	<bean id="marketMinaService" class="saas.winbons.provider.mina.MarketMinaServiceImpl">
+		<property name="marketService" ref="marketService" />
+	</bean>
+ -->
+	<!-- 日程 -->
+	<!-- <dubbo:service interface="saas.winbons.dubbo.api.ApiService" ref="calendarService" group="calendarService" protocol="dubbo1" /> -->
+	<bean id="calendarService" class="saas.winbons.provider.CalendarServiceImpl" />
+	<dubb"F:/trunk/saas-crm/saas-crm-market-activity/src/main/java/saas/crm/market/activity/action/ActivityCustomerController.java"o:service interface="saas.winbons.dubbo.api.ApiService" ref="calendarMinaService" group="calendarMinaService" protocol="dubbo2" />
+	<bean id="calendarMinaService" class="saas.winbons.provider.mina.CalendarMinaServiceImpl">
+		<property name="calendarService" ref="calendarService" />
+	</bean>
+
+    <!-- 客户统计 -->
+	<bean id="analysisService" class="saas.winbons.provider.AnalysisServiceImpl" />
+	<dubbo:service interface="saas.winbons.dubbo.api.ApiService" ref="analysisMinaService" group="analysisMinaService" protocol="dubbo2" />
+	<bean id="analysisMinaService" class="saas.winbons.provider.mina.AnalysisMinaServiceImpl">
+		<property name="analysisService" ref="analysisService" />
+	</bean>
+	
+	<!-- package saas.crm.market.activity.action;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
+import org.hibernate.type.LongType;
+import org.hibernate.type.StringType;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Controller;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
+import saas.crm.CrmContext;
+import saas.crm.PermissionConstant;
+import saas.crm.base.CommonPageResult;
+import saas.crm.base.controller.AbstractCommonController;
+import saas.crm.base.uisetting.IUISetting;
+import saas.crm.customer.action.CustomerCriteria.CustomerSelectType;
+import saas.crm.customer.contant.CustomerMappingFile;
+import saas.crm.customer.data.manager.CustomerSqlUtils;
+import saas.crm.customer.data.manager.ICustomerManager;
+import saas.crm.customer.data.manager.ICustomerPoolManager;
+import saas.crm.customer.manager.IPoolActivatedService;
+import saas.crm.customer.vo.CustomerVO;
+import saas.crm.data.model.CustomerFilterField;
+import saas.crm.data.model.customer.Customer;
+import saas.crm.data.model.customer.FilterValueDTO;
+import saas.crm.data.model.definition.DefinedFeild;
+import saas.crm.data.model.log.OperateEnum;
+import saas.crm.data.model.sales.Contract;
+import saas.crm.data.model.sales.Opportunity;
+import saas.crm.data.model.uisetting.VUiGridColumn;
+import saas.crm.data.vo.uisetting.UiGridColumnVO;
+import saas.crm.dynamic.ItemTypeEnum;
+import saas.crm.dynamic.manager.IDynamicManager;
+import saas.crm.dynamic.model.ItemType;
+import saas.crm.market.activity.contant.ActivityRole;
+import saas.crm.market.activity.model.Activity;
+import saas.crm.market.activity.model.ActivityCustomerVo;
+import saas.crm.market.activity.service.IActivityCustomerService;
+import saas.crm.market.activity.service.IActivityManager;
+import saas.crm.organization.manager.IDepartmentManager;
+import saas.crm.sales.contant.ContractMappingFile;
+import saas.crm.sales.manager.IContractManager;
+import saas.crm.sales.opportunity.action.OpportunityCriteria.OpportunitySelectType;
+import saas.crm.sales.opportunity.contant.OpportunityMappingFile;
+import saas.crm.sales.opportunity.manager.IOpportunityMananger;
+import saas.crm.sales.opportunity.manager.OpportunitySqlUtils;
+import saas.crm.sales.opportunity.vo.OpportunityVO;
+import saas.crm.sales.util.CompetitorCriteria.CompetitorSelectType;
+import saas.crm.sales.util.CompetitorSqlUtils;
+import saas.crm.sales.web.vo.ContractVO;
+import saas.crm.security.service.IPermission;
+import saas.crm.tag.manager.IBizRelTagManager;
+import saas.crm.web.utils.CrmDateUtils;
+import saas.crm.web.utils.ExceptionHandler;
+import saas.framework.dao.PageDataContext;
+import saas.framework.dao.PageVO;
+import saas.framework.permission.authz.RequiresModule;
+import saas.framework.permission.authz.RequiresPermissions;
+import saas.framework.permission.exception.AuthorizationException;
+import saas.framework.sql.Column;
+import saas.framework.sql.FilterItem;
+import saas.framework.sql.FilterItemList;
+import saas.framework.sql.FilterItemListImpl;
+import saas.framework.sql.FilterType;
+import saas.framework.sql.OrderItem;
+import saas.framework.sql.query.ISqlGenerater;
+import saas.framework.utils.SecurityUtils;
+import saas.framework.web.JsonResult;
+import saas.framework.web.action.PageResult;
+import saas.framework.web.jsonserializer.JsonContext;
+
+@Controller
+@RequestMapping("/activity/customer")
+@RequiresModule(PermissionConstant.MODULE_MARKETACTIVITY)
+public class ActivityCustomerController extends AbstractCommonController {
+	private static final Logger logger = LoggerFactory
+			.getLogger(ActivityCustomerController.class);
+
+	@Autowired
+	private IUISetting uiSettingManager;
+
+	@Autowired
+	private ICustomerPoolManager customerPoolManager;
+
+	@Autowired
+	private IBizRelTagManager bizRelTagManager;
+
+	@Autowired
+	protected IActivityCustomerService activityCustomerService;
+
+	@Autowired
+	private ISqlGenerater sqlGenerator;
+
+	@Autowired
+	private ICustomerManager customerManager;
+	@Autowired
+	private IOpportunityMananger opportunityMananger;
+	@Autowired
+	private IContractManager contractManager;
+	@Autowired
+	private IPermission permission;
+
+	@Autowired
+	private IDepartmentManager departmentManager;
+
+	@Autowired
+	private IDynamicManager dynamicManager;
+
+	@Autowired
+	private IPoolActivatedService poolActivatedService;
+
+	@Autowired
+	protected IActivityManager activityManager;
+
+    @Autowired
+    protected JdbcTemplate jdbcTemplate;
+    
+	private static final String SELECTTYPE_PARAM = "selectType";
+	private static final double DAY_MS = 24 * 3600 * 1000;
+
+	@Override
+	public String getGridId() {
+		return "ID_GRID_ACTIVITY";
+	}
+
+	@Override
+	public Class<?> getModelClass() {
+		return Activity.class;
+	}
+
+	/**
+	 * 查看商机
+	 * 
+	 * @param activityId
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("/oppList")
+	@RequiresPermissions(PermissionConstant.ACTIVITY_QUERY_OPPORTUNITY)
+	public JsonResult opportunityList(
+			@RequestParam("activityId") Long activityId,
+			HttpServletRequest request) {
+		PageVO pageVO = PageDataContext.getCurrentPageVO();
+		Object data = findData(request);
+		PageResult result = null;
+		if (pageVO.getCurrentPage() == 1 && !isMobileRequest()) {
+			VUiGridColumn[] columns = uiSetting.getUserGridColumns(
+					"ID_GRID_OPPORTUNITY", SecurityUtils.getUserId());
+			result = super.buildPageResult(data, changColumnToVO(columns),
+					pageVO.getTotalCount(), pageVO.getLimit(),
+					pageVO.getCurrentPage());
+		} else {
+			result = super.buildPageResult(data, null, pageVO.getTotalCount(),
+					pageVO.getLimit(), pageVO.getCurrentPage());
+		}
+		// 修改权限相关信息与自己有关的商机才能看
+		List<Long> oppoIds = activityManager.getOppoIds();
+		List<OpportunityVO> activities = (List<OpportunityVO>) result
+				.getItems();
+		for (OpportunityVO actvt : activities) {
+			Long oppoId = actvt.getId();
+			boolean canDetail = oppoIds.contains(oppoId);
+			actvt.setCanDetail(canDetail);
+		}
+		return generateJsonResult(result);
+	}
+
+	/**
+	 * 查看合同
+	 * 
+	 * @param activityId
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("/contractList")
+	@RequiresPermissions(PermissionConstant.ACTIVITY_QUERY_CONTACT)
+	public JsonResult contractList(@RequestParam("activityId") Long activityId,
+			HttpServletRequest request) {
+		PageVO pageVO = PageDataContext.getCurrentPageVO();
+		Object data = findData(request);
+		PageResult result = null;
+		if (pageVO.getCurrentPage() == 1 && !isMobileRequest()) {
+			VUiGridColumn[] columns = uiSetting.getUserGridColumns(
+					"ID_GRID_CONTRACT", SecurityUtils.getUserId());
+			result = super.buildPageResult(data, changColumnToVO(columns),
+					pageVO.getTotalCount(), pageVO.getLimit(),
+					pageVO.getCurrentPage());
+		} else {
+			result = super.buildPageResult(data, null, pageVO.getTotalCount(),
+					pageVO.getLimit(), pageVO.getCurrentPage());
+		}
+
+		// 修改权限相关信息与自己有关的商机才能看
+
+		List<Long> contractIds = activityManager.getContractIds();
+		List<ContractVO> activities = (List<ContractVO>) result.getItems();
+		for (ContractVO actvt : activities) {
+			Long oppoId = actvt.getId();
+			boolean canDetail = contractIds.contains(oppoId);
+			actvt.setCanDetail(canDetail);
+		}
+		return generateJsonResult(result);
+	}
+
+	/**
+	 * 查看市场活动下的客户字段
+	 * 
+	 * @param activityId
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("/listCustomers")
+	@RequiresPermissions(PermissionConstant.ACTIVITY_QUERY_CUSTOMER)
+	public JsonResult listCustomers(
+			@RequestParam("activityId") Long activityId,
+			HttpServletRequest request) {
+		PageVO pageVO = PageDataContext.getCurrentPageVO();
+		Object data = findData(request);
+		String toLink = request.getParameter("toLink");
+		PageResult result = null;
+		if (pageVO.getCurrentPage() == 1 && !isMobileRequest()) {
+			VUiGridColumn[] columns = uiSetting.getUserGridColumns(
+					"ID_GRID_CUSTOMER", SecurityUtils.getUserId());
+			UiGridColumnVO[] columnVos = changColumnToVO(columns);
+			if("true".equalsIgnoreCase(toLink)){
+				columnVos = removeFields(columnVos);
+			}
+			result = buildPageResult(data, columnVos, pageVO.getTotalCount(),
+					pageVO.getLimit(), pageVO.getCurrentPage(), activityId);
+		} else {
+			result = buildPageResult(data, null, pageVO.getTotalCount(),
+					pageVO.getLimit(), pageVO.getCurrentPage(), activityId);
+		}
+
+	       // 修改权限相关信息
+        List<CustomerVO> customerVOs = (List<CustomerVO>) result.getItems();
+       try{
+    	   permission.checkPermission(PermissionConstant.MODULE_CUSTOMER+":"+PermissionConstant.DETAIL, SecurityUtils.getUserId(),false);
+       }catch (Exception e){
+    	   return generateJsonResult(result);
+       }
+       	Set<Long> users= activityManager.getManegerList(PermissionConstant.MODULE_CUSTOMER + ":" + PermissionConstant.QUERY);
+        for(CustomerVO customerVO:customerVOs){
+            List<Long> userIds= customerManager.getCustomerAllRelUsers(customerVO.getId());
+            boolean isRelation=false;
+            for(Long userId:userIds){
+               if(users.contains(userId)){
+                   isRelation=true;
+                   break;
+               }
+           }
+        	customerVO.setRelated(isRelation);
+        }
+        return generateJsonResult(result);
+	}
+
+	@Override
+	public Object findData(HttpServletRequest request) {
+		String path = request.getServletPath();
+		String activityId = request.getParameter("activityId");
+		Object object = null;
+		if (path.contains("listCustomers")) {
+			Column[] userExtraColumns = extraQueryColumns();
+			if (userExtraColumns != null) {
+				for (Column column : userExtraColumns) {
+					sqlGenerator.addUserDefineColumn(column);
+				}
+			}
+			object = customerManager.findData(buildFilterItem(request),
+					sqlGenerator.buildSQL(Customer.class, joinSql(activityId)));
+		} else if (path.contains("contractList")) {
+			Column[] userExtraColumns = extraQueryColumnsContract();
+			if (userExtraColumns != null) {
+				for (Column column : userExtraColumns) {
+					sqlGenerator.addUserDefineColumn(column);
+				}
+			}
+			Activity activity = (Activity) activityManager.getEntity(
+					Long.parseLong(activityId), Activity.class);
+			object = contractManager.findData(buildContractFilterItem(request),
+					sqlGenerator.buildSQL(
+							Contract.class,
+							joinSqlContract(Long.parseLong(activityId),
+									activity.getBenefitsEndDate()
+											)));
+		} else if (path.contains("oppList")) {
+			Column[] userExtraColumns = extraQueryColumnsOpp();
+			if (userExtraColumns != null) {
+				for (Column column : userExtraColumns) {
+					sqlGenerator.addUserDefineColumn(column);
+				}
+			}
+			Activity activity = (Activity) activityManager.getEntity(
+					Long.parseLong(activityId), Activity.class);
+			object = opportunityMananger.findData(
+					buildOppoFilterItem(request),
+					sqlGenerator.buildSQL(
+							Opportunity.class,
+							joinSqlOpp(Long.parseLong(activityId),
+									activity.getBenefitsEndDate()
+											)));
+		}
+		addOperationLog(Customer.class.getSimpleName(), request,
+				OperateEnum.LIST, null);
+		return object;
+
+	}
+
+	private UiGridColumnVO[] removeFields(UiGridColumnVO[] definedFeilds) {
+		//普通的线索模块过滤掉与活动相关的字段
+		List<UiGridColumnVO> newList = new ArrayList<UiGridColumnVO>();
+		for(UiGridColumnVO ele : definedFeilds){
+			//在静态类中确定要过滤的字段过滤掉，不管是在展示或者隐藏的列表里
+			if(!CustomerFilterField.actiLinkedFileds.contains(ele.getName())){
+				newList.add(ele);
+			}
+		}
+		UiGridColumnVO[] arr = new UiGridColumnVO[newList.size()];
+		for(int i =0; i<newList.size();i++){
+			arr[i] = newList.get(i);
+		}
+		return arr;
+	}
+	
+	public PageResult buildPageResult(Object data, Object columnModel,
+			long totalCount, int limit, int currentPage, Long activityId) {
+		JsonContext.open("t_crm_customer");
+		CommonPageResult customerPageResult = new CommonPageResult(currentPage,
+				totalCount, limit, data);
+		if (columnModel != null) {
+			customerPageResult.setColumnModel(columnModel);
+		}
+		List<CustomerVO> customerVOs = (List<CustomerVO>) data;
+
+		Set<Long> userids = new HashSet<Long>();
+		if (customerVOs != null) {
+			for (CustomerVO vo : customerVOs) {
+				userids.add(vo.getOwnerId());
+				customerManager.setCustomCoordinate(vo);
+				vo.setTags(bizRelTagManager.getBizTagsByItemId(
+						ItemType.CUSTOMER.name(), vo.getId(),
+						SecurityUtils.getUserId()));
+			}
+		}
+		userInfoManager.updateUsersInfo(userids, customerPageResult);
+		List<ActivityCustomerVo> acvoList = new ArrayList<ActivityCustomerVo>();
+		for (CustomerVO vo : customerVOs) {
+			ActivityCustomerVo acvo = Model2ActivityCustomerVo(vo, activityId);
+			acvoList.add(acvo);
+		}
+		data = acvoList;
+		customerPageResult.setItems(data);
+		return customerPageResult;
+	}
+
+	@Override
+	public Column[] extraQueryColumns() {
+		Column poolColumn = new Column("name", "poolName", new StringType(),
+				"pool");
+		Column collAclColumn = new Column("is_collection", "collStr",
+				new StringType(), "collAcl");
+		Column deptColumn = new Column("name", "deptName", new StringType(),
+				"d");
+		Column sourceColumn = new Column("item_label", "sourceName",
+				new StringType(), "l1");
+		Column customerTypeColumn = new Column("item_label",
+				"customerTypeName", new StringType(), "l2");
+		Column industryColumn = new Column("item_label", "industryName",
+				new StringType(), "l3");
+		Column ratingColumn = new Column("item_label", "ratingName",
+				new StringType(), "l4");
+		Column businessTypeColumn = new Column("item_label",
+				"businessTypeName", new StringType(), "l5");
+		Column statusColumn = new Column("item_label", "statusName",
+				new StringType(), "l6");
+		return new Column[] { poolColumn, collAclColumn, deptColumn,
+				sourceColumn, customerTypeColumn, industryColumn, ratingColumn,
+				businessTypeColumn, statusColumn };
+	}
+
+	public Column[] extraQueryColumnsContract() {
+		Column customColumn = new Column("name", "customName",
+				new StringType(), "customer");
+		Column departColumn = new Column("name", "deptName", new StringType(),
+				"depart");
+		Column oppoColumn = new Column("name", "oppoName", new StringType(),
+				"oppo");
+		Column typeColumn = new Column("name", "typeName", new StringType(),
+				"item1");
+		Column statusColumn = new Column("name", "statuName", new StringType(),
+				"item2");
+		Column payColumn = new Column("mount,0)", "payments", new StringType(),
+				"ifnull(pay");
+		Column beginColumn = new Column("begindate/1000,'%Y-%m-%d')",
+				"begindate", new StringType(), "FROM_UNIXTIME(contract");
+		Column endColumn = new Column("enddate/1000,'%Y-%m-%d')", "enddate",
+				new StringType(), "FROM_UNIXTIME(contract");
+		Column signColumn = new Column("signdate/1000,'%Y-%m-%d')", "signdate",
+				new StringType(), "FROM_UNIXTIME(contract");
+		Column payTypeNameColumn = new Column("name", "payTypeName", new StringType(), "item3");
+		return new Column[] { customColumn, departColumn, oppoColumn,
+				typeColumn, statusColumn, payColumn, beginColumn, endColumn,
+				signColumn,payTypeNameColumn };
+
+	}
+
+	public Column[] extraQueryColumnsOpp() {
+		Column custColumn = new Column("name", "custName", new StringType(),
+				"c");
+		Column poolColumn = new Column("cust_pool_id", "pool", new LongType(),
+				"c");
+		Column ownerColumn = new Column("owner_id", "custOwner",
+				new LongType(), "c");
+		Column deptColumn = new Column("name", "deptName", new StringType(),
+				"d");
+		Column stageColumn = new Column("name", "stageName", new StringType(),
+				"s");
+		Column winRateColumn = new Column("win_rate", "winRate",
+				new StringType(), "s");
+		Column typeColumn = new Column("item_label", "typeName",
+				new StringType(), "l1");
+		Column sourceColumn = new Column("item_label", "sourceName",
+				new StringType(), "l2");
+		Column loseReasonColumn = new Column("item_label", "lose_reason",
+				new StringType(), "l3");
+		Column contactColumn = new Column("name", "contactName",
+				new StringType(), "con");
+		return new Column[] { custColumn, poolColumn, ownerColumn, deptColumn,
+				stageColumn, winRateColumn, typeColumn, sourceColumn,
+				loseReasonColumn, contactColumn };
+	}
+
+	protected String joinSql(String activityId) {
+		StringBuilder builder = new StringBuilder();
+		builder.append(" left join t_crm_cust_public_pool pool on pool.id = customer.cust_pool_id ");
+		builder.append(" LEFT JOIN t_crm_cust_collection_share_acl collAcl ON collAcl.cust_id = customer.id AND collAcl.user_id = "
+				+ SecurityUtils.getUserId());
+		builder.append(" left join t_crm_department d on d.id = customer.dept_id ");
+		builder.append(" left join t_crm_list_item l1 on l1.id = customer.source ");
+		builder.append(" left join t_crm_list_item l2 on l2.id = customer.type ");
+		builder.append(" left join t_crm_list_item l3 on l3.id = customer.industry ");
+		builder.append(" left join t_crm_list_item l4 on l4.id = customer.rating ");
+		builder.append(" left join t_crm_list_item l5 on l5.id = customer.business_type ");
+		builder.append(" left join t_crm_list_item l6 on l6.id = customer.fstatus ");
+		builder.append(" left join t_crm_activity_ref r on r.activity_id="
+				+ activityId
+				+ " and r.ref_type = 1 and r.ref_id = customer.id ");
+		return builder.toString();
+	}
+
+	protected String joinSqlOpp(long activityId, long bef) {
+		StringBuilder builder = new StringBuilder();
+		builder.append(" left join t_crm_customer c on c.id = opportunity.cust_id ");
+		builder.append(" left join t_crm_department d on d.id = opportunity.dept_id ");
+		builder.append(" left join t_crm_sales_opportunity_stage s on s.id = opportunity.stage_id ");
+		builder.append(" left join t_crm_list_item l1 on l1.id = opportunity.oppo_type_id ");
+		builder.append(" left join t_crm_list_item l2 on l2.id = opportunity.oppo_source_id ");
+		builder.append(" left join t_crm_list_item l3 on l3.id = opportunity.lose_reason ");
+		builder.append(" left join t_crm_cust_contact con on con.id = opportunity.contact_id ");
+		builder.append(" right join t_crm_activity_ref r on r.activity_id="
+				+ activityId
+				+ " and r.ref_type = 1 and r.ref_id = opportunity.cust_id"
+				+ " AND opportunity.created_date>=r.created_date AND opportunity.created_date<="
+				+ bef);
+		return builder.toString();
+	}
+
+	protected String joinSqlContract(long activityId, long bef) {
+		StringBuilder b = new StringBuilder();
+		b.append(" left join t_crm_customer customer on customer.id=contract.customerid ");
+		// b.append(
+		// " left join (select p.name,a.contract_id,p.id from t_crm_product p left join   t_crm_contract_product_acl a ");
+		// b.append(" on p.dbid = a.dbid and p.id = a.product_id  ) product on contract.id=product.contract_id ");
+		b.append(" left join t_crm_department depart on depart.id = contract.departmentid ");
+		b.append(" left join (select id,item_label as name from t_crm_list_item t1 where list_id=1005 ) item1 on item1.id = contract.type");
+		b.append(" left join (select id,item_label as name from t_crm_list_item t2 where list_id=1006 ) item2 on item2.id = contract.status ");
+		b.append(" left join (select id,item_label as name from t_crm_list_item t3 where list_id=24 ) item3 on item3.id = contract.paytype ");
+		b.append(" left join t_crm_sales_opportunity oppo on oppo.id = contract.opportunityid ");
+		b.append("  LEFT JOIN (select contractid,sum(amount) as mount  FROM  t_crm_payments group by contractid) pay on contract.id=pay.contractid ");
+		b.append(" right join t_crm_activity_ref r on r.activity_id="
+				+ activityId
+				+ " and r.ref_type = 1 and r.ref_id = contract.customerid and contract.checkstatus=5"
+				+ " and contract.created_date>=r.created_date AND contract.created_date<="
+				+ bef);
+		return b.toString();
+	}
+
+	@Override
+	public FilterItemList buildFilterItem(HttpServletRequest request) {
+		Long now = System.currentTimeMillis();
+		FilterItemList filterItemList = new FilterItemListImpl();
+
+		// 在市场活动模块内部访问的客户列表，必须带有activityId
+		String toLink = request.getParameter("toLink");
+		String activityId = request.getParameter("activityId");
+		List<Long> custIdList = activityCustomerService.getLinkedCustIds(Long
+				.parseLong(activityId));
+		if ((null != custIdList) && custIdList.size() > 0) {
+			if (StringUtils.isNotBlank(toLink)
+					&& "true".equalsIgnoreCase(toLink)) {
+				filterItemList.addFilterItem(new FilterItem(
+						"customer.owner_id", SecurityUtils.getUserId(),
+						FilterType.EQ));
+				filterItemList.addFilterItem(new FilterItem("customer.id",
+						StringUtils.join(custIdList, ","), FilterType.NIN));
+			} else {
+				filterItemList.addFilterItem(new FilterItem(
+						"customer.owner_id is not  NULL and customer.id",
+						StringUtils.join(custIdList, ","), FilterType.IN));
+			}
+		} else {
+			// 如果找不到和当前活动相关联的客户ID，传一个不可能为true的条件的值，让它查询到空结果
+			if (StringUtils.isBlank(toLink) || "false".equalsIgnoreCase(toLink)) {
+				filterItemList.addFilterItem(new FilterItem("customer.id", 0L,
+						FilterType.EQ));
+			} else {
+				filterItemList.addFilterItem(new FilterItem(
+						"customer.owner_id", SecurityUtils.getUserId(),
+						FilterType.EQ));
+			}
+		}
+		// 通过最近时长筛选
+		String lastFollowPeriod = request.getParameter("lastFollowPeriod");
+		if (StringUtils.isNotBlank(lastFollowPeriod)) {
+			// 去除可能存在的非数字字段
+			lastFollowPeriod.replaceAll("[^0-9]", "");
+			lastFollowPeriod = jdbcTemplate.queryForObject("select item_label  from t_crm_list_item where id = "+lastFollowPeriod,String.class);
+			int priodInt = Integer.parseInt(lastFollowPeriod) - 1;// 显示在前端的天数是只舍不入的，所以这里减1
+			if(priodInt>=0){
+				Long lastTimestamp = (long) (now - DAY_MS * priodInt);
+				filterItemList.addFilterItem(new FilterItem("r.last_follow_period",lastTimestamp, FilterType.LTE));
+			}
+		}
+		
+		// 通过总时长筛选
+		String followPeriod = request.getParameter("followPeriod");
+		if (StringUtils.isNotBlank(followPeriod)) {
+			// 去除可能存在的非数字字段
+			followPeriod.replaceAll("[^0-9]", "");
+			followPeriod = jdbcTemplate.queryForObject("select item_label  from t_crm_list_item where id = "+followPeriod,String.class);
+			int priodInt = Integer.parseInt(followPeriod) - 1;// 显示在前端的天数是只舍不入的，所以这里减1
+			if(priodInt>=0){
+				Long lastTimestamp = (long) (now - DAY_MS * priodInt);
+				filterItemList.addFilterItem(new FilterItem("r.follow_period",lastTimestamp, FilterType.LTE));
+			}
+		}
+
+        // 在市场活动模块内部访问的客户列表，必须带有activityId
+        if ((null != custIdList) && custIdList.size() > 0) {
+            if (StringUtils.isNotBlank(toLink) && "true".equalsIgnoreCase(toLink)) {
+                filterItemList.addFilterItem(new FilterItem("customer.owner_id",SecurityUtils.getUserId(),
+                        FilterType.EQ));
+                filterItemList.addFilterItem(new FilterItem("customer.id", StringUtils.join(custIdList, ","),
+                        FilterType.NIN));
+            } else {
+                filterItemList.addFilterItem(new FilterItem("customer.owner_id is not  NULL and customer.id", StringUtils.join(custIdList, ","),
+                        FilterType.IN));
+            }
+        } else {
+            // 如果找不到和当前活动相关联的客户ID，传一个不可能为true的条件的值，让它查询到空结果
+            if (StringUtils.isBlank(toLink) || "false".equalsIgnoreCase(toLink)) {
+                filterItemList.addFilterItem(new FilterItem("customer.id", 0L, FilterType.EQ));
+            }else {
+            	 filterItemList.addFilterItem(new FilterItem("customer.owner_id",SecurityUtils.getUserId(),
+                         FilterType.EQ));
+            }
+        }
+        /** 设置排序 */
+        String orderBy = request.getParameter("orderBy");
+        String desc = request.getParameter("desc");
+        if (StringUtils.isBlank(orderBy) || "ud".equals(orderBy)) {
+            filterItemList.addOrderItem(new OrderItem("customer.updated_date", true));
+        } else if ("cd".equals(orderBy)) {
+            filterItemList.addOrderItem(new OrderItem("customer.created_date", true));
+        } else {
+            boolean isDesc = true;
+            if (StringUtils.isNotBlank(desc)) {
+                isDesc = "1".equals(desc) ? true : false;
+            }
+            // 否则按照选定的某一列做倒序排序的查询 
+            String value = CustomerMappingFile.getMappingFiled(orderBy);
+            //跟进时长在数据库里存的是时间戳，但是排序实际按照时间戳和当前时刻的差值来的，要把倒序和正序颠倒一下
+            if("lastFollowPeriod".equalsIgnoreCase(orderBy)){
+            	value = now+ " - r.last_follow_period";
+            }else if("followPeriod".equalsIgnoreCase(orderBy)){
+            	value = now+ " - r.follow_period";
+            }
+            filterItemList.addOrderItem(new OrderItem(value, isDesc));
+        }
+
+		/** 如果通过ID直接查询，那么就不往后继续判断了 */
+		String dataId = request.getParameter("dataId");
+		if (StringUtils.isNotBlank(dataId)) {
+			filterItemList.addFilterItem(new FilterItem("customer.id", Long
+					.parseLong(dataId), FilterType.EQ));
+			return filterItemList;
+		}
+
+		String custIds = request.getParameter("ids");
+		if (StringUtils.isNotBlank(custIds)) {
+			if (custIds.contains("_")) {
+				List<String> idList = new ArrayList<String>();
+				String[] cids = custIds.split(",");
+				for (int i = 0; i < cids.length; i++) {
+					String cid = cids[i];
+					if (cid.contains("_")) {
+						String id = cid.split("_")[1];
+						idList.add(id);
+					}
+				}
+				if (!idList.isEmpty()) {
+					filterItemList.addFilterItem(new FilterItem("customer.id",
+							StringUtils.join(idList, ","), FilterType.IN));
+				}
+			} else {
+				filterItemList.addFilterItem(new FilterItem("customer.id",
+						custIds, FilterType.IN));
+			}
+			return filterItemList;
+		}
+
+		//判断管理权限，决定是否可以查询下属数据,没有管理权限时则只能查询自己的数据
+		String queryOwnerIds = request.getParameter("queryOwnerIds");//所选的查询下属数据的人员
+		Set<Long> userSet = new HashSet<Long>();
+		boolean flag = permission.isAuthorizedWithManaged(PermissionConstant.MODULE_CUSTOMER + ":" + PermissionConstant.QUERY, SecurityUtils.getUserId(), true);
+		if (flag && StringUtils.isBlank(queryOwnerIds)) {
+			userSet = departmentManager.findMyManageUsers(SecurityUtils.getUserId());
+		} else {
+			userSet.add(SecurityUtils.getUserId());
+		}
+		// 按公海客户池过滤
+		String poolId = request.getParameter("poolId");
+		if (StringUtils.isNotBlank(poolId)) {
+			if ("all".equals(poolId.toLowerCase())) { // all表示查询所有公海客户，对客户端使用
+				//是否超级管理员
+				boolean isSuperUser = CrmContext.isSuperUser();
+				Long dbId = SecurityUtils.getTenantId();
+				String queryPoolSql = " SELECT DISTINCT cust_pool_id FROM ( " + " SELECT a.cust_pool_id FROM t_crm_cust_public_pool_share_acl a WHERE "
+						+ (isSuperUser ? "a.dbid = " + dbId : "a.secure_id = " + SecurityUtils.getUserId()) + " UNION " + " SELECT p.id AS cust_pool_id FROM t_crm_cust_public_pool p WHERE "
+						+ (isSuperUser ? "p.dbid = " + dbId : "p.created_by = " + SecurityUtils.getUserId()) + " ) c ";
+				filterItemList.addFilterItem(new FilterItem("customer.cust_pool_id", queryPoolSql, FilterType.IN));
+				filterItemList.addFilterItem(new FilterItem("customer.owner_id", "", FilterType.ISNULL)); // 不显示存在负责人的公海客户
+			} else {
+				filterItemList.addFilterItem(new FilterItem("customer.cust_pool_id", Long.parseLong(poolId), FilterType.EQ));
+				if (Long.parseLong(poolId) > -1) {
+					filterItemList.addFilterItem(new FilterItem("customer.owner_id", "", FilterType.ISNULL));
+				}
+			}
+		} else {
+			String selectType = request.getParameter(SELECTTYPE_PARAM);
+			if ("3".equals(selectType)) {
+				List<Long> cusList = null;
+				Long moduleValue[] = { ItemTypeEnum.Customer.dbValue };
+				int day = 7;
+				String d = request.getParameter("day");//7天未联系客户：7天前新建且未邮件联系过的
+				if (StringUtils.isNotBlank(d)) {
+					day = Integer.parseInt(d);
+					DateTime dt = new DateTime(new Date());
+					filterItemList.addFilterItem(new FilterItem("customer.created_date", dt.minusDays(day).getMillis(), FilterType.LTE));
+				}
+
+				FilterItem filterItem = new FilterItem("", CustomerSqlUtils.getCustomerExistsSqlByType(CustomerSelectType.ALL, userSet, queryOwnerIds), FilterType.EXIST);
+				filterItemList.addFilterItem(filterItem);
+				List<Long> ids = customerManager.getCustIdFromEmail(day);
+
+				if (!ids.isEmpty()) {//7天内邮件联系过的
+					FilterItem emailfilterItem = new FilterItem("customer.id", StringUtils.join(ids, ","), FilterType.NIN);
+					filterItemList.addFilterItem(emailfilterItem);
+				}
+
+				try {
+					cusList = dynamicManager.getSendDynamicIdList(moduleValue, -day);
+				} catch (ParseException e) {
+					logger.error("客户" + day + "天未联系日期转换错误了！", e);
+				}
+
+				//7天内动态跟进过的
+				if (cusList != null && cusList.size() > 0) {
+					FilterItem emailfilterItem = new FilterItem("customer.id", StringUtils.join(cusList, ","), FilterType.NIN);
+					filterItemList.addFilterItem(emailfilterItem);
+				}
+
+			} else {
+				CustomerSelectType custScope = CustomerSelectType.getByType(selectType);
+				if(StringUtils.isNotBlank(queryOwnerIds)){
+					FilterItem filterItem = new FilterItem("", CustomerSqlUtils.getCustomerExistsSqlByType(custScope, userSet, StringUtils.isBlank(queryOwnerIds) ? null : queryOwnerIds), FilterType.EXIST);
+					filterItemList.addFilterItem(filterItem);
+				}else if (ActivityRole.RELATED.equals(activityManager.getManagerInActivityRole(Long.parseLong(activityId), userSet))) {
+					FilterItem filterItem = new FilterItem("",CustomerSqlUtils.getCustomerExistsSqlByType(custScope, userSet, StringUtils.isBlank(queryOwnerIds) ? null: queryOwnerIds),FilterType.EXIST);
+					filterItemList.addFilterItem(filterItem);
+				}
+
+			}
+		}
+		
+		// 按更新时间过滤
+		Long sTime = null;
+		Long eTime = null;
+		String time = request.getParameter("time");
+		if (StringUtils.isNotBlank(time)) {
+			Date startTime = CrmDateUtils.getDateByType(time, true);
+			sTime = startTime.getTime();
+			Date endTime = CrmDateUtils.getDateByType(time, false);
+			eTime = endTime.getTime();
+		} else {
+			String startTimeStr = request.getParameter("startTime");
+			String endTimeStr = request.getParameter("endTime");
+			if (StringUtils.isNotBlank(startTimeStr)) {
+				try {
+					SimpleDateFormat formater = new SimpleDateFormat(
+							"yyyy-MM-dd HH:mm:ss");
+					Date startTime = formater.parse(startTimeStr + " 00:00:00");
+					sTime = startTime.getTime();
+				} catch (ParseException e) {
+					sTime = null;
+
+				}
+			}
+			if (StringUtils.isNotBlank(endTimeStr)) {
+				try {
+					SimpleDateFormat formater = new SimpleDateFormat(
+							"yyyy-MM-dd HH:mm:ss");
+					Date endTime = formater.parse(endTimeStr + " 23:59:59");
+					eTime = endTime.getTime();
+				} catch (ParseException e) {
+					eTime = null;
+				}
+			}
+		}
+		if (sTime != null) {
+			filterItemList.addFilterItem(new FilterItem(
+					"customer.updated_date", sTime, FilterType.GTE));
+		}
+		if (eTime != null) {
+			filterItemList.addFilterItem(new FilterItem(
+					"customer.updated_date", eTime, FilterType.LTE));
+		}
+		// 按名称过滤
+		String name = request.getParameter("name");
+		if (StringUtils.isNotBlank(name)) {
+			if (name.indexOf("%") >= 0) {
+				name = name.replaceAll("%", "\\\\%");
+			}
+			if (name.indexOf("'") >= 0) {
+				name = name.replaceAll("'", "\\\\'");
+			}
+			filterItemList.addFilterItem(new FilterItem("customer.name", name,
+					FilterType.LIKE));
+		}
+		// 按类型过滤
+		String typeVaLue = request.getParameter("type");
+		if (StringUtils.isNotBlank(typeVaLue)) {
+			filterItemList.addFilterItem(new FilterItem("customer.type",
+					typeVaLue, FilterType.IN));
+		}
+		// 按等级过滤
+		String rating = request.getParameter("rating");
+		if (StringUtils.isNotBlank(rating)) {
+			filterItemList.addFilterItem(new FilterItem("customer.rating",
+					rating, FilterType.IN));
+		}
+		// 按状态过滤
+		String fstatus = request.getParameter("fstatus");
+		if (StringUtils.isNotBlank(fstatus)) {
+			filterItemList.addFilterItem(new FilterItem("customer.fstatus",
+					fstatus, FilterType.IN));
+		}
+		// 按客户来源过滤
+		// String source = request.getParameter("source");
+		// if (StringUtils.isNotBlank(source)) {
+		// filterItemList.addFilterItem(new FilterItem("customer.source",
+		// Long.parseLong(source), FilterType.EQ));
+		// }
+
+		// 按标签过滤
+		String tagId = request.getParameter("tagId");
+		if (StringUtils.isNotBlank(tagId)) {
+
+			Collection<Long> itemIds = bizRelTagManager.getItemIdByTagId(
+					ItemTypeEnum.Customer.name(), Long.parseLong(tagId),
+					SecurityUtils.getUserId());
+			if (CollectionUtils.isNotEmpty(itemIds)) {
+				filterItemList.addFilterItem(new FilterItem("customer.id",
+						StringUtils.join(itemIds, ","), FilterType.IN));
+			} else {
+				filterItemList.addFilterItem(new FilterItem("customer.id",
+						null, FilterType.EQ));
+			}
+		}
+		// 按是否有商机过滤
+		String hasOpp = request.getParameter("hasOpp");
+		if (StringUtils.isNotBlank(hasOpp)) {
+			if ("1".equals(hasOpp)) {
+				filterItemList
+						.addFilterItem(new FilterItem(
+								"",
+								" select cust_id from t_crm_sales_opportunity where cust_id = customer.id ",
+								FilterType.EXIST));
+			} else {
+				filterItemList
+						.addFilterItem(new FilterItem(
+								"",
+								" select cust_id from t_crm_sales_opportunity where cust_id = customer.id ",
+								FilterType.NEXIST));
+			}
+		}
+
+		FilterItemList fi = getFilters(request);
+		if (fi != null && fi.filerItemSize() > 0) {
+			for (int i = 0; i < fi.filerItemSize(); i++) {
+				filterItemList.addFilterItem(fi.getFilterItem(i));
+			}
+		}
+
+		return filterItemList;
+	}
+
+	private FilterItemList getFilters(HttpServletRequest request) {
+		FilterItemList filterItemList = new FilterItemListImpl();
+		Long sTime = null;
+		Long eTime = null;
+		SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		// 统一封装处理筛选条件
+		String filterStr = request.getParameter("filters");
+		if (!StringUtils.isBlank(filterStr)) {
+			List<FilterValueDTO> dtoList = JSONArray.parseArray(filterStr,
+					FilterValueDTO.class);
+			if (dtoList != null && dtoList.size() > 0) {
+				for (FilterValueDTO dto : dtoList) {
+					FilterType ft = FilterType.IN;
+					String filterFile = dto.getFilter();
+					String typeField = dto.getType();
+					if ("text".equals(typeField)) {
+						ft = FilterType.LIKE;
+					} else if ("combobox".equals(typeField)) {
+						ft = FilterType.IN;
+					}
+					// 取客户对应的数据库字段
+					String value = CustomerMappingFile
+							.getMappingFiled(filterFile);
+
+                    String values = dto.getValues();
+					if ("lastFollowPeriod".equalsIgnoreCase(filterFile)) {
+						if (StringUtils.isNotBlank(values)) {
+							// 去除可能存在的非数字字段
+							values = values.replaceAll("[^0-9]", "");
+							values = jdbcTemplate.queryForObject("select item_label  from t_crm_list_item where id = "+values,String.class);
+							Long now = System.currentTimeMillis();
+							int priodInt = Integer.parseInt(values) - 1;// 显示在前端的天数是只舍不入的，所以这里减1
+							if(priodInt>=0){
+							Long lastTimestamp = (long) (now - DAY_MS
+									* priodInt);
+							filterItemList.addFilterItem(new FilterItem(
+									"r.last_follow_period", lastTimestamp,
+									FilterType.LTE));
+							}
+
+						}
+						continue;
+					}else if("followPeriod".equalsIgnoreCase(filterFile)){
+						if (StringUtils.isNotBlank(values)) {
+							// 去除可能存在的非数字字段
+							values = values.replaceAll("[^0-9]", "");
+							values = jdbcTemplate.queryForObject("select item_label  from t_crm_list_item where id = "+values,String.class);
+							Long now = System.currentTimeMillis();
+							int priodInt = Integer.parseInt(values) - 1;// 显示在前端的天数是只舍不入的，所以这里减1
+							if(priodInt>=0){
+							Long lastTimestamp = (long) (now - DAY_MS
+									* priodInt);
+							filterItemList.addFilterItem(new FilterItem(
+									"r.follow_period", lastTimestamp,
+									FilterType.LTE));
+							}
+
+						}
+						continue;
+					}
+					// 初始化接收到的值的变量
+					String[] valu = new String[1];
+					// 如果是创建时间和更新时间，要特殊处理一下本周本月,如果是自定义类型的时间，只能筛选时间段
+					if ("createdDate".equals(filterFile)
+							|| "updatedDate".equals(filterFile)
+							|| "date".equals(typeField)
+							|| "dt".equals(typeField)) {
+
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = new String[2];
+							valu = dto.getValues().split(",");
+							if (StringUtils.isNotBlank(valu[0])) {
+								try {
+
+									Date startTime = null;
+									if ("dt".equals(typeField)) {
+										startTime = formater.parse(valu[0]
+												+ ":00");
+									} else {
+										startTime = formater.parse(valu[0]
+												+ " 00:00:00");
+									}
+
+									sTime = startTime.getTime();
+
+								} catch (ParseException e) {
+									sTime = null;
+								}
+							}
+							if (valu.length > 1) {
+								if (StringUtils.isNotBlank(valu[1])) {
+									try {
+
+										Date endTime = null;
+										if ("dt".equals(typeField)) {
+											endTime = formater.parse(valu[1]
+													+ ":59");
+										} else {
+											endTime = formater.parse(valu[1]
+													+ " 23:59:59");
+										}
+
+										eTime = endTime.getTime();
+									} catch (ParseException e) {
+										eTime = null;
+									}
+								}
+							}
+						} else {
+							if ("thizWeek".equals(dto.getValues())
+									|| "thizMonth".equals(dto.getValues())) {
+								Date startTime = CrmDateUtils.getDateByType(
+										dto.getValues(), true);
+								sTime = startTime.getTime();
+								Date endTime = CrmDateUtils.getDateByType(
+										dto.getValues(), false);
+								eTime = endTime.getTime();
+							}
+						}
+						valu = new String[2];
+						if (sTime != null) {
+							if ("dt".equals(typeField)
+									|| "date".equals(typeField)) {
+								valu[0] = " UNIX_TIMESTAMP(" + value
+										+ ")*1000 ";
+								filterItemList.addFilterItem(new FilterItem(
+										valu[0], sTime, FilterType.GTE));
+							} else {
+								filterItemList.addFilterItem(new FilterItem(
+										value, sTime, FilterType.GTE));
+							}
+
+						}
+						if (eTime != null) {
+							if ("dt".equals(typeField)
+									|| "date".equals(typeField)) {
+								valu[1] = " UNIX_TIMESTAMP(" + value
+										+ ")*1000 ";
+								filterItemList.addFilterItem(new FilterItem(
+										valu[1], eTime, FilterType.LTE));
+							} else {
+								filterItemList.addFilterItem(new FilterItem(
+										value, eTime, FilterType.LTE));
+							}
+
+						}
+						// 如果是筛选地区，就是筛选省市区/县的意思
+					} else if ("district".equals(filterFile)) {
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = dto.getValues().split(",");
+						}
+						String[] column = StringUtils.split(value, ",");
+						for (int i = 0; i < 3; i++) {
+							if (StringUtils.isNotBlank(valu[i])) {
+								filterItemList.addFilterItem(new FilterItem(
+										column[i], valu[i], FilterType.LIKE));
+							}
+						}
+					} else if ("fdate".equals(typeField)
+							|| "fdt".equals(typeField)
+							|| "ftime".equals(typeField)) {
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = dto.getValues().split(",");
+						}
+						if (StringUtils.isNotBlank(valu[0])) {
+							filterItemList.addFilterItem(new FilterItem(value,
+									valu[0], FilterType.GTE));
+						}
+						if (valu.length > 1) {
+							if (StringUtils.isNotBlank(valu[1])) {
+								filterItemList.addFilterItem(new FilterItem(
+										value, valu[1], FilterType.LT));
+							}
+						}
+					} else {
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = dto.getValues().split(",");
+						} else {
+							valu[0] = dto.getValues();
+							if (valu[0].indexOf("%") >= 0) {
+								valu[0] = valu[0].replaceAll("%", "\\\\%");
+							}
+							if (valu[0].indexOf("'") >= 0) {
+								valu[0] = valu[0].replaceAll("'", "");
+							}
+							if (valu[0].indexOf("‘") >= 0) {
+								valu[0] = valu[0].replaceAll("‘", "");
+							}
+							if (valu[0].indexOf("’") >= 0) {
+								valu[0] = valu[0].replaceAll("‘", "");
+							}
+							if (valu[0].indexOf("“") >= 0) {
+								valu[0] = valu[0].replaceAll("“", "");
+							}
+							if (valu[0].indexOf("”") >= 0) {
+								valu[0] = valu[0].replaceAll("”", "");
+							}
+							if (valu[0].indexOf(",") >= 0) {
+								valu[0] = valu[0].replaceAll(",", "");
+							}
+							if (valu[0].indexOf("(") >= 0) {
+								valu[0] = valu[0].replaceAll("\\(", "");
+							}
+							if (valu[0].indexOf(")") >= 0) {
+								valu[0] = valu[0].replaceAll("\\)", "");
+							}
+							if (valu[0].indexOf("*") >= 0) {
+								valu[0] = valu[0].replaceAll("*", "");
+							}
+						}
+
+						if (ft == FilterType.LIKE) {
+							filterItemList.addFilterItem(new FilterItem(value,
+									"" + StringUtils.join(valu, ",") + "", ft));
+						} else {
+
+							filterItemList.addFilterItem(new FilterItem(value,
+									"'" + StringUtils.join(valu, "','") + "'",
+									ft));
+						}
+					}
+				}
+			}
+		}
+
+		return filterItemList;
+	}
+
+	@Override
+	public String[] getNotDisplayFields(boolean isCreate) {
+
+		String[] commonHideFields = new String[] { "owner_id", "parent_id",
+				"public_type", "pictureLocation", "valid", "firstContact",
+				"receive_date", "expireDate", "lastContactDate" };
+
+		/** 如果未开启公海，那么不显示客户池字段 */
+		if (!poolActivatedService.isOpen()) {
+			commonHideFields = (String[]) ArrayUtils.addAll(commonHideFields,
+					new String[] { "cust_pool" });
+		}
+
+		if (isCreate) {
+			commonHideFields = (String[]) ArrayUtils.addAll(commonHideFields,
+					new String[] { "createdDate", "createdBy", "updatedDate",
+							"updatedBy" });
+		}
+
+		return commonHideFields;
+	}
+
+	@RequestMapping("/detailView")
+	public JsonResult detailView(HttpServletRequest request) {
+		String id = request.getParameter("id");
+		boolean isCreate = (id == null);
+		Customer entity = null;
+		if (!isCreate) {
+			try{
+				permission.checkPermission(PermissionConstant.MODULE_MARKETACTIVITY+":"+PermissionConstant.ACTIVITY_DETAIL_CUSTOMER, SecurityUtils.getUserId(),false);
+			}catch(Exception e){
+				try{
+					permission.checkPermission(PermissionConstant.MODULE_CUSTOMER+":"+PermissionConstant.DETAIL, SecurityUtils.getUserId(),false);
+					Set<Long> users= activityManager.getManegerList(PermissionConstant.MODULE_CUSTOMER + ":" + PermissionConstant.QUERY);
+				    List<Long> userIds= customerManager.getCustomerAllRelUsers(Long.parseLong(id));
+					boolean isRelation=false;
+	                    for(Long userId:userIds){
+	                       if(users.contains(userId)){
+	                           isRelation=true;
+	                           break;
+	                       }
+	                   }
+	                    if(isRelation==false){
+	                        throw new AuthorizationException("您没有市场活动查看客户详情权限, 请联系管理员！");
+	                    }
+				}catch (Exception ee){
+					throw new AuthorizationException("您没有市场活动查看客户详情权限, 请联系管理员！");
+				}
+			}
+		}else{
+				permission.checkPermission(PermissionConstant.MODULE_MARKETACTIVITY+":"+PermissionConstant.ACTIVITY_DETAIL_CUSTOMER, SecurityUtils.getUserId(),false);
+		}
+		
+		Assert.notNull(Customer.class);
+		Map<String, Object> mapInfo = new HashMap<String, Object>();
+		List<DefinedFeild> definedFeilds = uiSetting
+				.getModelDefineField("t_crm_customer");
+		for (DefinedFeild ele : definedFeilds) {
+			String colFieldName = ele.getColumn_field_name();
+			if (colFieldName.equalsIgnoreCase("last_follow_period")
+					|| colFieldName.equalsIgnoreCase("follow_period")) {
+				// 最近跟进时长和总跟进时长在资料页面不许编辑，使用text类型
+				ele.setComboxid(-1L);
+				ele.setIs_updateable(false);
+				ele.setField_type("text");
+				ele.setField_type_ex("text");
+			}
+		}
+		String iosNewVersion = request.getParameter("iosNewVersion");
+
+		
+		checkNotDisplayFields(definedFeilds, isCreate);
+		if (!isCreate) {
+			entity = (Customer) customerManager.getEntity(Long.parseLong(id),
+					Customer.class);
+			entity.setTags(bizRelTagManager.getBizTagsByItemId(
+					ItemTypeEnum.Customer.name(), Long.parseLong(id),
+					SecurityUtils.getUserId()));
+			Long activityId = Long
+					.parseLong(request.getParameter("activityId"));
+			ActivityCustomerVo entityVo = Model2ActivityCustomerVo(entity,
+					activityId);
+			mapInfo.put("entity", entityVo);
+			if (this.isMobileRequest()) {
+				mapInfo.put("tags", bizRelTagManager.getBizTagsByItemId(
+						ItemTypeEnum.Customer.name(), Long.parseLong(id),
+						SecurityUtils.getUserId()));
+				entityVo.setTags(null);
+				mapInfo.put("entity", entityVo);
+			}
+			if (this.isMobileRequest()) {
+				mapInfo.put("salesTeamNum", new Integer(0));
+			}
+		}
+
+		// 手动配置必填项
+		String mappingName = request.getParameter("mp");
+		if (StringUtils.isNotBlank(mappingName)) {
+			for (DefinedFeild field : definedFeilds) {
+				if (mappingName.equals(field.getMapping_field_name())) {
+					field.setIs_mandatory(true);
+					break;
+				}
+			}
+		}
+		if (definedFeilds != null) {
+			for (DefinedFeild field : definedFeilds) {
+				if (field.getMapping_field_name().equals("name")) {
+					field.setCheckRepeat(true);
+					break;
+				}
+			}
+		}
+		if (this.isMobileRequest()) {
+			List<DefinedFeild> splitField = uiSetting
+					.getSplitLineField("t_crm_customer");
+			if (splitField != null && splitField.size() > 0) {
+				definedFeilds.removeAll(splitField);
+			}
+			mapInfo.put("items", definedFeilds);
+		} else {
+			mapInfo.put("items", definedFeilds);
+		}
+		// 兼容老版本的移动端的解析
+		if (StringUtils.isNotBlank(iosNewVersion)) {
+			Boolean iosNew = "1".equals(iosNewVersion) ? true : false;
+			if (iosNew) {
+				return generateJsonResult(mapInfo);
+			} else {
+				String msg = generateJsonResult(mapInfo).toJsonString();
+
+				msg = msg.replaceAll(":5010", ":\"未合作\"");
+
+				msg = msg.replaceAll(":5011", ":\"正在合作\"");
+
+				msg = msg.replaceAll(":5012", ":\"曾经合作\"");
+
+				JSONObject o = JSONObject.parseObject(msg);
+				Object jso = o.getJSONObject("data");
+				return generateJsonResult(jso);
+			}
+		}
+		return generateJsonResult(mapInfo);
+	}
+
+
+	private ActivityCustomerVo Model2ActivityCustomerVo(Customer entity,
+			Long activityId) {
+		Assert.notNull(entity);
+		ActivityCustomerVo vo = new ActivityCustomerVo();
+		BeanUtils.copyProperties(entity, vo);
+		Map<String, Object> map = activityManager.qryRef(entity.getId(),
+				activityId, 1);
+		if (map != null) {
+			entity.setLastFollowPeriod((Long) map.get("last_follow_period"));
+			entity.setFollowPeriod((Long) map.get("follow_period"));
+		} else {
+			entity.setLastFollowPeriod(null);
+			entity.setFollowPeriod(null);
+		}
+		// 补充一些字段的实际值
+		Long now = System.currentTimeMillis();
+
+		Long followPeriod = entity.getFollowPeriod();
+		if (null == followPeriod) {
+			vo.setFollowPeriodVal(0 + "天");
+		} else {
+			Long followPeriodVal = (long) Math.ceil((now - followPeriod)
+					/ DAY_MS);
+			vo.setFollowPeriodVal(followPeriodVal + "天");
+		}
+		Long lastFollowPeriod = entity.getLastFollowPeriod();
+		if (null == lastFollowPeriod) {
+			vo.setLastFollowPeriodVal(0 + "天");
+			vo.setActivityRef(false);
+		} else {
+			Long followPeriodVal = (long) Math.ceil((now - lastFollowPeriod)
+					/ DAY_MS);
+			vo.setLastFollowPeriodVal(followPeriodVal + "天");
+			vo.setActivityRef(true);
+		}
+
+		return vo;
+	}
+
+	@RequestMapping("/transfer")
+	@RequiresPermissions(PermissionConstant.ACTIVITY_TRANSFER_CUSTOMER)
+	public JsonResult transfer(@RequestParam("customerId") String customerId,
+			@RequestParam("ownerId") Long userId, HttpServletRequest request) {
+		// moveCheck(customerId, userId);
+
+		String[] custIds = StringUtils.split(customerId, ",");
+
+		// 对于具有所有者的线索：在再次分配时必须具有线索模块的转移权限，才可以再次分配线索
+		Long activityId = Long.parseLong(request.getParameter("activityId"));
+		Activity activity = (Activity) activityManager.getEntity(activityId,
+				Activity.class);
+		 activityManager.checkPermission(PermissionConstant.MODULE_MARKETACTIVITY+":"+ PermissionConstant.UPDATE, SecurityUtils.getUserId(), activity.getId());
+		Long operateEffect = activity.getBenefitsEndDate();
+		if (System.currentTimeMillis() > operateEffect) {
+			ExceptionHandler.throwException("超过效益结束时间");
+		}
+
+		List<Long> cids = new ArrayList<Long>();
+
+		int notCooperation = 0;
+		for (int i = 0; i < custIds.length; i++) {
+			Long id = Long.parseLong(custIds[i]);
+			Customer cust = customerManager.getCustomerById(id);
+			if (cust != null) {
+				if (!saas.framework.utils.StringUtils
+						.isEmpty(cust.getOwnerId())
+						&& cust.getOwnerId().equals(userId)) {
+					continue;
+				}
+				cids.add(id);
+				if (cust.getCooperationStatus().toString().equals("5010")) {
+					notCooperation++; // 记录未合作的客户数
+				}
+			}
+
+		}
+
+		if (notCooperation > 0) {
+			Integer num = customerManager.checkOwnerNumber(userId);
+			if (num != null) {
+				if (num < 1) {
+					return generateError(new IllegalArgumentException(
+							"转移的目标用户可负责的客户数已达上限，无法转移"));
+				} else if (num < notCooperation) {
+					return generateError(new IllegalArgumentException("最多可转移"
+							+ num + "个未合作客户，请重新选择"));
+				}
+			}
+		}
+
+		Long[] ids = cids.toArray(new Long[cids.size()]);
+		String msg = customerManager.migrateCustomer(ids, userId);
+		if (StringUtils.isNotBlank(msg)) {
+			String errorMsg = "客户【" + msg + "】为被共享的公海客户，无法转移";
+			return generateError(new IllegalArgumentException(errorMsg));
+		}
+		// UserPhotoVO userPhotoVO = userInfoManager.getById(userId);
+		// 操作日志
+		// String description = SecurityUtils.getCurrentUser().getRealName() +
+		// "将客户【" + customerId + "】转移给【"
+		// + userPhotoVO.getRealName() + "】";
+		return generateJsonResult();
+	}
+
+	@RequestMapping("/linkActivity")
+	@RequiresPermissions(PermissionConstant.ACTIVITY_ASSOCIATED_CUSTOMER)
+	public JsonResult linkActivity(
+			@RequestParam("customerIds") String customerIds,
+			@RequestParam("activityId") Long activityId,
+			HttpServletRequest request) {
+
+		Activity activity = (Activity) activityManager.getEntity(activityId,
+				Activity.class);
+		 activityManager.checkPermission(PermissionConstant.MODULE_MARKETACTIVITY+":"+ PermissionConstant.UPDATE, SecurityUtils.getUserId(), activity.getId());
+		// ActivityUtil.checkBenefitsEnd(activity,
+		// PermissionConstant.ACTIVITY_ASSOCIATED_CUSTOMER);
+
+		// 添加市场活动-客户的关联
+		String[] ids = customerIds.split(",");
+		for (String customerId : ids) {
+			Long now = System.currentTimeMillis();
+			Customer cust = customerManager.getCustomerById(Long
+					.parseLong(customerId.trim()));
+			cust.setFollowPeriod(now);
+			cust.setLastFollowPeriod(now);
+			customerManager.save(cust);
+			activityManager.saveActivityRef(Long.parseLong(customerId.trim()),
+					activityId, 1);
+			activityManager.saveCustDisLog(Long.parseLong(customerId.trim()),
+					activityId, cust.getOwnerId());
+		}
+		return generateJsonResult();
+	}
+
+	@RequestMapping("/delLink")
+	@RequiresPermissions(PermissionConstant.ACTIVITY_DELETE_CUSTOMER)
+	public JsonResult delLink(@RequestParam("customerIds") String customerIds,
+			@RequestParam("activityId") Long activityId,
+			HttpServletRequest request) {
+	    activityManager.checkPermission(PermissionConstant.MODULE_MARKETACTIVITY+":"+ PermissionConstant.UPDATE, SecurityUtils.getUserId(), activityId);
+		// 不是物理删除，只是解除关联
+		String[] ids = customerIds.split(",");
+		// 判断有没超过操作期
+		// Activity activity = (Activity) activityManager.getEntity(activityId,
+		// Activity.class);
+		// Integer operateEffect = activity.getOperateEffectiveDay();
+		// for (String customerId : ids) {
+		// if (operateEffect != null
+		// && activityManager.isOperateCustomer(activityId,
+		// Long.parseLong(customerId.trim()),
+		// activity.getOperateEffectiveDay()) == false) {
+		// ExceptionHandler.throwException("超过有效期");
+		// }
+		// }
+		  Set<Long> userSet = activityManager.getManegerList(PermissionConstant.MODULE_MARKETACTIVITY + ":"
+	                + PermissionConstant.UPDATE);
+	        ActivityRole activityRole=	activityManager.getManagerInActivityRole(activityId, userSet);
+			
+		for (String customerId : ids) {
+			 if(ActivityRole.RELATED.equals(activityRole)){
+		        	Customer customer=(Customer) activityManager.getEntity(Long.parseLong(customerId.trim()), Customer.class);
+		        	if(SecurityUtils.getUserId()!=customer.getOwnerId()){
+		        	 throw new AuthorizationException("您没有该市场活动管理权限,请联系管理员！");
+		        	}
+		        }
+			activityManager.delActivityRef(Long.parseLong(customerId.trim()),
+					activityId, 1);
+			activityManager.delCustDisLog(Long.parseLong(customerId.trim()),
+					activityId);
+		}
+		return generateJsonResult();
+	}
+
+	// 构建商机查询过滤器
+	public FilterItemList buildOppoFilterItem(HttpServletRequest request) {
+
+		FilterItemList filterItemList = new FilterItemListImpl();
+
+		/** 设置排序 */
+		String orderBy = request.getParameter("orderBy");
+		String desc = request.getParameter("desc");
+		if (StringUtils.isBlank(orderBy) || "ud".equals(orderBy)) {
+			filterItemList.addOrderItem(new OrderItem(
+					"opportunity.updated_date", true));
+		} else if ("cd".equals(orderBy)) {
+			filterItemList.addOrderItem(new OrderItem(
+					"opportunity.created_date", true));
+		} else {
+			boolean isDesc = true;
+			if (StringUtils.isNotBlank(desc)) {
+				isDesc = "1".equals(desc) ? true : false;
+			}
+			String value = OpportunityMappingFile.getMappingFiled(orderBy);
+			filterItemList.addOrderItem(new OrderItem(value, isDesc));
+		}
+		// 在市场活动模块内部访问的客户列表，必须带有activityId
+		String activityId = request.getParameter("activityId");
+		List<Long> custIdList = activityCustomerService.getLinkedCustIds(Long
+				.parseLong(activityId));
+		if ((null != custIdList) && custIdList.size() > 0) {
+			filterItemList.addFilterItem(new FilterItem("c.id", StringUtils
+					.join(custIdList, ","), FilterType.IN));
+		} else {
+			// 如果找不到和当前活动相关联的客户ID，传一个不可能为true的条件的值，让它查询到空结果
+			filterItemList.addFilterItem(new FilterItem("c.id", 0L,
+					FilterType.EQ));
+		}
+
+		// 判断管理权限，决定是否可以查询下属数据,没有管理权限时则只能查询自己的数据
+		String queryOwnerIds = request.getParameter("queryOwnerIds");// 所选的查询下属数据的人员
+		Set<Long> userSet = activityManager
+				.getManegerList(PermissionConstant.MODULE_OPPORTUNITY + ":"
+						+ PermissionConstant.QUERY);
+		// 按选择类型过滤
+		String selectType = request.getParameter(SELECTTYPE_PARAM);
+		OpportunitySelectType oppoScope = OpportunitySelectType
+				.getByType(selectType);
+		if (ActivityRole.RELATED.equals(activityManager
+				.getManagerInActivityRole(Long.parseLong(activityId), userSet))) {
+			FilterItem filterItem = new FilterItem("",
+					OpportunitySqlUtils.getCustomerExistsSqlByType(oppoScope,
+							userSet, queryOwnerIds), FilterType.EXIST);
+			filterItemList.addFilterItem(filterItem);
+		}
+		// 按名称过滤
+		String name = request.getParameter("name");
+		if (StringUtils.isNotBlank(name)) {
+			if (name.indexOf("%") >= 0) {
+				name = name.replaceAll("%", "\\\\%");
+			}
+			filterItemList.addFilterItem(new FilterItem("opportunity.name",
+					name, FilterType.LIKE));
+		}
+
+		// 按销售阶段过滤
+		String stageId = request.getParameter("stageId");
+		if (StringUtils.isNotBlank(stageId)) {
+			filterItemList.addFilterItem(new FilterItem("opportunity.stage_id",
+					Long.parseLong(stageId), FilterType.IN));
+		}
+
+		// 按照创建时间过滤
+		// 客户的活动开始时间与效益结束时间之间（含当天）所对应产生的商机、合同
+		Activity activity = (Activity) activityManager.getEntity(
+				Long.parseLong(activityId), Activity.class);
+		// filterItemList.addFilterItem(new
+		// FilterItem("opportunity.created_date", activity.getCreatedDate(),
+		// FilterType.GTE));
+		// filterItemList.addFilterItem(new
+		// FilterItem("opportunity.created_date", activity.getBenefitsEndDate(),
+		// FilterType.LTE));
+		Long sTime = null;
+		Long eTime = null;
+		String time = request.getParameter("time");
+		if (StringUtils.isNotBlank(time)) {
+			Date startTime = CrmDateUtils.getDateByType(time, true);
+			sTime = startTime.getTime();
+			Date endTime = CrmDateUtils.getDateByType(time, false);
+			eTime = endTime.getTime();
+		} else {
+			String startTimeStr = request.getParameter("startTime");
+			String endTimeStr = request.getParameter("endTime");
+			if (StringUtils.isNotBlank(startTimeStr)) {
+				try {
+					SimpleDateFormat formater = new SimpleDateFormat(
+							"yyyy-MM-dd HH:mm:ss");
+					Date startTime = formater.parse(startTimeStr + " 00:00:00");
+					sTime = startTime.getTime();
+				} catch (ParseException e) {
+					sTime = null;
+
+				}
+			}
+			if (StringUtils.isNotBlank(endTimeStr)) {
+				try {
+					SimpleDateFormat formater = new SimpleDateFormat(
+							"yyyy-MM-dd HH:mm:ss");
+					Date endTime = formater.parse(endTimeStr + " 23:59:59");
+					eTime = endTime.getTime();
+				} catch (ParseException e) {
+					eTime = null;
+				}
+			}
+		}
+		if (sTime != null) {
+			filterItemList.addFilterItem(new FilterItem(
+					"opportunity.updated_date", sTime, FilterType.GTE));
+		}
+		if (eTime != null) {
+			filterItemList.addFilterItem(new FilterItem(
+					"opportunity.updated_date", eTime, FilterType.LTE));
+		}
+
+		FilterItemList fl = getOppoFilters(request);
+		if (fl != null && fl.filerItemSize() > 0) {
+			for (int i = 0; i < fl.filerItemSize(); i++) {
+				filterItemList.addFilterItem(fl.getFilterItem(i));
+			}
+		}
+
+		return filterItemList;
+	}
+
+	private FilterItemList getOppoFilters(HttpServletRequest request) {
+
+		FilterItemList filterItemList = new FilterItemListImpl();
+		Long sTime = null;
+		Long eTime = null;
+		Double samount = null;
+		Double eamount = null;
+		// 统一封装处理筛选条件
+		String filterStr = request.getParameter("filters");
+		if (!StringUtils.isBlank(filterStr)) {
+			List<FilterValueDTO> dtoList = JSONArray.parseArray(filterStr,
+					FilterValueDTO.class);
+			if (dtoList != null && dtoList.size() > 0) {
+				for (FilterValueDTO dto : dtoList) {
+					FilterType ft = FilterType.IN;
+					String filterFile = dto.getFilter();
+					String typeField = dto.getType();
+					// String values = dto.getValues();
+
+					if ("text".equals(typeField)) {
+						ft = FilterType.LIKE;
+					} else if ("combobox".equals(typeField)) {
+						ft = FilterType.IN;
+					} else if ("autocomplete".equals(typeField)) {
+						ft = FilterType.LIKE;
+
+					}
+					// 取客户对应的数据库字段
+					String value = OpportunityMappingFile
+							.getMappingFiled(filterFile);
+
+					// 初始化接收到的值的变量
+					String[] valu = new String[1];
+					// 如果是创建时间和更新时间，要特殊处理一下本周本月,如果是自定义类型的时间，只能筛选时间段
+					if ("createdDate".equals(filterFile)
+							|| "updatedDate".equals(filterFile)
+							|| "date".equals(typeField)
+							|| "dt".equals(typeField)) {
+
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = new String[2];
+							valu = dto.getValues().split(",");
+							if (StringUtils.isNotBlank(valu[0])) {
+								try {
+									SimpleDateFormat formater = new SimpleDateFormat(
+											"yyyy-MM-dd HH:mm:ss");
+									Date startTime = null;
+									if ("dt".equals(typeField)) {
+										startTime = formater.parse(valu[0]
+												+ ":00");
+									} else {
+										startTime = formater.parse(valu[0]
+												+ " 00:00:00");
+									}
+									sTime = startTime.getTime();
+								} catch (ParseException e) {
+									sTime = null;
+								}
+							}
+							if (valu.length > 1) {
+								if (StringUtils.isNotBlank(valu[1])) {
+									try {
+										SimpleDateFormat formater = new SimpleDateFormat(
+												"yyyy-MM-dd HH:mm:ss");
+										Date endTime = null;
+										if ("dt".equals(typeField)) {
+											endTime = formater.parse(valu[1]
+													+ ":59");
+										} else {
+											endTime = formater.parse(valu[1]
+													+ " 23:59:59");
+										}
+										eTime = endTime.getTime();
+									} catch (ParseException e) {
+										eTime = null;
+									}
+								}
+							}
+						} else {
+							if ("thizWeek".equals(dto.getValues())
+									|| "thizMonth".equals(dto.getValues())) {
+								Date startTime = CrmDateUtils.getDateByType(
+										dto.getValues(), true);
+								sTime = startTime.getTime();
+								Date endTime = CrmDateUtils.getDateByType(
+										dto.getValues(), false);
+								eTime = endTime.getTime();
+							}
+						}
+						valu = new String[2];
+						if (sTime != null) {
+							if ("dt".equals(typeField)
+									|| "date".equals(typeField)) {
+								if ("finishDate".equals(filterFile)) {
+									filterItemList
+											.addFilterItem(new FilterItem(
+													value, sTime,
+													FilterType.GTE));
+								} else {
+									valu[0] = " UNIX_TIMESTAMP(" + value
+											+ ")*1000 ";
+									filterItemList
+											.addFilterItem(new FilterItem(
+													valu[0], sTime,
+													FilterType.GTE));
+								}
+							} else {
+								filterItemList.addFilterItem(new FilterItem(
+										value, sTime, FilterType.GTE));
+							}
+
+						}
+						if (eTime != null) {
+							if ("dt".equals(typeField)
+									|| "date".equals(typeField)) {
+								if ("finishDate".equals(filterFile)) {
+									filterItemList
+											.addFilterItem(new FilterItem(
+													value, eTime,
+													FilterType.LTE));
+								} else {
+									valu[1] = " UNIX_TIMESTAMP(" + value
+											+ ")*1000 ";
+									filterItemList
+											.addFilterItem(new FilterItem(
+													valu[1], eTime,
+													FilterType.LTE));
+								}
+
+							} else {
+								filterItemList.addFilterItem(new FilterItem(
+										value, eTime, FilterType.LTE));
+							}
+
+						}
+					}
+					if ("salesAmount".equals(filterFile)) {
+						valu = dto.getValues().split(",");
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = new String[2];
+							valu = dto.getValues().split(",");
+							if (valu[0] != null) {
+								try {
+									samount = Double.parseDouble(valu[0]);
+								} catch (Exception e) {
+									samount = Double.MIN_VALUE;
+									;
+								}
+							}
+
+							try {
+								if (valu[1] != null) {
+									eamount = Double.parseDouble(valu[1]);
+								}
+							} catch (Exception e) {
+								eamount = Double.MAX_VALUE;
+							}
+							if (samount != null) {
+								filterItemList.addFilterItem(new FilterItem(
+										value, samount, FilterType.GTE));
+							}
+							if (eamount != null) {
+								filterItemList.addFilterItem(new FilterItem(
+										value, eamount, FilterType.LTE));
+							}
+						}
+					} else if ("fdate".equals(typeField)
+							|| "fdt".equals(typeField)
+							|| "ftime".equals(typeField)) {
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = dto.getValues().split(",");
+						}
+						if (StringUtils.isNotBlank(valu[0])) {
+							filterItemList.addFilterItem(new FilterItem(value,
+									valu[0], FilterType.GTE));
+						}
+						if (valu.length > 1) {
+							if (StringUtils.isNotBlank(valu[1])) {
+								filterItemList.addFilterItem(new FilterItem(
+										value, valu[1], FilterType.LT));
+							}
+						}
+					} else {
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = dto.getValues().split(",");
+						} else {
+							valu[0] = dto.getValues();
+							if (valu[0].indexOf("%") >= 0) {
+								valu[0] = valu[0].replaceAll("%", "\\\\%");
+							}
+							if (valu[0].indexOf("'") >= 0) {
+								valu[0] = valu[0].replaceAll("'", "");
+							}
+							if (valu[0].indexOf("‘") >= 0) {
+								valu[0] = valu[0].replaceAll("‘", "");
+							}
+							if (valu[0].indexOf("’") >= 0) {
+								valu[0] = valu[0].replaceAll("‘", "");
+							}
+							if (valu[0].indexOf("“") >= 0) {
+								valu[0] = valu[0].replaceAll("“", "");
+							}
+							if (valu[0].indexOf("”") >= 0) {
+								valu[0] = valu[0].replaceAll("”", "");
+							}
+							if (valu[0].indexOf(",") >= 0) {
+								valu[0] = valu[0].replaceAll(",", "");
+							}
+							if (valu[0].indexOf("(") >= 0) {
+								valu[0] = valu[0].replaceAll("\\(", "");
+							}
+							if (valu[0].indexOf(")") >= 0) {
+								valu[0] = valu[0].replaceAll("\\)", "");
+							}
+							if (valu[0].indexOf("*") >= 0) {
+								valu[0] = valu[0].replaceAll("*", "");
+							}
+						}
+						if ("salesAmount".equals(filterFile)) {
+							valu = dto.getValues().split(",");
+							if (dto.getValues().indexOf(",") >= 0) {
+								valu = new String[2];
+								valu = dto.getValues().split(",");
+								if (valu[1] != null && valu[2] != null) {
+									filterItemList
+											.addFilterItem(new FilterItem(
+													value, valu,
+													FilterType.BETWEEN));
+								}
+								if (valu[1] != null && valu[2] == null) {
+									filterItemList
+											.addFilterItem(new FilterItem(
+													value, valu, FilterType.GTE));
+								}
+								if (valu[1] == null && valu[2] != null) {
+									filterItemList
+											.addFilterItem(new FilterItem(
+													value, valu, FilterType.LTE));
+								}
+							}
+						}
+						if (!"createdDate".equals(filterFile)
+								&& !"updatedDate".equals(filterFile)
+								&& !"date".equals(typeField)
+								&& !"dt".equals(typeField)) {
+							filterItemList.addFilterItem(new FilterItem(value,
+									StringUtils.join(valu, ","), ft));
+						}
+					}
+				}
+			}
+		}
+
+		return filterItemList;
+
+	}
+
+	// 构建合同查询过滤器
+	public FilterItemList buildContractFilterItem(HttpServletRequest request) {
+
+		FilterItemList filterItemList = new FilterItemListImpl();
+
+		// 在市场活动模块内部访问的客户列表，必须带有activityId
+		String activityId = request.getParameter("activityId");
+		List<Long> custIdList = activityCustomerService.getLinkedCustIds(Long
+				.parseLong(activityId));
+		if ((null != custIdList) && custIdList.size() > 0) {
+			filterItemList.addFilterItem(new FilterItem("customer.id",
+					StringUtils.join(custIdList, ","), FilterType.IN));
+		} else {
+			// 如果找不到和当前活动相关联的客户ID，传一个不可能为true的条件的值，让它查询到空结果
+			filterItemList.addFilterItem(new FilterItem("customer.id", 0L,
+					FilterType.EQ));
+		}
+		String orderBy = request.getParameter("orderBy");
+		String desc = request.getParameter("desc");
+		if (StringUtils.isBlank(orderBy)) {
+			filterItemList.addOrderItem(new OrderItem("contract.updated_date",
+					true));
+		} else {
+			boolean isDesc = true;
+			if (StringUtils.isNotBlank(desc)) {
+				isDesc = "1".equals(desc) ? true : false;
+			}
+			// 否则按照选定的某一列做倒序排序的查询
+			String value = ContractMappingFile.getMappingFiled(orderBy);
+			filterItemList.addOrderItem(new OrderItem(value, isDesc));
+		}
+
+		// 按owner过滤
+		String ownerId = request.getParameter("ownerId");
+		if (StringUtils.isNotBlank(ownerId)) {
+			filterItemList.addFilterItem(new FilterItem("contract.ownerId",
+					Long.parseLong(ownerId), FilterType.EQ));
+		}
+
+		// 按主题过滤
+		String subject = request.getParameter("subject");
+		if (StringUtils.isNotBlank(subject)) {
+			if (subject.indexOf("%") >= 0) {
+				subject = subject.replaceAll("%", "\\\\%");
+			}
+			filterItemList.addFilterItem(new FilterItem("contract.subject",
+					subject, FilterType.LIKE));
+		}
+		// 按合同类型过滤
+		String type = request.getParameter("type");
+		if (StringUtils.isNotBlank(type)) {
+			filterItemList.addFilterItem(new FilterItem("contract.type", type,
+					FilterType.IN));
+		}
+		// 按合同状态
+		String status = request.getParameter("status");
+		if (StringUtils.isNotBlank(status)) {
+			filterItemList.addFilterItem(new FilterItem("contract.status",
+					status, FilterType.IN));
+		}
+		// 按客户
+		String customer = request.getParameter("customer");
+		if (StringUtils.isNotBlank(customer)) {
+			if (customer.indexOf("%") >= 0) {
+				customer = customer.replaceAll("%", "\\\\%");
+			}
+			filterItemList.addFilterItem(new FilterItem("customer.name",
+					customer, FilterType.LIKE));
+		}
+
+		// 按照时间过滤
+		// 客户的活动开始时间与效益结束时间之间（含当天）所对应产生的商机、合同
+		Activity activity = (Activity) activityManager.getEntity(
+				Long.parseLong(activityId), Activity.class);
+		// filterItemList
+		// .addFilterItem(new FilterItem("contract.created_date",
+		// activity.getCreatedDate(), FilterType.GTE));
+		// filterItemList.addFilterItem(new FilterItem("contract.created_date",
+		// activity.getBenefitsEndDate(),
+		// FilterType.LTE));
+
+		Long sTime = null;
+		Long eTime = null;
+		String time = request.getParameter("time");
+		if (StringUtils.isNotBlank(time)) {
+			Date startTime = CrmDateUtils.getDateByType(time, true);
+			sTime = startTime.getTime();
+			Date endTime = CrmDateUtils.getDateByType(time, false);
+			eTime = endTime.getTime();
+		} else {
+			String startTimeStr = request.getParameter("begindate");
+			String endTimeStr = request.getParameter("enddate");
+			if (StringUtils.isNotBlank(startTimeStr)) {
+				try {
+					SimpleDateFormat formater = new SimpleDateFormat(
+							"yyyy-MM-dd HH:mm:ss");
+					Date startTime = formater.parse(startTimeStr + " 00:00:00");
+					sTime = startTime.getTime();
+				} catch (ParseException e) {
+					sTime = null;
+
+				}
+			}
+			if (StringUtils.isNotBlank(endTimeStr)) {
+				try {
+					SimpleDateFormat formater = new SimpleDateFormat(
+							"yyyy-MM-dd HH:mm:ss");
+					Date endTime = formater.parse(endTimeStr + " 23:59:59");
+					eTime = endTime.getTime();
+				} catch (ParseException e) {
+					eTime = null;
+				}
+			}
+		}
+		if (sTime != null) {
+			filterItemList.addFilterItem(new FilterItem(
+					"contract.updated_date", sTime, FilterType.GTE));
+		}
+		if (eTime != null) {
+			filterItemList.addFilterItem(new FilterItem(
+					"contract.updated_date", eTime, FilterType.LTE));
+		}
+
+		String selectType = request.getParameter(SELECTTYPE_PARAM);
+
+		// 判断管理权限，决定是否可以查询下属数据,没有管理权限时则只能查询自己的数据
+		String queryOwnerIds = request.getParameter("queryOwnerIds");// 所选的查询下属数据的人员
+		Set<Long> userSet = activityManager
+				.getManegerList(PermissionConstant.MODULE_CONTRACT + ":"
+						+ PermissionConstant.QUERY);
+
+		CompetitorSelectType selectype = CompetitorSelectType
+				.getByType(selectType);
+		if (ActivityRole.RELATED.equals(activityManager
+				.getManagerInActivityRole(Long.parseLong(activityId), userSet))) {
+			FilterItem filterItem = new FilterItem("",
+					CompetitorSqlUtils.getContractSqlByType(selectype, userSet,
+							queryOwnerIds), FilterType.EXIST);
+			filterItemList.addFilterItem(filterItem);
+		}
+		FilterItemList fi = getContractFilters(request);
+		if (fi != null && fi.filerItemSize() > 0) {
+			for (int i = 0; i < fi.filerItemSize(); i++) {
+				filterItemList.addFilterItem(fi.getFilterItem(i));
+			}
+		}
+
+		return filterItemList;
+	}
+
+	private FilterItemList getContractFilters(HttpServletRequest request) {
+		FilterItemList filterItemList = new FilterItemListImpl();
+		Long sTime = null;
+		Long eTime = null;
+		SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		// 统一封装处理筛选条件
+		String filterStr = request.getParameter("filters");
+		if (!StringUtils.isBlank(filterStr)) {
+			List<FilterValueDTO> dtoList = JSONArray.parseArray(filterStr,
+					FilterValueDTO.class);
+			if (dtoList != null && dtoList.size() > 0) {
+				for (FilterValueDTO dto : dtoList) {
+					FilterType ft = FilterType.IN;
+					String filterFile = dto.getFilter();
+					String typeField = dto.getType();
+					if ("text".equals(typeField)) {
+						ft = FilterType.LIKE;
+					} else if ("combobox".equals(typeField)) {
+						ft = FilterType.IN;
+					} else if ("autocomplete".equals(typeField)) {
+						ft = FilterType.LIKE;
+					}
+					// 取客户对应的数据库字段
+					String value = ContractMappingFile
+							.getMappingFiled(filterFile);
+
+					// 初始化接收到的值的变量
+					String[] valu = new String[1];
+					// 如果是创建时间和更新时间，要特殊处理一下本周本月,如果是自定义类型的时间，只能筛选时间段
+					if ("createdDate".equals(filterFile)
+							|| "updatedDate".equals(filterFile)
+							|| "date".equals(typeField)
+							|| "dt".equals(typeField)) {
+
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = new String[2];
+							valu = dto.getValues().split(",");
+							if (StringUtils.isNotBlank(valu[0])) {
+								try {
+
+									Date startTime = null;
+									if ("dt".equals(typeField)) {
+										startTime = formater.parse(valu[0]
+												+ ":00");
+									} else {
+										startTime = formater.parse(valu[0]
+												+ " 00:00:00");
+									}
+
+									sTime = startTime.getTime();
+
+								} catch (ParseException e) {
+									sTime = null;
+								}
+							}
+							if (valu.length > 1) {
+								if (StringUtils.isNotBlank(valu[1])) {
+									try {
+
+										Date endTime = null;
+										if ("dt".equals(typeField)) {
+											endTime = formater.parse(valu[1]
+													+ ":59");
+										} else {
+											endTime = formater.parse(valu[1]
+													+ " 23:59:59");
+										}
+
+										eTime = endTime.getTime();
+									} catch (ParseException e) {
+										eTime = null;
+									}
+								}
+							}
+						} else {
+							if ("thizWeek".equals(dto.getValues())
+									|| "thizMonth".equals(dto.getValues())) {
+								Date startTime = CrmDateUtils.getDateByType(
+										dto.getValues(), true);
+								sTime = startTime.getTime();
+								Date endTime = CrmDateUtils.getDateByType(
+										dto.getValues(), false);
+								eTime = endTime.getTime();
+							}
+						}
+						valu = new String[2];
+						if (sTime != null) {
+							if ("dt".equals(typeField)
+									|| "date".equals(typeField)) {
+								if ("finishDate".equals(filterFile)
+										|| "begindate".equals(filterFile)
+										|| "enddate".equals(filterFile)
+										|| "signdate".equals(filterFile)) {
+									filterItemList
+											.addFilterItem(new FilterItem(
+													value, sTime,
+													FilterType.GTE));
+								} else {
+									valu[0] = " UNIX_TIMESTAMP(" + value
+											+ ")*1000 ";
+									filterItemList
+											.addFilterItem(new FilterItem(
+													valu[0], sTime,
+													FilterType.GTE));
+								}
+							} else {
+								filterItemList.addFilterItem(new FilterItem(
+										value, sTime, FilterType.GTE));
+							}
+
+						}
+						if (eTime != null) {
+							if ("dt".equals(typeField)
+									|| "date".equals(typeField)) {
+								if ("finishDate".equals(filterFile)
+										|| "begindate".equals(filterFile)
+										|| "enddate".equals(filterFile)
+										|| "signdate".equals(filterFile)) {
+									filterItemList
+											.addFilterItem(new FilterItem(
+													value, eTime,
+													FilterType.LTE));
+								} else {
+									valu[1] = " UNIX_TIMESTAMP(" + value
+											+ ")*1000 ";
+									filterItemList
+											.addFilterItem(new FilterItem(
+													valu[1], eTime,
+													FilterType.LTE));
+								}
+							} else {
+								filterItemList.addFilterItem(new FilterItem(
+										value, eTime, FilterType.LTE));
+							}
+
+						}
+					} else if ("total".equals(filterFile)) {
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = dto.getValues().split(",");
+							if (StringUtils.isNotBlank(valu[0])) {
+								filterItemList.addFilterItem(new FilterItem(
+										value, valu[0], FilterType.GTE));
+							}
+							if (valu.length > 1) {
+								if (StringUtils.isNotBlank(valu[1])) {
+									filterItemList
+											.addFilterItem(new FilterItem(
+													value, valu[1],
+													FilterType.LTE));
+								}
+							}
+						}
+					} else if ("payment".equals(filterFile)) {
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = dto.getValues().split(",");
+							if (StringUtils.isNotBlank(valu[0])) {
+								filterItemList.addFilterItem(new FilterItem(
+										value, valu[0], FilterType.GTE));
+							}
+							if (valu.length > 1) {
+								if (StringUtils.isNotBlank(valu[1])) {
+									filterItemList
+											.addFilterItem(new FilterItem(
+													value, valu[1],
+													FilterType.LTE));
+								}
+							}
+						}
+					} else if ("invoicePayment".equals(filterFile)) {
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = dto.getValues().split(",");
+							if (StringUtils.isNotBlank(valu[0])) {
+								filterItemList.addFilterItem(new FilterItem(
+										value, valu[0], FilterType.GTE));
+							}
+							if (valu.length > 1) {
+								if (StringUtils.isNotBlank(valu[1])) {
+									filterItemList
+											.addFilterItem(new FilterItem(
+													value, valu[1],
+													FilterType.LTE));
+								}
+							}
+						}
+					} else if ("fdate".equals(typeField)
+							|| "fdt".equals(typeField)
+							|| "ftime".equals(typeField)) {
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = dto.getValues().split(",");
+						}
+						if (StringUtils.isNotBlank(valu[0])) {
+							filterItemList.addFilterItem(new FilterItem(value,
+									valu[0], FilterType.GTE));
+						}
+						if (valu.length > 1) {
+							if (StringUtils.isNotBlank(valu[1])) {
+								filterItemList.addFilterItem(new FilterItem(
+										value, valu[1], FilterType.LT));
+							}
+						}
+					} else {
+						if (dto.getValues().indexOf(",") >= 0) {
+							valu = dto.getValues().split(",");
+						} else {
+							valu[0] = dto.getValues();
+							if (valu[0].indexOf("%") >= 0) {
+								valu[0] = valu[0].replaceAll("%", "\\\\%");
+							}
+							if (valu[0].indexOf("'") >= 0) {
+								valu[0] = valu[0].replaceAll("'", "");
+							}
+							if (valu[0].indexOf("‘") >= 0) {
+								valu[0] = valu[0].replaceAll("‘", "");
+							}
+							if (valu[0].indexOf("’") >= 0) {
+								valu[0] = valu[0].replaceAll("‘", "");
+							}
+							if (valu[0].indexOf("“") >= 0) {
+								valu[0] = valu[0].replaceAll("“", "");
+							}
+							if (valu[0].indexOf("”") >= 0) {
+								valu[0] = valu[0].replaceAll("”", "");
+							}
+							if (valu[0].indexOf(",") >= 0) {
+								valu[0] = valu[0].replaceAll(",", "");
+							}
+							if (valu[0].indexOf("(") >= 0) {
+								valu[0] = valu[0].replaceAll("\\(", "");
+							}
+							if (valu[0].indexOf(")") >= 0) {
+								valu[0] = valu[0].replaceAll("\\)", "");
+							}
+							if (valu[0].indexOf("*") >= 0) {
+								valu[0] = valu[0].replaceAll("*", "");
+							}
+						}
+
+						if (ft == FilterType.LIKE) {
+							filterItemList.addFilterItem(new FilterItem(value,
+									"" + StringUtils.join(valu, ",") + "", ft));
+						} else {
+
+							filterItemList.addFilterItem(new FilterItem(value,
+									"'" + StringUtils.join(valu, "','") + "'",
+									ft));
+						}
+					}
+				}
+			}
+		}
+
+		return filterItemList;
+	}
+
+	/**
+	 * 单独接口，为了单独返回一个字段及其可选字段
+	 * 
+	 * @param activity
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("/FilterFields")
+	public JsonResult FilterFields(HttpServletRequest request) {
+		List<DefinedFeild> list = new ArrayList<DefinedFeild>();
+		DefinedFeild field = uiSettingManager.getDefineField("t_crm_customer",
+				"lastFollowPeriod");
+		list.add(field);
+		return generateJsonResult(list);
+	}
+
+	@RequestMapping("/queryDistributeLogs")
+	@RequiresPermissions(PermissionConstant.QUERY)
+	public JsonResult queryDistributeLogs(HttpServletRequest request) {
+		// 查询单个线索的所有分配记录
+		Long customerId = Long.parseLong(request.getParameter("id"));
+		Long activityId = Long.parseLong(request.getParameter("activityId"));
+		List<Map<String, Object>> logList = activityManager
+				.queryDistributeLogs(customerId, activityId);
+		return generateJsonResult(logList);
+	}
+}
+	
+	<bean id="customerService" class="saas.winbons.provider.CustomerServiceImpl" />
+	<dubbo:service interface="saas.winbons.dubbo.api.ApiService" ref="customerMinaService" group="customerMinaService" protocol="dubbo2" />
+	<bean id="customerMinaService" class="saas.winbons.provider.mina.CustomerMinaServiceImpl">
+		<property name="customerService" ref="customerService" />
+	</bean> -->
+	
+	<!-- 性能监控 -->
+	<!-- <dubbo:monitor address="192.168.2.79:6060" /> -->
+
+
+</beans>

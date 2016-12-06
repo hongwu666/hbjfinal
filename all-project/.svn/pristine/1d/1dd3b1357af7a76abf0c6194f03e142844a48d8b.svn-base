@@ -1,0 +1,48 @@
+package saas.winbons.framework.tools;
+
+import org.beetl.core.BeetlKit;
+import org.beetl.core.GroupTemplate;
+
+import saas.winbons.beetl.func.CallTemplateFn;
+import saas.winbons.beetl.func.CommonSql;
+import saas.winbons.beetl.func.DebugFn;
+import saas.winbons.beetl.func.IIFFn;
+import saas.winbons.beetl.func.InParse;
+import saas.winbons.beetl.func.ReflectFn;
+import saas.winbons.beetl.func.SetFn;
+import saas.winbons.beetl.func.SqlFn;
+
+
+public abstract class ToolBeetl {
+	
+		
+	/**
+	 * 模板扩展
+	 */
+	@SuppressWarnings("static-access")
+	public static GroupTemplate regiseter(){
+/*		GroupTemplate mainGT = BeetlRenderFactory.groupTemplate;
+		if(mainGT == null){
+			mainGT = new BeetlRenderFactory().groupTemplate;
+		}
+		
+		mainGT.registerFunction("escapeXml", new EscapeXml());*/
+		
+		//默认函数
+		GroupTemplate gt = BeetlKit.gt;
+		if(null != gt){
+			gt.registerFunction("commonSql", new CommonSql());
+			gt.registerFunction("inParse", new InParse());
+			gt.registerFunction("iifFn", new IIFFn());
+			gt.registerFunction("sqlFn", new SqlFn());
+			gt.registerFunction("callTemplateFn", new CallTemplateFn());
+			gt.registerFunction("reflectFn", new ReflectFn());
+			gt.registerFunction("setFn", new SetFn());
+			gt.registerFunction("debugFn", new DebugFn());
+			
+		}
+		
+		return null;
+	}
+
+}

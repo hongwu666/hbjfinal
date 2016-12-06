@@ -1,0 +1,9 @@
+package saas.winbons.format;
+
+
+public interface IEnumFormat {
+	
+	String getColumnName();
+	int getCallbackFormatType();
+	
+}

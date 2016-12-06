@@ -1,0 +1,76 @@
+package saas.framework.utils;
+
+import java.text.SimpleDateFormat;
+
+import org.apache.commons.lang3.RandomStringUtils;
+
+/**
+ * 继承Hibernate的IdentifierGenerator, 将ID长度为Long类型，到17位.
+ * DBID主要用于同时使用多个数据库,不能依赖单个数据库自增生成主键的情形.
+ * 
+ * 1. 时间戳      - 沿用年月日时分秒的方式, 14位.
+ * 2. AppId   - 使用2位的自定义值.
+ * 3. Count   - 相同JVM同一毫秒内的计数器,长度减为3.
+ *
+ * 全部使用, 14位时间戳   + 2位AppId + 3位微秒内计数器.
+ */
+public class UUIDGenerator{
+
+	public static String generate() {
+		return String.valueOf(new StringBuilder(19).append(getYYMMDDHHMMSS()).append(format(getAppId())).append(format(getCount())).toString());
+	}
+	
+	private UUIDGenerator(){
+		
+	}
+	
+	private static short counter = (short) 0;
+
+	/**
+	 * Unique in a millisecond for this JVM instance (unless there
+	 * are > Short.MAX_VALUE instances created in a millisecond)
+	 */
+	protected static short getCount() {
+		synchronized(UUIDGenerator.class) {
+			if (counter<0 || counter > 999) counter=0;
+			return counter++;
+		}
+	}
+	/**
+	 * 可重载子类实现从System Properties, Spring ApplicationContext等地方获得值.
+	 */
+	protected static String getAppId() {
+		return RandomStringUtils.randomNumeric(2);
+	}
+	
+	/**
+	 * 格式化成长度为2的字符串.
+	 */
+	protected static String format(String appId) {
+		if (appId.length() < 2) {
+			appId = "0" + appId;
+		}
+		return appId;
+	}
+	
+	protected static String format(short shortval) {
+		String formatted = Short.toString(shortval);
+		StringBuffer buf = new StringBuffer("000");
+		buf.replace( 3-formatted.length(), 3, formatted );
+		return buf.toString();
+	}
+	
+	protected static String getYYMMDDHHMMSS() {
+		String strDate = null;
+		try {
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+			strDate = sdf.format(System.currentTimeMillis());
+		} catch (Exception e) {
+		}
+		return strDate;
+	}
+	
+	public static void main(String[] args) {
+		System.out.println(generate());
+	}
+}

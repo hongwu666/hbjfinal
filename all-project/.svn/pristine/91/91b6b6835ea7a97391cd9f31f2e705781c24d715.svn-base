@@ -1,0 +1,34 @@
+package saas.winbons.data.model.customer;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import saas.winbons.data.model.BaseModel;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+public class CustomerPoolRule extends BaseModel<CustomerPoolRule> {
+
+	private static final long serialVersionUID = -3486479184111723043L;
+	
+	public static final CustomerPoolRule dao = new CustomerPoolRule();
+	
+	public List<Map<String, Object>> findCustPoolRulesByPoolId(ContextDTO contextDTO,Long poolId){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contextDTO", contextDTO);
+		map.put("tableName", "t_crm_cust_public_pool_rules");
+		map.put("columns", ToolJfinalSql.buildSelectSql(CustomerPoolRule.class, "",""));
+		map.put("poolId", poolId);
+		String sql = ToolSqlXml.getSql("winbons.customer.findCustPoolRulesByPoolId",map);
+		List<Record> find = Db.find(contextDTO, sql);
+		return ToolModel.recordListConvert(find);
+	}
+
+
+}

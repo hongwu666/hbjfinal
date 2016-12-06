@@ -1,0 +1,9 @@
+package saas.winbons.data.model.defined;
+
+public class VUiGridColumnModel extends ColumnVUiGridColumn<VUiGridColumnModel> {
+
+	private static final long serialVersionUID = -8578201816551436197L;
+	
+	public static final VUiGridColumnModel dao = new VUiGridColumnModel();
+
+}

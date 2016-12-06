@@ -1,0 +1,14 @@
+package saas.monitor.mvc.email;
+
+import saas.monitor.mvc.base.BaseModel;
+
+public class EmailSendLogModel extends BaseModel<EmailSendLogModel> {
+
+	private static final long serialVersionUID = -1327230970929603504L;
+
+	@Override
+	protected Class<? extends BaseModel<EmailSendLogModel>> getLogClass() {
+		return EmailSendLogModel.class;
+	}
+
+}

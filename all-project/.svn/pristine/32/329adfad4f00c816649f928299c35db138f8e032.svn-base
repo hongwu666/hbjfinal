@@ -1,0 +1,60 @@
+package saas.monitor.job;
+
+import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+
+import saas.crm.data.dto.email.EmailAccountReceivedJmsDTO;
+import saas.monitor.constantInit.ConstantInit;
+import saas.monitor.tools.ToolGson;
+
+import com.jfinal.ext.plugin.jms.JmsKit;
+import com.jfinal.kit.PropKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.plugin.redis.Redis;
+
+@DisallowConcurrentExecution
+public class BuildReceiveEmailJob implements Job {
+	
+	private static Logger log = Logger.getLogger(CleanEmailAccountJob.class);
+	
+
+	@Override
+	public void execute(JobExecutionContext context)
+			throws JobExecutionException {
+		try{
+			List<Record> find = Db.find("select * from t_monitor_email_account order by lastUpdateDate asc");
+			for(Record r : find){
+				Long dbid = r.getLong("dbid");
+				Long userId = r.getLong("userId");
+				Long emailAccountId = r.getLong("emailAccountId");
+				String queueKey = ConstantInit.BuildReceiveEmailJob + dbid + ConstantInit.UNDERLINE_STRING + userId + ConstantInit.UNDERLINE_STRING + emailAccountId;
+				Object object = Redis.use(ConstantInit.RedisPlugin).get(queueKey);
+				if(null != object){
+					log.info("用户【dbId:" + dbid + ", userId:" + userId + ",emailAccountId=" + emailAccountId + "】，任务处理中,下次轮训...");
+					continue;
+				}
+				EmailAccountReceivedJmsDTO emailAccountReceivedJmsDTO = new EmailAccountReceivedJmsDTO();
+				emailAccountReceivedJmsDTO.setDbId(dbid);
+				emailAccountReceivedJmsDTO.setUserId(userId);
+				emailAccountReceivedJmsDTO.setEmailAccountId(emailAccountId);
+				emailAccountReceivedJmsDTO.setSource(ConstantInit.TaskSource.SYSTEM);
+				log.info("推送邮箱 用户【dbId:" + dbid + ", userId:" + userId + ",emailAccountId=" + emailAccountId + "】");
+				JmsKit.sendQueue(PropKit.use("jms.properties").get("QUEUE_EMAIL_RECEIVE_TASK.name"), emailAccountReceivedJmsDTO, "a");
+				Db.update("update t_monitor_email_account set lastUpdateDate = ?,count = count + 1 where id = ?",System.currentTimeMillis(),r.getLong("id"));
+				Redis.use(ConstantInit.RedisPlugin).setex(queueKey, Integer.parseInt(PropKit.get("BuildReceiveEmailJob.pending")), queueKey);
+			}
+			
+			
+			
+		}catch(Exception e){
+			log.error("自动清理邮箱出错",e);
+		}
+	}
+
+}

@@ -1,0 +1,13 @@
+package saas.monitor.interceptor;
+
+import com.jfinal.aop.Interceptor;
+import com.jfinal.aop.Invocation;
+
+public class AclInterceptor implements Interceptor {
+
+	@Override
+	public void intercept(Invocation inv) {
+		
+	}
+
+}

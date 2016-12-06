@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--  
+	菜单sql
+-->
+<sql-statement namespace="sql.receipt">
+	
+	<sql id="search">
+		<![CDATA[ 
+			from t_monitor_email_receive_logs where 1 = 1 
+					<%
+			commonSql("sql.common.params",filters!,sorts!);
+		%> 
+    	]]>
+	</sql>
+	
+	<sql id="searchAccountSendTimes">
+		<![CDATA[ 
+			from t_monitor_email_account where 1 = 1 
+					<%
+			commonSql("sql.common.params",filters!,sorts!);
+		%> 
+    	]]>
+	</sql>
+	
+	
+	<sql id="buildReceiveEmailJob">
+	<![CDATA[ 
+		SELECT
+			t_crm_email_account.dbid,
+			t_crm_email_account.id,
+			t_crm_email_account.user_id,
+			t_crm_email_account.email_account
+		FROM
+			t_crm_email_account INNER JOIN 
+			t_crm_user on t_crm_email_account.dbid = t_crm_user.dbid and t_crm_email_account.user_id = t_crm_user.user_id and 
+			t_crm_user.is_deleted = 'N'
+		WHERE
+        t_crm_email_account.is_deleted = 'N' 
+        AND pop3_enabled = 'Y' 
+		AND pop3_available = 'Y'
+	]]>
+	</sql>
+
+</sql-statement>

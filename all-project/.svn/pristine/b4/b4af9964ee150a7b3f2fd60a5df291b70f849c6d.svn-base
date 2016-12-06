@@ -1,0 +1,20 @@
+package saas.crm.customer.module;
+
+public class CustomerLocationResult {
+	
+	private Double 	dis;			// 距离
+	private CustomerLocation obj;	// 客户位置对象
+	
+	public Double getDis() {
+		return dis;
+	}
+	public void setDis(Double dis) {
+		this.dis = dis;
+	}
+	public CustomerLocation getObj() {
+		return obj;
+	}
+	public void setObj(CustomerLocation obj) {
+		this.obj = obj;
+	}
+}

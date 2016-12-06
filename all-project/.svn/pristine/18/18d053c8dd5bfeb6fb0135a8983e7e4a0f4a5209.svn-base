@@ -1,0 +1,39 @@
+package saas.monitor.tools;
+
+import org.beetl.core.BeetlKit;
+import org.beetl.core.GroupTemplate;
+import org.beetl.ext.jfinal.BeetlRenderFactory;
+
+import saas.monitor.beetl.func.AuthAcl;
+import saas.monitor.beetl.func.CommonSql;
+import saas.monitor.beetl.func.EscapeXml;
+import saas.monitor.beetl.func.InParse;
+
+
+public abstract class ToolBeetl {
+	
+		
+	/**
+	 * 模板扩展
+	 */
+	@SuppressWarnings("static-access")
+	public static GroupTemplate regiseter(){
+		GroupTemplate mainGT = BeetlRenderFactory.groupTemplate;
+		if(mainGT == null){
+			mainGT = new BeetlRenderFactory().groupTemplate;
+		}
+		
+		mainGT.registerFunction("escapeXml", new EscapeXml());
+		mainGT.registerFunction("authAcl", new AuthAcl());
+		
+		//默认函数
+		GroupTemplate gt = BeetlKit.gt;
+		if(null != gt){
+			gt.registerFunction("commonSql", new CommonSql());
+			gt.registerFunction("inParse", new InParse());
+		}
+		
+		return mainGT;
+	}
+
+}

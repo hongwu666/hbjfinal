@@ -1,0 +1,56 @@
+package saas.monitor.mvc.index;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authc.IncorrectCredentialsException;
+import org.apache.shiro.authc.UnknownAccountException;
+import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.subject.Subject;
+
+import saas.monitor.interceptor.AuthInterceptor;
+import saas.monitor.mvc.base.BaseService;
+import saas.monitor.mvc.security.User;
+import saas.monitor.tools.ToolString;
+import saas.monitor.tools.security.ShiroUtils;
+import com.jfinal.aop.Enhancer;
+
+public class IndexService extends BaseService{
+	
+	public static final IndexService service = Enhancer.enhance(IndexService.class);
+
+	@Override
+	protected Class<? extends BaseService> getLogClass() {
+		return IndexService.class;
+	}
+	
+	public String login(HttpServletRequest request, HttpServletResponse response, String userName, String passWord){
+		Subject subject = SecurityUtils.getSubject();
+		UsernamePasswordToken token = new UsernamePasswordToken(userName, passWord);
+		String error = "";
+		try {
+			subject.login(token);
+		} catch(UnknownAccountException ue) {
+			token.clear();
+			error = ue.getMessage();
+		} catch(IncorrectCredentialsException ie) {
+			ie.printStackTrace();
+			token.clear();
+			error = "登录失败，密码不匹配";
+		} catch(RuntimeException re) {
+			re.printStackTrace();
+			token.clear();
+			error = "登录失败";
+		}
+		if(ToolString.isEmptyString(error)){
+			AuthInterceptor.setCurrentUser(request, response, ShiroUtils.getUser(), false);
+		}
+		return error;
+	}
+	
+	public User getByName(String name) {
+		return User.dao.findFirst("select u.* from t_monitor_user  u where u.loginCode=?", name);
+	}
+
+}

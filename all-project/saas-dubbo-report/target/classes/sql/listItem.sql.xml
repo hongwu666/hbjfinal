@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--  
+	菜单sql
+-->
+<sql-statement namespace="winbons.listItem">
+	
+	<!-- 查询根菜单 -->
+	<sql id="findByListId">
+		<![CDATA[ 
+			select id,item_label as lable,item_label as label from t_crm_list_item where is_valid = 'Y' and list_id = ${listId} 
+			<%
+				if(!contextDTO.mobileRequest && listId == 7){
+					print(" and id <> 66 ");
+				}
+			%>  
+			 order by display_order 
+    	]]>
+	</sql>
+	
+	<sql id="getAllItemsByGridHead">
+	<![CDATA[ 
+		select id,item_label as label,item_label as lable from t_crm_list_item where is_valid = 'Y' and dbid = ${contextDTO.dbId} 
+	]]>
+	</sql>
+	
+
+</sql-statement>

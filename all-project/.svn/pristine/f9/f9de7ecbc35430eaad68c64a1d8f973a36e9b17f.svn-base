@@ -1,0 +1,38 @@
+package saas.winbons.provider.rest;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import saas.winbons.dubbo.api.ApiService;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.api.market.IMarketRestService;
+
+import com.alibaba.dubbo.rpc.protocol.rest.support.ContentType;
+
+@Path("market")
+@Consumes({MediaType.APPLICATION_JSON})
+@Produces({ContentType.APPLICATION_JSON_UTF_8})
+public class MarketRestServiceImpl implements IMarketRestService {
+	
+	private ApiService marketService;
+	
+	public void setMarketService(ApiService marketService) {
+		this.marketService = marketService;
+	}
+
+
+
+
+
+	@Override
+	@POST
+	@Path("execute")
+	public ResultDTO executeDto(RequestDTO requestDTO) {
+		return 	marketService.executeDto(requestDTO);
+	}
+	
+}

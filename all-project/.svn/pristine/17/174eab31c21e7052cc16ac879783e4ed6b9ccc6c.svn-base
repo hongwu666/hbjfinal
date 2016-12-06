@@ -1,0 +1,148 @@
+/**
+ * All rights reserved by DigitNexus Technology INC.
+ */
+package saas.framework.cache.impl;
+
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import saas.framework.cache.ICache;
+
+/**
+ * 
+ * @ClassName: MapCache
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author yxx
+ * @date 2014年2月24日 下午3:23:10
+ * @param <K>
+ * @param <V>
+ */
+public class MapCache<K, V> implements ICache<K, V> {
+
+	private final static Logger logger = LoggerFactory.getLogger(MapCache.class);
+	private Map<K, SoftReference<V>> dataMap;
+	private ReferenceQueue<V> queue = new ReferenceQueue<V>();
+	private AtomicLong hitCount = new AtomicLong();
+	private AtomicLong unhitCount = new AtomicLong();
+	private String name;
+
+	public MapCache(String name) {
+		this.dataMap = new HashMap<K, SoftReference<V>>();
+		this.name = name;
+	}
+
+	protected MapCache(String name, Map<K, SoftReference<V>> dataMap) {
+		this.dataMap = dataMap;
+		this.name = name;
+	}
+
+	private final void clearData() {
+		Reference<? extends V> ref;
+		while ((ref = queue.poll()) != null) {
+			@SuppressWarnings("unchecked")
+			CachedElement ce = (CachedElement) ref;
+			dataMap.remove(ce.key);
+		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.dn.cache.ICache#clear()
+	 */
+	@Override
+	public void clear() {
+		clearData();
+		dataMap.clear();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.dn.cache.ICache#put(java.lang.String, java.lang.Object)
+	 */
+	@Override
+	public V put(K key, V v) {
+		clearData();
+		dataMap.put(key, new CachedElement(key, v));
+		return get(key);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.dn.cache.ICache#remove(java.lang.String)
+	 */
+	@Override
+	public V remove(K key) {
+		clearData();
+		V v = null;
+		SoftReference<V> refObj = dataMap.remove(key);
+		if (refObj != null) {
+			v = refObj.get();
+		}
+		return v;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.dn.cache.ICache#size()
+	 */
+	@Override
+	public int size() {
+		clearData();
+		return dataMap.size();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.dn.cache.ICache#get(java.lang.String)
+	 */
+	@Override
+	public V get(K key) {
+		V v = null;
+		SoftReference<V> refObj = dataMap.get(key);
+		if (refObj != null) {
+			v = refObj.get();
+		}
+
+		if (logger.isDebugEnabled()) {
+			long unhitValue = 0;
+			long hitValue = 0;
+			if (v == null) {
+				unhitValue = unhitCount.incrementAndGet();
+				hitValue = hitCount.get();
+			} else {
+				hitValue = hitCount.incrementAndGet();
+				unhitValue = unhitCount.get();
+			}
+
+			logger.debug("in \"{}\" cache, size: {}; hit rate: {}%", new Object[] { name, dataMap.size(), hitValue * 100 / (hitValue + unhitValue) });
+		}
+		return v;
+	}
+
+	class CachedElement extends SoftReference<V> {
+
+		final public K key;
+
+		/**
+		 * @param referent
+		 * @param q
+		 */
+		public CachedElement(K key, V v) {
+			super(v, queue);
+			this.key = key;
+			v = null;
+		}
+	}
+}

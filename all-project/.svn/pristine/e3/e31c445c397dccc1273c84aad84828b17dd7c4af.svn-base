@@ -1,0 +1,75 @@
+package saas.monitor.mvc.base;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+
+import saas.monitor.criteria.FilterVO;
+import saas.monitor.criteria.SortVO;
+import saas.monitor.tools.ToolSqlXml;
+
+public abstract class BaseService {
+	
+	protected final Logger LOG = Logger.getLogger(BaseService.class);
+	
+	protected abstract Class<? extends BaseService> getLogClass();
+	
+	 /**
+     * 获取SQL，动态SQL，使用Beetl解析
+     * @param sqlId
+     * @param param
+     * @return
+     */
+	public String getSqlByBeetl(String sqlId, Map<String, Object> param){
+    	return ToolSqlXml.getSql(sqlId, param);
+    }
+	
+	 /**
+     * 获取SQL，动态SQL，使用Beetl解析
+     * @param sqlId
+     * @param param
+     * @return
+     */
+	public String getSqlByBeetl(String sqlId, FilterVO[] filters){
+		Map<String, Object> param = new HashMap<String, Object>();
+		for(FilterVO filterVO : filters){
+			filterVO.setProperty(filterVO.getProperty().replace("filters.", ""));
+		}
+		param.put("result", filters);
+    	return ToolSqlXml.getSql(sqlId, param);
+    }
+	
+	 /**
+     * 获取SQL，动态SQL，使用Beetl解析
+     * @param sqlId
+     * @param param
+     * @return
+     */
+	public String getSqlByBeetl(String sqlId, FilterVO[] filters,SortVO[] sorts){
+		Map<String, Object> param = new HashMap<String, Object>();
+		for(FilterVO filterVO : filters){
+			filterVO.setProperty(filterVO.getProperty().replace("filters.", ""));
+		}
+		param.put("result", filters);
+		param.put("sorts", sorts);
+    	return ToolSqlXml.getSql(sqlId, param);
+    }
+	
+	/**
+     * 获取SQL，动态SQL，使用Beetl解析
+     * @param sqlId
+     * @param param
+     * @return
+     */
+	public String getSqlByBeetl(String sqlId, String tableName,FilterVO[] filters){
+		Map<String, Object> param = new HashMap<String, Object>();
+		for(FilterVO filterVO : filters){
+			filterVO.setProperty(filterVO.getProperty().replace("filters.", ""));
+		}
+		param.put("result", filters);
+		param.put("tableName", tableName);
+    	return ToolSqlXml.getSql(sqlId, param);
+    }
+
+}

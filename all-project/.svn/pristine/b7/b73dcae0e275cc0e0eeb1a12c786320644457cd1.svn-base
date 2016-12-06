@@ -1,0 +1,9 @@
+package saas.winbons.data.model.email;
+
+import saas.winbons.data.model.BaseModel;
+
+public class EmailInfo extends BaseModel<EmailInfo> {
+
+	private static final long serialVersionUID = -9137243212010016058L;
+
+}

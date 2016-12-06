@@ -1,0 +1,59 @@
+package saas.winbons.data.model.security;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationListener;
+import org.springframework.stereotype.Component;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.jfinal.kit.PropKit;
+
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.utils.HttpClientUtils;
+
+@Component
+public class IMUserEventListener implements ApplicationListener<IMUserEvent> {
+	
+	private static final Logger logger = LoggerFactory.getLogger(IMUserEventListener.class);
+
+	@Override
+	public void onApplicationEvent(IMUserEvent event) {
+		Map<String, Object> source = (Map<String, Object>) event.getSource();
+		Long id = (Long) source.get("data");
+		ContextDTO contextDTO = (ContextDTO) source.get("contextDTO");
+		try{
+			Long dbId = contextDTO.getDbId();
+			Long userId = id;
+			String baseURL = PropKit.get("new.im.server");
+			logger.info("------ 创建用户的IM账号：dbId=" + dbId + ", userId=" + userId + ", baseURL=" + baseURL + " -------");
+			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
+			nameValuePairs.add(new BasicNameValuePair("dbId", String.valueOf(dbId)));
+			nameValuePairs.add(new BasicNameValuePair("userId", String.valueOf(userId)));
+			nameValuePairs.add(new BasicNameValuePair("IM_AUTH_TOKEN", "__winbons_im_password123456!@#$%^"));
+			
+			String responseContent = HttpClientUtils.postHttpClientResponse(baseURL + "account/create", nameValuePairs, null);
+			JSONObject jsonResult = JSON.parseObject(responseContent);
+			JSONObject imAccount = jsonResult.getJSONObject("data");
+			String imAccountId = imAccount.getString("accountId");
+			String imToken = imAccount.getString("token");
+			ImUserModel imUser = new ImUserModel();
+			imUser.set("dbid", dbId);
+			imUser.set("user_id", userId);
+			imUser.set("im_account_id", imAccountId);
+			imUser.set("im_token", imToken);
+			imUser.save(contextDTO);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		
+	}
+
+
+}

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--  
+	菜单sql
+-->
+<sql-statement namespace="winbins.user">
+	
+	<sql id="getSimpleUserInfoByUserIds">
+	<![CDATA[ 
+		select user_id as userId, login_id as userName, display_name as realName,photo_url as photoUrl from t_crm_user where user_id in 
+		<%
+			print(inParse(ids));
+		%>
+	]]>
+	</sql>
+	
+	
+	<sql id="selectUsers">
+	<![CDATA[ 
+		select ${columns} from t_crm_user where 1 = 1 
+		<%
+				commonSql("winbons.common.params",filters!,sorts!);
+			%> 
+	]]>
+	</sql>
+	
+	<sql id="checkUser">
+	<![CDATA[ 
+		<%
+			var result = sqlFn(contextDTO,"one","select count(1) as count from t_crm_user where dbid = ? and login_id = ?",contextDTO.dbId,userMap.login_id);
+			if(result > 0){
+				return 0;
+			}else{
+				result = sqlFn(contextDTO,"one","select count(1) as count from t_bs_user where username = ?",userMap.login_id);
+				if(result > 0){
+					return 1;
+				}else{
+					reuturn 2;
+				}
+			}
+			
+			
+			
+		%>
+		
+		
+	]]>
+	</sql>
+	
+	
+</sql-statement>

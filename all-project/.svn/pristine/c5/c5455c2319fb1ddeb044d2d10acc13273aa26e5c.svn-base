@@ -1,0 +1,16 @@
+package saas.winbons.framework.nosql;
+
+import org.springframework.context.ApplicationListener;
+import org.springframework.data.mongodb.core.mapping.event.BeforeSaveEvent;
+
+import com.mongodb.DBObject;
+
+public class DefaultBeforeSaveEvent<E> implements ApplicationListener<BeforeSaveEvent<E>> {
+
+	@Override
+	public void onApplicationEvent(BeforeSaveEvent<E> event) {
+		DBObject dbObject = event.getDBObject();
+		dbObject.removeField("_class");
+	}
+
+}

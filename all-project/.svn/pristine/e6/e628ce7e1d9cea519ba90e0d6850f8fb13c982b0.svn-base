@@ -1,0 +1,8 @@
+package saas.winbons.data.model.email;
+
+import saas.winbons.data.model.BaseModel;
+
+public class EmailContactGroupRelContact extends BaseModel<EmailContactGroupRelContact> {
+	private static final long serialVersionUID = 2516421841872618554L;
+
+}

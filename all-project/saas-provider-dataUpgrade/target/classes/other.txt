@@ -1,0 +1,14 @@
+importDy.url=E:/importDy.xls
+importDyError.url=E:/importDy_error.txt
+importDy.dbid=12053364
+importDy.enable=false
+importDy.dtFommat=yyyy.MM.dd
+
+
+
+customerRecovery.enable=true
+
+
+
+customerLastUpdate.enable=false
+

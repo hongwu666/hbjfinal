@@ -1,0 +1,209 @@
+package saas.winbons.data.model.leads;
+
+import saas.winbons.data.model.UserDefinedFieldValueModel;
+
+public abstract class ColumnLeads<M extends UserDefinedFieldValueModel<M>> extends UserDefinedFieldValueModel<M> {
+
+	private static final long serialVersionUID = 7547590942274940840L;
+	
+	public void setOwnerId(java.lang.Long ownerId) {
+		set("owner_id", ownerId);
+	}
+
+	public java.lang.Long getOwnerId() {
+		return get("owner_id");
+	}
+
+	public void setName(java.lang.String name) {
+		set("name", name);
+	}
+
+	public java.lang.String getName() {
+		return get("name");
+	}
+
+	public void setCompName(java.lang.String compName) {
+		set("comp_name", compName);
+	}
+
+	public java.lang.String getCompName() {
+		return get("comp_name");
+	}
+
+	public void setTag(java.lang.Integer tag) {
+		set("tag", tag);
+	}
+
+	public java.lang.Integer getTag() {
+		return get("tag");
+	}
+
+	public void setCompTel(java.lang.String compTel) {
+		set("comp_tel", compTel);
+	}
+
+	public java.lang.String getCompTel() {
+		return get("comp_tel");
+	}
+
+	public void setCompFax(java.lang.String compFax) {
+		set("comp_fax", compFax);
+	}
+
+	public java.lang.String getCompFax() {
+		return get("comp_fax");
+	}
+
+	public void setDept(java.lang.Long dept) {
+		set("dept", dept);
+	}
+
+	public java.lang.Long getDept() {
+		return get("dept");
+	}
+
+	public void setStatus(java.lang.Long status) {
+		set("status", status);
+	}
+
+	public java.lang.Long getStatus() {
+		return get("status");
+	}
+
+	public void setSource(java.lang.Long source) {
+		set("source", source);
+	}
+
+	public java.lang.Long getSource() {
+		return get("source");
+	}
+
+	public void setGender(java.lang.String gender) {
+		set("gender", gender);
+	}
+
+	public java.lang.String getGender() {
+		return get("gender");
+	}
+
+	public void setJob(java.lang.String job) {
+		set("job", job);
+	}
+
+	public java.lang.String getJob() {
+		return get("job");
+	}
+
+	public void setTel(java.lang.String tel) {
+		set("tel", tel);
+	}
+
+	public java.lang.String getTel() {
+		return get("tel");
+	}
+
+	public void setMobile(java.lang.String mobile) {
+		set("mobile", mobile);
+	}
+
+	public java.lang.String getMobile() {
+		return get("mobile");
+	}
+
+	public void setEmail(java.lang.String email) {
+		set("email", email);
+	}
+
+	public java.lang.String getEmail() {
+		return get("email");
+	}
+
+	public void setWebsite(java.lang.String website) {
+		set("website", website);
+	}
+
+	public java.lang.String getWebsite() {
+		return get("website");
+	}
+
+	public void setCountry(java.lang.String country) {
+		set("country", country);
+	}
+
+	public java.lang.String getCountry() {
+		return get("country");
+	}
+
+	public void setProvince(java.lang.String province) {
+		set("province", province);
+	}
+
+	public java.lang.String getProvince() {
+		return get("province");
+	}
+
+	public void setCity(java.lang.String city) {
+		set("city", city);
+	}
+
+	public java.lang.String getCity() {
+		return get("city");
+	}
+
+	public void setAddress(java.lang.String address) {
+		set("address", address);
+	}
+
+	public java.lang.String getAddress() {
+		return get("address");
+	}
+
+	public void setWeibo(java.lang.String weibo) {
+		set("weibo", weibo);
+	}
+
+	public java.lang.String getWeibo() {
+		return get("weibo");
+	}
+
+	public void setWechat(java.lang.String wechat) {
+		set("wechat", wechat);
+	}
+
+	public java.lang.String getWechat() {
+		return get("wechat");
+	}
+
+	public void setQq(java.lang.String qq) {
+		set("qq", qq);
+	}
+
+	public java.lang.String getQq() {
+		return get("qq");
+	}
+
+	public void setWeixin(java.lang.String weixin) {
+		set("weixin", weixin);
+	}
+
+	public java.lang.String getWeixin() {
+		return get("weixin");
+	}
+
+	public void setZip(java.lang.String zip) {
+		set("zip", zip);
+	}
+
+	public java.lang.String getZip() {
+		return get("zip");
+	}
+
+	public void setRemarks(java.lang.String remarks) {
+		set("remarks", remarks);
+	}
+
+	public java.lang.String getRemarks() {
+		return get("remarks");
+	}
+
+}

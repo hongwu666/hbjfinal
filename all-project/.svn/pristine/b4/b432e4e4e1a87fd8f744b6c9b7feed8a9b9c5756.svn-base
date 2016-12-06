@@ -1,0 +1,37 @@
+package saas.monitor.mvc.index;
+
+import saas.monitor.interceptor.AuthInterceptor;
+import saas.monitor.mvc.base.BaseController;
+import saas.monitor.mvc.base.BaseValidator;
+
+public class LoginValidator extends BaseValidator {
+
+	@Override
+	protected Class<? extends BaseValidator> getLogClass() {
+		return LoginValidator.class;
+	}
+
+	@Override
+	protected void validateBase(BaseController c) {
+		//validateString("checkCode", 0, 5, "error", "验证码不能为空");
+		if(!invalid){
+			validateString("loginCode", 0, 50, "error", "账号或密码不能为空");
+		}
+		if(!invalid){
+			validateString("loginPassword", 0, 50, "error", "账号或密码不能为空");
+		}
+		if(!invalid){
+			/*String authCode = AuthInterceptor.getAuthCode(c.getRequest());
+			if(null == authCode || !authCode.toUpperCase().equals(c.getPara("checkCode").toUpperCase())){
+				addError("error", "验证码错误");
+			}*/
+		}
+		
+	}
+
+	@Override
+	protected void handleErrorBase(BaseController c) {
+		c.render("/login/index.html");
+	}
+
+}

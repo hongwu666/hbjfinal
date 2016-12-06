@@ -1,0 +1,43 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: FileType.java 
+ * @Package saas.crm.dynamic.model 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年8月5日 下午4:27:36 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.model;
+
+/**
+ * @ClassName: FileType
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年8月5日 下午4:27:36
+ */
+
+public enum FileType {
+
+	IMAGE(0), COMMONFILE(1);
+	
+	public final int value;
+	
+	private FileType(int value){
+		this.value=value;
+	}
+	
+	public static FileType getType(int value){
+		for (FileType fileType : values()) {
+			if(fileType.value==value){
+				return fileType;
+			}
+		}
+		return FileType.COMMONFILE;
+	}
+}

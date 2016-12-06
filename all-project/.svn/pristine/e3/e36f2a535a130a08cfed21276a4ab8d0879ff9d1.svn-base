@@ -1,0 +1,11 @@
+package saas.crm.data.model.log;
+
+import com.jfinal.plugin.activerecord.Model;
+
+public class FileUploadLog extends Model<FileUploadLog> {
+
+	private static final long serialVersionUID = 927958982391108518L;
+	
+	public static final FileUploadLog dao = new FileUploadLog();
+
+}

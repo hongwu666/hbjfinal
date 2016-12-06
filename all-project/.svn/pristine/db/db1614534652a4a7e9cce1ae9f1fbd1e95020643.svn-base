@@ -1,0 +1,47 @@
+package saas.winbons.dubbo.api;
+
+import java.io.Serializable;
+
+public class CommonCriteria implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+	
+	private FilterDTO[] filters;
+	private SortDTO[] sorts;
+	private PageDto page;
+	private boolean paged;
+	
+	
+	public FilterDTO[] getFilters() {
+		return filters;
+	}
+	public void setFilters(FilterDTO[] filters) {
+		this.filters = filters;
+	}
+	public SortDTO[] getSorts() {
+		return sorts;
+	}
+	public void setSorts(SortDTO[] sorts) {
+		this.sorts = sorts;
+	}
+	public PageDto getPage() {
+		return page;
+	}
+	public void setPage(PageDto page) {
+		this.page = page;
+		this.paged = true;
+	}
+	
+
+	/**
+	 * @return the paged
+	 */
+
+	public boolean isPaged() {
+
+		return paged;
+	}
+	
+	
+
+}

@@ -1,0 +1,14 @@
+package saas.winbons.data.model.security;
+
+import org.springframework.context.ApplicationEvent;
+
+public class UserAddEvent extends ApplicationEvent {
+
+	private static final long serialVersionUID = 1L;
+
+	public UserAddEvent(Object source) {
+		
+		super(source);
+	}
+
+}

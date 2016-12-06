@@ -1,0 +1,159 @@
+package saas.crm.web.utils;
+
+
+import org.apache.commons.lang3.StringUtils;
+
+import saas.crm.customer.module.CustomerLocation;
+import saas.crm.customer.module.Location;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
+/**
+ * 高德地图查找工具类
+ * @author wlf
+ *
+ */
+public class CrmAMapSearchUtils {
+	
+	private static final String DATA_URL = "http://restapi.amap.com/v3/geocode/geo?";
+	private static final String AMAP_KEY = "4e7947452b28e1bc2cefabec316d9b5a";
+	private static final String VERSON = "rsv3";
+	private static final String QUERY_URL = DATA_URL + "key=" + AMAP_KEY + "&s=" + VERSON + "&address=%s";
+	
+	/**
+	 * 构建CustomerLocation主键
+	 * @param dbid
+	 * @param id
+	 * @return
+	 */
+	public static String buildCustomerLocationId(Long dbid, Long id){
+		if(dbid != null && id != null){
+			return dbid + "_" + id;
+		}
+		return null;
+	}
+	
+	/**
+	 * 通过详细地址+城市获取经纬度信息
+	 * @param addr		详细地址
+	 * @param city		城市
+	 * @return
+	 */
+	public static Location parseLocationFromAddr(String addr, String city){
+		
+		Location loc = null;
+		
+		if(StringUtils.isNotBlank(city)){
+			String url = QUERY_URL + "&city=%s";
+			String result = CrmHttpClientUtil.get(String.format(url, addr.replaceAll("\\s*", ""), city.replaceAll("\\s*", "")));
+			loc = parseLocationFromResult(result);
+		} else {
+			String result = CrmHttpClientUtil.get(String.format(QUERY_URL, addr.replaceAll("\\s*", "")));
+			loc = parseLocationFromResult(result);
+		}
+		
+		return loc;
+	}
+	
+	/**
+	 * 通过详细地址+城市获取客户地理位置信息
+	 * @param addr		详细地址
+	 * @param city		城市
+	 * @return
+	 */
+	public static CustomerLocation parseCustomerLocationFromAddr(String addr, String city){
+		
+		CustomerLocation cl = null;
+		
+		if(StringUtils.isNotBlank(city)){
+			String url = QUERY_URL + "&city=%s";
+			String result = CrmHttpClientUtil.get(String.format(url, addr.replaceAll("\\s*", ""), city.replaceAll("\\s*", "")));
+			cl = parseCustomerLocationFromResult(result);
+		} else {
+			String result = CrmHttpClientUtil.get(String.format(QUERY_URL, addr.replaceAll("\\s*", "")));
+			cl = parseCustomerLocationFromResult(result);
+		}
+		
+		return cl;
+	}
+	
+	/**
+	 * 解析高德返回结果获取客户地理位置信息
+	 * @param result
+	 * @return
+	 */
+	private static CustomerLocation parseCustomerLocationFromResult(String result) {
+		CustomerLocation cl = null;
+		
+		JSONObject geoObj = getJSONObjectFromResult(result);
+		if(geoObj != null){
+			Location loc = buildLocation(geoObj.getString("location"));
+			if (loc != null) {
+				cl = new CustomerLocation();
+				cl.setLoc(loc);
+				cl.setProvince(geoObj.getString("province"));
+				cl.setCity(geoObj.getString("city"));
+				cl.setArea(geoObj.getString("district"));
+				cl.setStreet(geoObj.getString("street"));
+				cl.setAddress(geoObj.getString("formatted_address"));
+			}
+		}
+		return cl;
+	}
+	
+	/**
+	 * 解析高德返回结果获取经纬度
+	 * @param result
+	 * @return
+	 */
+	private static Location parseLocationFromResult(String result) {
+		JSONObject geoObj = getJSONObjectFromResult(result);
+		if(geoObj != null){
+			return buildLocation(geoObj.getString("location"));
+		}
+		return null;
+	}
+	
+	/**
+	 * 解析高德返回结果
+	 * @param result
+	 * @return
+	 */
+	private static JSONObject getJSONObjectFromResult(String result) {
+		if(result.indexOf("geocodes")>=0){
+			// 解析高德返回结果
+			JSONObject obj = (JSONObject) JSON.parse(result);
+			JSONArray geocodes = obj.getJSONArray("geocodes");
+			// 如果返回结果有效
+			if (geocodes.size() > 0) {
+				return geocodes.getJSONObject(0);
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * 通过字符串构造经纬度对象
+	 * @param str
+	 * @return
+	 */
+	private static Location buildLocation(String str) {
+		
+		if(StringUtils.isBlank(str) || str.indexOf(",") == -1){
+			return null;
+		}
+		
+		Location loc = new Location();
+		try{
+			String[] locStr = str.split(",");
+			loc.setLng(Double.parseDouble(locStr[0]));
+			loc.setLat(Double.parseDouble(locStr[1]));
+		} catch (Exception e){
+			loc = null;
+		}
+		return loc;
+	}
+	
+}

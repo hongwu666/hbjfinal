@@ -1,0 +1,17 @@
+package com.jfinal.plugin.activerecord;
+
+public interface IdGenerators {
+
+	
+	public boolean isOrderID(String tableName);
+
+	public Long getIdByTable(Long dbId, String tableName);
+
+	public Long generateCommonID(Long dbId);
+
+	public static final String NON_ORDER = "idGenerators";
+
+	public static final String ORDER = "order_idGenerators";
+
+	public boolean addOrderedIdTables(String table);
+}

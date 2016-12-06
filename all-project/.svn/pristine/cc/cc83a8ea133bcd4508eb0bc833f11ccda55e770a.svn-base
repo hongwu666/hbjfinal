@@ -1,0 +1,159 @@
+package saas.winbons.dubbo.web.dto;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class UiGridColumnVO {
+	
+	private Long id;
+	private String gridId;
+	private String field;
+	private int width;
+	private Boolean autoWidth;
+	private Boolean isSort;
+	private String align;
+	private String renderer;
+	private String formatter;
+	private String name;
+	private Integer indexNum;
+	private Boolean display;
+	private String fieldType;
+	private String columnName;
+	private Map<String,Object>[] values = new HashMap[0]; 
+	
+	public UiGridColumnVO() {
+		super();
+	}
+
+	public UiGridColumnVO(String gridId, String field, int width) {
+		super();
+		this.gridId = gridId;
+		this.field = field;
+		this.width = width;
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getGridId() {
+		return gridId;
+	}
+	public void setGridId(String gridId) {
+		this.gridId = gridId;
+	}
+	
+	public int getWidth() {
+		return width;
+	}
+	public void setWidth(int width) {
+		this.width = width;
+	}
+
+	public Boolean isAutoWidth() {
+		return autoWidth;
+	}
+
+	public void setAutoWidth(Boolean autoWidth) {
+		this.autoWidth = autoWidth;
+	}
+
+	public String getAlign() {
+		return align;
+	}
+
+	public void setAlign(String align) {
+		this.align = align;
+	}
+
+	public String getRenderer() {
+		return renderer;
+	}
+
+	public void setRenderer(String renderer) {
+		this.renderer = renderer;
+	}
+
+	public Boolean getIsSort() {
+		return isSort;
+	}
+
+	public void setIsSort(Boolean isSort) {
+		this.isSort = isSort;
+	}
+
+	public Integer getIndexNum() {
+		return indexNum;
+	}
+
+	public void setIndexNum(Integer indexNum) {
+		this.indexNum = indexNum;
+	}
+
+	public String getField() {
+		return field;
+	}
+
+	public void setField(String field) {
+		this.field = field;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public Boolean getDisplay() {
+		return display;
+	}
+
+	public void setDisplay(Boolean display) {
+		this.display = display;
+	}
+
+	public Boolean getAutoWidth() {
+		return autoWidth;
+	}
+
+	public String getFormatter() {
+		return formatter;
+	}
+
+	public void setFormatter(String formatter) {
+		this.formatter = formatter;
+	}
+
+	public String getFieldType() {
+		return fieldType;
+	}
+
+	public void setFieldType(String fieldType) {
+		this.fieldType = fieldType;
+	}
+
+	public String getColumnName() {
+		return columnName;
+	}
+
+	public void setColumnName(String columnName) {
+		this.columnName = columnName;
+	}
+
+	public Map<String, Object>[] getValues() {
+		return values;
+	}
+
+	public void setValues(Map<String, Object>[] values) {
+		this.values = values;
+	}
+	
+	
+}
+

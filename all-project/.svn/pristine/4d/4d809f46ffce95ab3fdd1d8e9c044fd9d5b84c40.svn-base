@@ -1,0 +1,81 @@
+package saas.crm.customer.module;
+
+import java.io.Serializable;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import com.alibaba.fastjson.annotation.JSONField;
+
+/**
+ * 高德地图地域集合
+ * @author wlf
+ *
+ */
+@Document(collection = "AMapAddress")
+public class AMapAddress implements Serializable{
+	
+	private static final long serialVersionUID = 8141543981738593171L;
+	
+	@Id
+	private Long		id;			// 这里通过邮政编码作为主键
+	private Long		parentId;	// 省级的parentId为-1
+	private String 		citycode;	// 地域代码
+	private String 		name;		// 名称
+	private String		level;		// 地域等级
+	private Location   center;		// 中心坐标
+	private Integer		orderIdx;	// 排序
+	private Long		dbid;		// 默认为11
+	
+	public Long getId() {
+		return id;
+	}
+	public void setId(Long id) {
+		this.id = id;
+	}
+	public String getCitycode() {
+		return citycode;
+	}
+	public void setCitycode(String citycode) {
+		this.citycode = citycode;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public String getLevel() {
+		return level;
+	}
+	public void setLevel(String level) {
+		this.level = level;
+	}
+	public Location getCenter() {
+		return center;
+	}
+	public void setCenter(Location center) {
+		this.center = center;
+	}
+	public Long getParentId() {
+		return parentId;
+	}
+	public void setParentId(Long parentId) {
+		this.parentId = parentId;
+	}
+	@JSONField(serialize = false)
+	public Integer getOrderIdx() {
+		return orderIdx;
+	}
+	public void setOrderIdx(Integer orderIdx) {
+		this.orderIdx = orderIdx;
+	}
+	@JSONField(serialize = false)
+	public Long getDbid() {
+		return dbid;
+	}
+	public void setDbid(Long dbid) {
+		this.dbid = dbid;
+	}
+	
+}

@@ -1,0 +1,32 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: LogicType.java 
+ * @Package saas.framework.sql 
+ * @author star.ye 
+ * @date 2014年8月7日 下午5:04:23 
+ * @version 1.0 
+ */
+
+package saas.framework.sql;
+
+/**
+ * @ClassName: LogicType
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年8月7日 下午5:04:23
+ */
+
+public enum LogicType {
+	AND("AND"), OR("OR");
+	
+	public final String value;
+
+	private LogicType(String value) {
+		this.value = value;
+	}
+}

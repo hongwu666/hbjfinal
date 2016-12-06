@@ -1,0 +1,70 @@
+  
+        /** 
+         * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+         * All Rights Reserved.
+         * Development of this softwareWinbons Technology Software Co.,Ltd.
+         * Without the formal written consent of the Company, 
+         * any other individuals, groups may not use, 
+         * copy, modify, or distribute this software
+         * @Title: Stream.java 
+         * @Package saas.crm.dynamic.model 
+         * @Description: TODO(用一句话描述该文件做什么) 
+         * @author star.ye 
+         * @date 2014年7月17日 上午10:52:10 
+         * @version 1.0 
+         */   
+     
+    
+package saas.crm.dynamic.model;
+
+import java.io.Serializable;
+
+import saas.crm.dynamic.Action;
+
+
+  
+        /** 
+ * @ClassName: Stream 
+ * @Description: TODO(这里用一句话描述这个类的作用) 
+ * @author star.ye
+ * @date 2014年7月17日 上午10:52:10  
+ */
+
+public class Stream implements Serializable {
+
+	private static final long serialVersionUID = -5380086636635770776L;
+
+	private Action action;
+	
+	private String actionValue;
+
+	public Action getAction() {
+	
+		return action;
+	}
+
+	public void setAction(Action action) {
+	
+		this.action = action;
+	}
+
+	public String getActionValue() {
+	
+		return actionValue;
+	}
+
+	public void setActionValue(String actionValue) {
+	
+		this.actionValue = actionValue;
+	}
+
+	public Stream(Action action, String actionValue) {
+		super();
+		this.action = action;
+		this.actionValue = actionValue;
+	}
+
+	public Stream() {
+		super();
+	}
+}

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--  
+	菜单sql
+-->
+<sql-statement namespace="winbins.tag">
+	
+	<sql id="getItemIdByTagId">
+	<![CDATA[ 
+		select itemid from t_crm_biz_rel_tag where tagid = ?  and userid = ? and module = ?
+	]]>
+	</sql>
+	
+	<sql id="getBizTagsByItemId">
+	<![CDATA[ 
+		select ${columns} from t_crm_biz_rel_tag a   
+		INNER JOIN t_crm_tag b on a.dbid=b.dbid and a.tagid=b.id 
+		where a.itemid = ? and a.userid = ? and  a.module=? 
+		order by b.fsort 
+	]]>
+	</sql>
+	
+	
+	<sql id="getBizTagsByItemIds">
+	<![CDATA[ 
+		select ${columns} from t_crm_biz_rel_tag a   
+		INNER JOIN t_crm_tag b on a.dbid=b.dbid and a.tagid=b.id 
+		where 1 = 1 
+		<%
+			commonSql("winbons.common.params",filters!,sorts!);
+		%> 
+	]]>
+	</sql>
+	
+	
+
+</sql-statement>

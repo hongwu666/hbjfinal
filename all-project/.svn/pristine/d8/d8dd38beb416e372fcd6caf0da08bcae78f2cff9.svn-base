@@ -1,0 +1,23 @@
+package saas.winbons.framework.utils;
+
+import saas.winbons.dubbo.api.ContextDTO;
+
+public class CrmContext {
+	
+	private static ThreadLocal<ContextDTO> contextContainer = new ThreadLocal<ContextDTO>();
+	
+	public static void clear() {
+		contextContainer.remove();
+	}
+	
+	public static ContextDTO getContext() {
+		return contextContainer.get();
+	}
+	
+	public static void setContext(ContextDTO contextDTO) {
+		contextContainer.set(contextDTO);
+	}
+	
+	
+
+}

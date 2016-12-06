@@ -1,0 +1,39 @@
+package saas.winbons.data.model.customer;
+
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ApplicationEventMulticaster;
+import org.springframework.stereotype.Component;
+
+import saas.crm.dynamic.manager.ICommonDyManager;
+import saas.winbons.dubbo.api.ContextDTO;
+
+
+@Component
+public class CustomerDynamicEventListener implements ApplicationListener<CustomerDynamicEvent> {
+	
+	@Autowired
+	private ICommonDyManager commonDyManager;
+
+	
+	@Override
+	public void onApplicationEvent(CustomerDynamicEvent event) {
+		try{
+			System.out.println("1");
+			Map<String,Object> source = (Map<String,Object>)event.getSource();
+			Map<String,Object> map = (Map<String, Object>) source.get("data");
+			ContextDTO contextDTO = (ContextDTO) source.get("contextDTO");
+			
+			
+			
+			
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	
+	
+
+}

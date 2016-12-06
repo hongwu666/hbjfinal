@@ -1,0 +1,86 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: ItemTypeValueEnum.java 
+ * @Package saas.crm.dynamic 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年8月20日 下午4:51:57 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic;
+
+import org.apache.commons.lang3.StringUtils;
+
+
+/**
+ * @ClassName: ItemTypeValueEnum
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年8月20日 下午4:51:57
+ */
+
+public enum ItemTypeValueEnum {
+	
+	/** 标识首页动态类型 */
+	hp_releaseDynamicNormal("hp_releaseDynamicNormal"), 
+	hp_releaseDynamicPic("hp_releaseDynamicPic"), 
+	hp_releaseDynamicFile("hp_releaseDynamicFile"), 
+	hp_releaseDynamicPicAndFile("hp_releaseDynamicPicAndFile"),
+	
+	/** 标识客户/联系人动态类型 */
+	releaseDynamic("releaseDynamic"), 
+	releaseDynamicPic("releaseDynamicPic"), 
+	releaseDynamicFile("releaseDynamicFile"), 
+	releaseDynamicPicAndFile("releaseDynamicPicAndFile"), 
+	
+	/** 转发 */
+	hp_transpondDynamic("hp_transpondDynamic"), 
+	
+	/** 销售机会动态类型 */
+	opportunityDynamic("opportunityDynamic"),
+	opportunityDynamicPic("opportunityDynamicPic"),
+	opportunityDynamicFile("opportunityDynamicFile"),
+	opportunityDynamicPicAndFile("opportunityDynamicPicAndFile"),
+	
+	/** 竞争对手动态类型 */
+	competitorDynamic("competitorDynamic"),
+	competitorDynamicPic("competitorDynamicPic"),
+	competitorDynamicFile("competitorDynamicFile"),
+	competitorDynamicPicAndFile("competitorDynamicPicAndFile"),
+	
+	/** 线索动态类型 */
+	leadsDynamic("leadsDynamic"),
+	leadsDynamicPic("leadsDynamicPic"),
+	leadsDynamicFile("leadsDynamicFile"),
+	leadsDynamicPicAndFile("leadsDynamicPicAndFile"),
+	
+	/** 合同动态类型 */
+	contractDynamic("contractDynamic"),
+	contractDynamicPic("contractDynamicPic"),
+	contractDynamicFile("contractDynamicFile"),
+	contractDynamicPicAndFile("contractDynamicPicAndFile"),
+	
+	;
+	
+	public final String value;
+
+	private ItemTypeValueEnum(String value) {
+		this.value = value;
+	}
+
+	public static ItemTypeValueEnum getItemType(String value) {
+		if (StringUtils.isNotBlank(value))
+			for (ItemTypeValueEnum item : values()) {
+				if (item.value.equals(value)) {
+					return item;
+				}
+			}
+		return null;
+	}
+}

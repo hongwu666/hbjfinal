@@ -1,0 +1,27 @@
+package saas.winbons.market.enumtype;
+
+
+public enum TurnCustomerStatusEnum {
+	
+	NOTTURNED(0, "未转为客户"),
+	TURNED(1, "已转为客户");
+	
+	public final Integer name;
+	
+	public final String value;
+	
+	private TurnCustomerStatusEnum(Integer name, String value){
+		this.name = name;
+		this.value = value;
+	}
+	
+	public static String findValue(Integer name){
+		for(TurnCustomerStatusEnum ce : TurnCustomerStatusEnum.values()){
+			if(ce.name.equals(name)){
+				return ce.value;
+			}
+		}
+		return "";
+	}
+	
+}

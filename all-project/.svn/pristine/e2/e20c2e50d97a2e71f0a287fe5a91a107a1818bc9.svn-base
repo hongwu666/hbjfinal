@@ -1,0 +1,100 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: RedissionFactory.java 
+ * @Package saas.framework.cache 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年8月11日 下午1:13:50 
+ * @version 1.0 
+ */
+
+package saas.framework.cache;
+
+import org.redisson.Config;
+import org.redisson.Redisson;
+import org.redisson.SingleServerConfig;
+import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.codec.RedissonCodec;
+import org.springframework.beans.factory.FactoryBean;
+
+/**
+ * @ClassName: RedissionFactory
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年8月11日 下午1:13:50
+ */
+public class RedissionFactory implements FactoryBean<Redisson> {
+
+	private String ip;
+
+	private int port;
+
+	private RedissonCodec redissonCodec;
+
+	private int maxThreads = 4;
+
+	/**
+	 * @param maxThreads
+	 *            the maxThreads to set
+	 */
+
+	public void setMaxThreads(int maxThreads) {
+
+		this.maxThreads = maxThreads;
+	}
+
+	/**
+	 * @param ip
+	 *            the ip to set
+	 */
+
+	public void setIp(String ip) {
+		this.ip = ip;
+	}
+
+	/**
+	 * @param port
+	 *            the port to set
+	 */
+
+	public void setPort(int port) {
+
+		this.port = port;
+	}
+
+	/**
+	 * @param redissonCodec
+	 *            the redissonCodec to set
+	 */
+	public void setRedissonCodec(RedissonCodec redissonCodec) {
+
+		this.redissonCodec = redissonCodec;
+	}
+
+	@Override
+	public Redisson getObject() throws Exception {
+		Config config = new Config();
+		if (this.redissonCodec == null) {
+			this.redissonCodec = new JsonJacksonCodec();
+		}
+		config.setThreads(maxThreads);
+		config.setCodec(redissonCodec);
+		SingleServerConfig singleServerConfig = config.useSingleServer();
+		singleServerConfig.setAddress(ip + ":" + port);
+		return Redisson.create(config);
+	}
+
+	@Override
+	public Class<?> getObjectType() {
+		return Redisson.class;
+	}
+
+	public boolean isSingleton() {
+		return true;
+	}
+}

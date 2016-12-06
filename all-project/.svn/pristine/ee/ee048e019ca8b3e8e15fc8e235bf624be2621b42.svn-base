@@ -1,0 +1,210 @@
+package saas.winbons.provider;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import saas.winbons.contant.calendar.CalendarColumnConvertor;
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.data.model.calendar.CalendarInfo;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.service.AbstractCommonService;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.format.EnumFormatTool;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+
+import com.jfinal.ext.kit.ModelKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Model;
+import com.jfinal.plugin.activerecord.Record;
+
+public class CalendarServiceImpl extends AbstractCommonService {
+
+	@Override
+	public Class<? extends Model<?>> getModelClass() {
+		return CalendarInfo.class;
+	}
+
+	@Override
+	public Class<? extends IEnumFormat> getFormatClass() {
+		return CalendarColumnConvertor.class;
+	}
+	
+	@Override
+	protected void entityFormat(ContextDTO contextDTO,Map<String, Object> map){
+		EnumFormatTool.dealFormat(CalendarColumnConvertor.class, map);
+	}
+
+	@Override
+	public String getGridId() {
+		return null;
+	}
+
+	@Override
+	public String getTableName() {
+		return "t_crm_calendar_info";
+	}
+
+	@Override
+	public AbstractCommonService getService() {
+		return this;
+	}
+
+	@Override
+	public FilterItemList buildFilterItem(ContextDTO contextDTO, SimulationHttpServletRequest request) {
+		return null;
+	}
+	
+	public ResultDTO listView(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			resultDTO.setSuccess(true);
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Map<String,Object> param = new HashMap<String, Object>();
+			List<FilterDTO> fitler = requestDTO.getFitler();
+			fitler.add(new FilterDTO("a.valid", "Y"));
+			param.put("columns", ToolJfinalSql.buildSelectSql(getModelClass(), "a",""));
+			param.put("calendarColumns", ToolJfinalSql.buildSelectSql(getModelClass(), "",""));
+			param.put("contextDTO", requestDTO.getContextDTO());
+			param.put("filters", fitler);
+			param.put("sorts", requestDTO.getSort());
+			String sqlByBeetl = getSqlByBeetl("winbins.calendar.search",param);
+			List<Record> find = Db.find(contextDTO, sqlByBeetl);
+			List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find);
+			for(Map<String, Object> map : recordListConvert){
+				EnumFormatTool.dealFormat(CalendarColumnConvertor.class, map);
+			}
+			resultDTO.setData(recordListConvert);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	public ResultDTO save(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			resultDTO.setSuccess(true);
+			Map<Object, Object> data = requestDTO.getData();
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Map<String,Object> mapToModelMap = ToolModel.mapToModelMap(data, "calendar");
+			CalendarInfo calendarInfo = new CalendarInfo();
+			calendarInfo.set("valid", DataConstant.YES_OR_NO_YES);
+			EnumFormatTool.buildModel(CalendarColumnConvertor.class, calendarInfo, mapToModelMap);
+			CalendarInfo.dao.saveObj(contextDTO, calendarInfo);
+			Map<String, Object> map = ModelKit.toMap(calendarInfo);
+			EnumFormatTool.dealFormat(CalendarColumnConvertor.class, map);
+			resultDTO.setData(map);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	public ResultDTO update(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			resultDTO.setSuccess(true);
+			Map<Object, Object> data = requestDTO.getData();
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Map<String,Object> mapToModelMap = ToolModel.mapToModelMap(data, "calendar");
+			Object object = mapToModelMap.get("alertDelay");
+			if(null == object || object.equals("")){
+				mapToModelMap.remove("alertDelay");
+				mapToModelMap.put("alert", "N");
+			}
+			CalendarInfo calendarInfo = CalendarInfo.dao.findById(contextDTO, contextDTO.getDbId(),mapToModelMap.get("id"));
+			calendarInfo.set("valid", DataConstant.YES_OR_NO_YES);
+			EnumFormatTool.buildModel(CalendarColumnConvertor.class, calendarInfo, mapToModelMap);
+			CalendarInfo.dao.updateObj(contextDTO, calendarInfo);
+			Map<String, Object> map = ModelKit.toMap(calendarInfo);
+			EnumFormatTool.dealFormat(CalendarColumnConvertor.class, map);
+			resultDTO.setData( map);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	public ResultDTO delete(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			resultDTO.setSuccess(true);
+			Map<Object, Object> data = requestDTO.getData();
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Map<String,Object> mapToModelMap = ToolModel.mapToModelMap(data, "calendar");
+			CalendarInfo calendarInfo = CalendarInfo.dao.findById(contextDTO, contextDTO.getDbId(),mapToModelMap.get("id"));
+			calendarInfo.set("valid", DataConstant.YES_OR_NO_NO);
+			CalendarInfo.dao.updateObj(contextDTO, calendarInfo);
+			Map<String, Object> map = ModelKit.toMap(calendarInfo);
+			EnumFormatTool.dealFormat(CalendarColumnConvertor.class, map);
+			resultDTO.setData(map);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	public ResultDTO listByMobile(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			resultDTO.setSuccess(true);
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Map<String,Object> param = new HashMap<String, Object>();
+			List<FilterDTO> fitler = requestDTO.getFitler();
+			fitler.add(new FilterDTO("a.valid", "Y"));
+			param.put("contextDTO", requestDTO.getContextDTO());
+			param.put("filters", requestDTO.getFitler());
+			String sqlByBeetl = getSqlByBeetl("winbins.calendar.searchByMobile",param);
+			List<Record> find = Db.find(contextDTO, sqlByBeetl);
+			resultDTO.setData(ToolModel.recordListConvert(find));
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	@Override
+	public String getGridHeadSql() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getGridSql() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void rebuildCreateSearchView(RequestDTO requestDTO) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void reUpdateCreateSearchView(List<Map<String, Object>> list) {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	
+
+
+}

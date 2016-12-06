@@ -1,0 +1,109 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: Constant.java 
+ * @Package saas.crm 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年6月25日 下午3:56:08 
+ * @version 1.0 
+ */
+
+package saas.crm;
+
+/**
+ * @ClassName: Constant
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年6月25日 下午3:56:08
+ */
+
+public interface Constant {
+	
+
+	public static final String TIME_FORMAT = "time_format";
+
+	public static final String CURRENCY_FORMAT = "currencyformat";
+
+	public static final String DEFAULT_CATEGORY = "edm";
+
+	public static final String APPLY_COUNT = "applyCount";
+
+	public static final String USER_COUNT = "userCount";
+
+	public static final String DEFAULT_PWD = "666666";
+
+	public static final Long ROLE_OWER = 0L;
+	
+	public static final Long ROLE_COMMON = 1L;
+	
+	public static final Long INIT_DATA = -1L; 
+
+	String DEFAULT_USER_URL = "/style/images/index/user_icon.png";
+
+	String FEED_COUNT = "feed.pageCount";
+
+	String DEFAULT_FEED_COUNT = "20";
+
+	String JMS_LOG_QUEUE = "queue.crm.log";
+
+	long DEFAULT_DEPARTMENT = -1L;
+
+	int MAX_COMMENT_COUNT = 100;
+
+	int MAX_APPROVE_COUNT = 200;
+
+	long PRIVATE_DEP = 0;
+
+	long PUBLIC_DEP = 10000;
+
+	String PUBLIC_DEP_NAME = "公开";
+
+	String PRIVATE_DEP_NAME = "私有";
+
+	String TOPIC_NAME_PRE = "#";
+
+	int CUSTOMER_IMPORT = 1;
+
+	int CONTACT_IMPORT = 2;
+
+	String EXCEL_XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+	String EXCEL_XLS_CONTENT_TYPE = "application/vnd.ms-excel";
+
+	String appKey = "5473E9AD051B264D2C80FADA";
+
+	String BAIDU_MAP_STATIC_URL = "dynamic/mapUrl.ftl";
+
+	String RESOUCES_URL_PRE = "invite.resource.url";
+
+	String DEFAULT_START = "startFilter"; // 用于初始化重复字段的缓存（ICheckRepeatCache接口）
+
+	String AMAP_STATIC_URL = "dynamic/AMapUrl.ftl"; // 高德静态地图URL-模板
+
+	String AMAP_STATIC_KEY = "b2fe7c27798cadfa81a033ebad45b006"; // 高德静态地图KEY
+
+	/** 七牛对应的模块，用于动态文件上传和展示 */
+	String[] QINIU_MODULES = new String[] { "dynamic", "customer", "contact", "opportunity", "competitor", "contract", "leads", "workreport" };
+
+	String[] MONDULE_TABLE = new String[] { "t_crm_customer", "t_crm_cust_contact", "t_crm_document", "t_crm_sales_opportunity", "t_crm_competitor", "t_crm_contract", "t_crm_leads", "t_crm_workreport" };
+
+	int importMutiOn = 200; // 导入的多线程启动数
+
+	/** ==============与电话服务通讯相关参数=============== **/
+	int OPER_TYPE_ADD = 0;// 与电话服务通讯的操作类型，0-新增
+
+	int OPER_TYPE_UPDATE = 1;// 与电话服务通讯的操作类型，1-修改
+
+	String MQ_QUEUE_MERGE_CUSTOMER = "queue.caas.merge.customer";// 客户模块与电话服务通讯mq
+
+	String MQ_QUEUE_MERGE_CONTACT = "queue.caas.merge.linker";// 联系人模块与电话服务通讯Mq
+
+	String MQ_QUEUE_MERGE_LEADS = "queue.caas.merge.lead";// 线索模块与电话服务通讯mq
+	/** ==============与电话服务通讯相关参数=============== **/
+
+}

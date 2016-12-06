@@ -1,0 +1,99 @@
+package saas.monitor.mvc.backend;
+
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.shiro.authz.annotation.RequiresAuthentication;
+
+import saas.monitor.constantInit.ConstantInit;
+import saas.monitor.criteria.CommonCriteria;
+import saas.monitor.criteria.PageResult;
+import saas.monitor.mvc.base.BaseController;
+import saas.monitor.mvc.email.EmailAccountModel;
+import saas.monitor.mvc.email.EmailReceiveLogModel;
+import saas.monitor.tools.ToolGson;
+import saas.monitor.tools.ToolJfinalSql;
+import saas.monitor.tools.ToolModel;
+import saas.monitor.tools.ToolSqlXml;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.Record;
+
+@RequiresAuthentication
+public class BackendController extends BaseController {
+
+	@Override
+	protected Class<? extends BaseController> getLogClass() {
+		return BackendController.class;
+	}
+	
+	
+	public void index(){
+		
+		List<Record> find = Db.find("select * from t_monitor_email_account");
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("emailAccount", ToolModel.recordListConvert(find));
+		Calendar c = Calendar.getInstance();
+		c.set(Calendar.HOUR_OF_DAY, 0);
+		c.set(Calendar.MINUTE, 0);
+		c.set(Calendar.SECOND, 0);
+		c.set(Calendar.MILLISECOND, 0);
+		
+		Record findFirst = Db.findFirst("select count(1) as countTemp from t_monitor_email_receive_logs where createDate > ? and isOk = ?",c.getTimeInMillis(),ConstantInit.YES_OR_NO_NO);
+		map.put("errorCount", findFirst.get("countTemp"));
+		findFirst = Db.findFirst("select count(countTemp) as countTemp from (select count(1) as countTemp from t_monitor_email_receive_logs where createDate > ? and isOk = ? group by emailAccountId) t",c.getTimeInMillis(),ConstantInit.YES_OR_NO_NO);
+		map.put("errorAccountCount", findFirst.get("countTemp"));
+		setAttr("initData", ToolGson.GsonString(map));
+		setAttr("htmlContent", "/backend/summary.html");
+		render("/backend/index.html");
+	}
+	
+	public void receiptLog(){
+		setAttr("htmlContent", "/backend/receiptLog.html");
+		render("/backend/index.html");
+	}
+	
+	
+	
+	public void ajaxListReceiptLog(){
+		CommonCriteria commonCriteria = buildCommonCriteria();
+		String buildSelectSql = "select ";
+		buildSelectSql += ToolJfinalSql.buildSelectSql(EmailReceiveLogModel.class, "","");
+		Map<String, Object> buildMap = ToolSqlXml.buildMap(commonCriteria);
+		Page<Record> paginate = Db.paginate(commonCriteria.getPage().getRowStart() , commonCriteria.getPage().getLimit(), buildSelectSql,ToolSqlXml.getSql("sql.receipt.search", buildMap));
+		PageResult pageResult = new PageResult();
+		pageResult.setStart(getParaToInt("start"));
+		pageResult.setTotalRows(paginate.getTotalRow());
+		pageResult.setHits(paginate.getTotalRow());
+		List<Record> list = paginate.getList();
+		List<Map<String, Object>> modelListConvert = ToolModel.recordListConvert(list);
+		pageResult.setResults(modelListConvert.toArray(new Map[0]));
+		renderJson(pageResult);
+	}
+	
+	public void accountSendTimes(){
+		setAttr("htmlContent", "/backend/accountSendTimes.html");
+		render("/backend/index.html");
+	}
+	
+	
+	public void ajaxAccountSendTimes(){
+		CommonCriteria commonCriteria = buildCommonCriteria();
+		String buildSelectSql = "select ";
+		buildSelectSql += ToolJfinalSql.buildSelectSql(EmailAccountModel.class, "","");
+		Map<String, Object> buildMap = ToolSqlXml.buildMap(commonCriteria);
+		Page<Record> paginate = Db.paginate(commonCriteria.getPage().getRowStart() , commonCriteria.getPage().getLimit(), buildSelectSql,ToolSqlXml.getSql("sql.receipt.searchAccountSendTimes", buildMap));
+		PageResult pageResult = new PageResult();
+		pageResult.setStart(getParaToInt("start"));
+		pageResult.setTotalRows(paginate.getTotalRow());
+		pageResult.setHits(paginate.getTotalRow());
+		List<Record> list = paginate.getList();
+		List<Map<String, Object>> modelListConvert = ToolModel.recordListConvert(list);
+		pageResult.setResults(modelListConvert.toArray(new Map[0]));
+		renderJson(pageResult);
+	}
+
+}

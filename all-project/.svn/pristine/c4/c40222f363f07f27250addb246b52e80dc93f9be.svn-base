@@ -1,0 +1,19 @@
+package saas.winbons.customer.job;
+
+import java.util.List;
+
+import com.jfinal.plugin.activerecord.Db;
+
+public class CustomerPoolDefineJob {
+	
+	public void repairUpgrade(){
+		String sql = "select dbid from t_bs_systemprofile where category = 'customerPool' and fkey = 'activated' and fvalue = 'N'";
+		
+		
+		List<Long> findSingleAttribute = Db.findSingleAttribute(null, Long.class,sql);
+		for(Long dbid : findSingleAttribute){
+			Db.update(null, "UPDATE t_crm_definition_field SET is_mandatory = 'N' where table_name = 't_crm_customer' and column_field_name = 'cust_pool_id' and dbid = ?",dbid);
+		}
+	}
+
+}

@@ -1,0 +1,21 @@
+package saas.winbons.data.model;
+
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolSqlXml;
+
+
+
+
+public class SystemProfile extends BaseModel<SystemProfile> {
+
+	private static final long serialVersionUID = -4264714399887864565L;
+	
+	public static final SystemProfile dao = new SystemProfile();
+	
+	
+	public String getSystemProfile(ContextDTO contextDTO,String category, String key){
+		SystemProfile findFirst = SystemProfile.dao.findFirst(contextDTO, ToolSqlXml.getSql("winbons.systemProfile.getSystemProfile"),category,key,contextDTO.getDbId());
+		return findFirst.getStr("fvalue");
+	}
+
+}

@@ -1,0 +1,66 @@
+/** 
+ * Copyright (C) 2013 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: TableCache.java 
+ * @Package saas.framework.mutitenant.sql 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author yxx
+ * @date 2014-3-17 下午2:48:44 
+ * @version 1.0 
+ */
+
+package com.jfinal.plugin.sql;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * @ClassName: TableCache
+ * @author yxx
+ * @date 2014-3-17 下午2:48:44
+ */
+
+public final class TableCache {
+
+	private static final Logger logger = LoggerFactory
+			.getLogger(TableCache.class);
+
+	private static Set<String> tenantTable = new HashSet<String>();
+
+	private static Set<String> commonTable = new HashSet<String>();
+	
+	private static ConcurrentHashMap<String, Boolean> tabelparseCache=new ConcurrentHashMap<String, Boolean>();
+
+	public static boolean isTenantTable(String tableName) {
+		return tenantTable.contains(tableName.toLowerCase());
+	}
+
+	public static boolean isCommonTable(String tableName) {
+		return commonTable.contains(tableName.toLowerCase());
+	}
+
+	public static void addTable(String type, String tableName) {
+		if ("1".equals(type)) {
+			tenantTable.add(tableName.toLowerCase());
+		} else {
+			commonTable.add(tableName.toLowerCase());
+		}
+		logger.info("add a tenant table:{}", tableName);
+	}
+	
+	public static boolean addparseSql(String sql){
+		return tabelparseCache.putIfAbsent(sql, Boolean.TRUE)==null;
+	}
+	
+	public static boolean checkParseSQL(String sql){
+		return tabelparseCache.remove(sql, Boolean.TRUE);
+	}
+}

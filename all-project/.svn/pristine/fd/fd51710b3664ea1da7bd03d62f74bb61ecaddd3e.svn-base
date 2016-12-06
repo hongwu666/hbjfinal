@@ -1,0 +1,23 @@
+package saas.crm.data.vo.dynamic;
+
+public class AttentionNumVO implements java.io.Serializable{
+
+	private static final long serialVersionUID = 1L;
+	
+	private Long attenMe;
+	private Long myAtten;
+	
+	public Long getAttenMe() {
+		return attenMe;
+	}
+	public void setAttenMe(Long attenMe) {
+		this.attenMe = attenMe;
+	}
+	public Long getMyAtten() {
+		return myAtten;
+	}
+	public void setMyAtten(Long myAtten) {
+		this.myAtten = myAtten;
+	}
+
+}

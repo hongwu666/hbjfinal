@@ -1,0 +1,183 @@
+package com.jfinal.plugin.activerecord;
+
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+
+import com.jfinal.aop.Enhancer;
+import com.jfinal.log.Log;
+
+public class OrderedIdGenerator implements IdGenerators {
+	
+	private static final Log logger = Log.getLog(OrderedIdGenerator.class);
+	
+	public static final OrderedIdGenerator service = Enhancer.enhance(OrderedIdGenerator.class);
+	
+	private int MAX_VALUE;
+
+	private String service_proc_sql;
+
+	private String dbid_proc_sql;
+	
+	private static ConcurrentHashMap<Long, IdElement> tableIDCahe = new ConcurrentHashMap<Long, IdElement>();
+	
+	protected static Set<String> tables = new CopyOnWriteArraySet<String>();
+
+	/**
+	 * 根据租户id获取 数据库id
+	 * 
+	 * @param idElement
+	 * @param dbId
+	 *            租户id
+	 * @return
+	 * @throws InterruptedException
+	 */
+	private Long getIdByElement(IdElement idElement, Long dbId) throws InterruptedException {
+		Long id = idElement.getNextId();
+		int i = 0;
+		while (id == null) {
+			id = idElement.getNextId();
+			if (id == null && idElement.acquire()) {
+				loadInitID(idElement, dbId);
+				i++;
+			}
+			if (i > 3) {
+				logger.warn("can't get id from db ,dbId: {}" + dbId);
+				break;
+			}
+		}
+		return id;
+	}
+	
+	public Long nextId(Long dbId, String tableName) {
+		boolean isService = false;
+		if (tables.contains(tableName)) {
+			isService = true;
+		}
+		if (isService) {
+				Object execute = Db.execute(new ICallback() {
+				@Override
+				public Object call(Connection conn) throws SQLException {
+					CallableStatement callableStatement = conn.prepareCall("{call p_saas_servicesid()}");
+					ResultSet resultSet = callableStatement.executeQuery();
+					resultSet.next();
+					long long1 = resultSet.getLong(1);
+					return long1;
+				}
+			});
+			return Long.parseLong(execute.toString());
+		} else {
+			IdElement idElement = tableIDCahe.get(dbId);
+			try {
+				if (idElement == null) {
+					return getInitId(dbId);
+				} else {
+					return getIdByElement(idElement, dbId);
+				}
+			} catch (InterruptedException e) {
+				logger.error("interrupt thread by main :", e);
+				return null;
+			}
+		}
+	}
+	
+	/**
+	 * 获取租户的初始化id 对象池
+	 * 
+	 * @param dbId
+	 * @return
+	 * @throws InterruptedException
+	 */
+	private Long getInitId(Long dbId) throws InterruptedException {
+		IdElement idElement = tableIDCahe.get(dbId);
+		if (idElement == null) {
+			idElement = new IdElement(dbId);
+			IdElement temp = tableIDCahe.putIfAbsent(dbId, idElement);
+			if (temp != null) {
+				idElement = null;
+				return getIdByElement(temp, dbId);
+			}
+		}
+		return getIdByElement(idElement, dbId);
+	}
+	
+	/**
+	 * 加载 租户id 业务id对象池
+	 * 
+	 * @param idElement
+	 * @param dbId
+	 * @throws InterruptedException
+	 */
+	private void loadInitID(IdElement idElement, final Long dbId) throws InterruptedException {
+		try {
+			Object initId = Db.execute(new ICallback() {
+				
+				@Override
+				public Object call(Connection conn) throws SQLException {
+					CallableStatement callableStatement = conn.prepareCall("{call p_bs_identity(?,?)}");
+					callableStatement.setLong(1, dbId);
+					callableStatement.setLong(2, 1000);
+					ResultSet resultSet = callableStatement.executeQuery();
+					resultSet.next();
+					long long1 = resultSet.getLong(1);
+					return long1;
+				}
+			});
+			idElement.loadIds(Long.parseLong(initId.toString()),1000);
+		} catch (Exception ex) {
+			logger.error("load ids error by dbID:[" + dbId + "]", ex);
+			idElement.releaseLock();
+		}
+	}
+	
+	protected void init() {
+		initIdTables();
+		MAX_VALUE = 1000;
+		service_proc_sql = "{call p_saas_servicesid()}";
+		dbid_proc_sql = "{call p_bs_identity(?,?)}";
+	}
+
+
+	
+	
+	private void initIdTables() {
+		addOrderedIdTables("t_bs_services");
+		addOrderedIdTables("t_saas_services");
+		
+	}
+
+	@Override
+	public boolean isOrderID(String tableName) {
+		return tables.contains(tableName);
+	}
+
+	@Override
+	public Long getIdByTable(Long dbId, String tableName) {
+		return nextId(dbId, tableName);
+	}
+
+	@Override
+	public Long generateCommonID(Long dbId) {
+		IdElement idElement = tableIDCahe.get(dbId);
+		try {
+			if (idElement == null) {
+				return getInitId(dbId);
+			} else {
+				return getIdByElement(idElement, dbId);
+			}
+		} catch (InterruptedException e) {
+			logger.error("interrupt thread by main :", e);
+			return null;
+		}
+	}
+
+	@Override
+	public boolean addOrderedIdTables(String table) {
+		return tables.add(table);
+	}
+
+}

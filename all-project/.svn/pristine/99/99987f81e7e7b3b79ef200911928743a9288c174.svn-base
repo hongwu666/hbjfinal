@@ -1,0 +1,30 @@
+package com.jfinal.ext.plugin.quartz;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+
+import org.quartz.utils.ConnectionProvider;
+
+import com.alibaba.druid.pool.DruidDataSource;
+
+public class QuartzConnectionProvider implements ConnectionProvider {
+	
+    //Druid连接池
+    private DruidDataSource datasource;
+    
+
+	@Override
+	public Connection getConnection() throws SQLException {
+		return datasource.getConnection();
+	}
+
+	@Override
+	public void shutdown() throws SQLException {
+		 datasource.close();
+	}
+	
+	public void initialize(DruidDataSource datasource){
+		this.datasource = datasource;
+	}
+
+}

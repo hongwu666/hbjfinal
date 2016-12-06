@@ -1,0 +1,403 @@
+package saas.winbons.provider;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
+
+import com.alibaba.dubbo.common.utils.CollectionUtils;
+import com.jfinal.ext.kit.ModelKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Model;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.winbons.data.model.contact.ContractConvertor;
+import saas.winbons.data.model.contract.Contract;
+import saas.winbons.data.model.customer.Customer;
+import saas.winbons.data.model.sales.Opportunity;
+import saas.winbons.data.model.sales.OpportunityStage;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.service.AbstractCommonService;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.format.EnumFormatTool;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+
+public class OpportunityServiceImpl extends AbstractCommonService {
+
+	@Override
+	public Class<? extends Model<?>> getModelClass() {
+		return null;
+	}
+
+	@Override
+	public Class<? extends IEnumFormat> getFormatClass() {
+		return null;
+	}
+
+	@Override
+	public String getGridId() {
+		return null;
+	}
+
+	@Override
+	public String getTableName() {
+		return null;
+	}
+
+	@Override
+	public AbstractCommonService getService() {
+		return this;
+	}
+
+	@Override
+	public FilterItemList buildFilterItem(ContextDTO contextDTO, SimulationHttpServletRequest request) {
+		return null;
+	}
+
+	@Override
+	public String getGridHeadSql() {
+		return null;
+	}
+
+	@Override
+	public String getGridSql() {
+		return null;
+	}
+
+	@Override
+	public void rebuildCreateSearchView(RequestDTO requestDTO) {
+	}
+
+	@Override
+	public void reUpdateCreateSearchView(List<Map<String, Object>> list) {
+	}
+
+	/**
+	 * 商机转合同
+	 * 
+	 * @param requestDTO
+	 */
+	public ResultDTO convertToContract(RequestDTO requestDTO) {
+
+		ResultDTO resultDTO = new ResultDTO();
+
+		// contextDTO
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		// 商机ID
+		Object requestOpportunityId = requestDTO.get("id") == null ? requestDTO.getData() == null ? null : requestDTO.getData().get("id") : requestDTO.get("id");
+		// isNeedCheck，true校验,false不校验
+		Object isNeedCheck = requestDTO.get("isNeedCheck") == null ? requestDTO.getData() == null ? "false" : requestDTO.getData().get("isNeedCheck") : requestDTO.get("isNeedCheck");
+		// 转换boolean值
+		boolean isNeedCheckBool = Boolean.parseBoolean(isNeedCheck == null ? "false" : isNeedCheck.toString());
+
+		// 判断参数是否传递
+		if (requestOpportunityId == null) {
+			resultDTO.setError("商机ID不能为空");
+			resultDTO.setSuccess(false);
+			return resultDTO;
+		}
+
+		// 转整商机ID
+		Long opportunityId = Long.parseLong(requestOpportunityId.toString());
+
+		// definition_field服务类
+		UiSettingServiceImpl usServiceImpl = UiSettingServiceImpl.service;
+
+		// 查询商机映射合同字段definition表SQL参数
+		RequestDTO opportunityDefReqDTO = new RequestDTO();
+		BeanUtils.copyProperties(requestDTO, opportunityDefReqDTO);
+		opportunityDefReqDTO.getFitler().add(new FilterDTO("table_name", "t_crm_sales_opportunity"));
+		opportunityDefReqDTO.getFitler().add(new FilterDTO("map_column_field_name", null, "is not null"));
+
+		// 查询合同definition表SQL参数
+		RequestDTO contractDefReqDTO = new RequestDTO();
+		BeanUtils.copyProperties(requestDTO, contractDefReqDTO);
+		contractDefReqDTO.getFitler().add(new FilterDTO("table_name", "t_crm_contract"));
+		/** Don't display field in create contract **/
+		contractDefReqDTO.getFitler().add(new FilterDTO("mapping_field_name", "createdBy", "<>"));
+		contractDefReqDTO.getFitler().add(new FilterDTO("mapping_field_name", "createdDate", "<>"));
+		contractDefReqDTO.getFitler().add(new FilterDTO("mapping_field_name", "updatedDate", "<>"));
+		contractDefReqDTO.getFitler().add(new FilterDTO("mapping_field_name", "updatedBy", "<>"));
+		contractDefReqDTO.getFitler().add(new FilterDTO("mapping_field_name", "payment", "<>"));
+		contractDefReqDTO.getFitler().add(new FilterDTO("mapping_field_name", "invoicePayment", "<>"));
+
+		try {
+
+			/*********** 第一步 判断该商机是否转换过合同 *******************/
+			List<Map<String, Object>> findByOpportunityId = Contract.dao.findByOpportunityId(requestDTO);
+
+			if (CollectionUtils.isNotEmpty(findByOpportunityId) && isNeedCheckBool) {
+				resultDTO.setError("该商机已经被转换过，请更换其它未转换过的商机！");
+				resultDTO.setSuccess(false);
+				return resultDTO;
+			}
+
+			/*********** 第二步 判断商机映射的字段是否为空 *******************/
+			List<Map<String, Object>> opportunityDefList = usServiceImpl.getDefinitionField(opportunityDefReqDTO);
+
+			if (CollectionUtils.isEmpty(opportunityDefList)) {
+				resultDTO.setError("没有需要映射的字段列");
+				resultDTO.setSuccess(false);
+				return resultDTO;
+			}
+
+			/*********** 第三步查询该商机的数据库记录 *******************/
+			Opportunity opportunity = Opportunity.dao.findById(contextDTO, contextDTO.getDbId(), opportunityId);
+
+			/*********** 第四步鉴权操作 *******************/
+			String errorMsg = checkPermission(requestDTO, opportunity);
+			// 如果错误信息不为空则返回错误信息
+			if (StringUtils.isNotBlank(errorMsg)) {
+				resultDTO.setError(errorMsg);
+				resultDTO.setSuccess(false);
+				return resultDTO;
+			}
+
+			// 返回值的entity
+			Contract entity = new Contract();
+
+			/*********** 第五步商机转合同 *******************/
+			convertOpportunity(opportunityDefList, opportunity, entity);
+
+			/*********** 第六步商机产品转换合同产品 *******************/
+			convertProduct(requestDTO, opportunity, entity);
+
+			/*********** 第七步商机团队成员转换合同团队成员 *******************/
+			convertSharedUser(requestDTO, opportunity, entity);
+
+			/*********** 第八步商机团队成员转换合同团队成员 *******************/
+			convertOther(contextDTO, opportunity, entity);
+
+			/*********** 第九步获取合同定义的字段列 *******************/
+			List<Map<String, Object>> contractDefList = usServiceImpl.getDefinitionField(contractDefReqDTO);
+
+			/*********** 第十步构建返回值 *******************/
+			// 老版本返回属性名切换
+			Map<String, Object> entityMap = ModelKit.toMap(entity);
+			propertyConvert(entityMap);
+
+			Map<String, Object> resultMap = new HashMap<String, Object>();
+			resultMap.put("entity", entityMap);
+			resultMap.put("items", contractDefList);
+
+			resultDTO.setData(resultMap);
+			resultDTO.setSuccess(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+
+	}
+
+	/**
+	 * 该商机必须是赢单
+	 * 用户在新建合同页面，关联商机。查看的商机范围包括：自己是商机的所有者、下属是商机的所有者（用户有商机模块的【管理商机】权限
+	 * 
+	 * @param requestDTO
+	 * @param ownerId
+	 * @return
+	 */
+	private String checkPermission(RequestDTO requestDTO, Opportunity opportunity) {
+
+		if (opportunity == null) {
+			return "请求的数据超时或已经被删除！";
+		}
+
+		// 所有者
+		String ownerId = opportunity.get("owner_id").toString();
+		// 状态策略ID
+		String stageId = opportunity.get("stage_id").toString();
+
+		// 上下文
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		// 用户ID
+		Long userId = contextDTO.getUserId();
+
+		OpportunityStage opportunityStage = OpportunityStage.dao.findById(contextDTO, contextDTO.getDbId(), stageId);
+		String opportunityStatus = opportunityStage.get("status") == null ? "" : opportunityStage.get("status").toString();
+
+		// 赢单状态
+		if (!"110004367302".equals(opportunityStatus)) {
+			return "商机不是赢单状态，无法转换为合同！";
+		}
+
+		// 构建商机下的产品查询DTO
+		RequestDTO permissionDTO = new RequestDTO();
+		BeanUtils.copyProperties(requestDTO, permissionDTO);
+
+		// 查询商机下的管理权限SQL参数
+		Map<String, Object> map = new HashMap<>();
+		map.put("filters", permissionDTO.getFitler());
+		map.put("contextDTO", contextDTO);
+		map.put("userId", userId);
+		map.put("aclName", "Opportunity:update");
+
+		/************** 查询当前登录用户的管理商机权限，如果有则查询部门下所有用户的ID集合，因为他可以管理部门下所有的商机 *****************/
+		String updateManagerUserIds = ToolSqlXml.getSql("winbons.department.getManagerUserIdByAcl", map);
+
+		// 检查下属是否在ownerId当中,包括自己的
+		if (!updateManagerUserIds.contains(ownerId)) {
+			return "没有商机管理权限，权限不足！";
+		}
+		return null;
+	}
+
+	private void convertOpportunity(List<Map<String, Object>> opportunityDefList, Opportunity opportunity, Contract entity) {
+
+		String columnFieldName = null;
+		// String fieldTypeEx = null;
+		String mapColumnFieldName = null;
+		Object columnValue = null;
+
+		/*********** 第五商机映射合同 *******************/
+		// 根据ID查询商机记录
+		// 遍历商机映射合同的字段列
+		for (Map<String, Object> opportunityDef : opportunityDefList) {
+
+			columnFieldName = opportunityDef.get("column_field_name").toString();
+			// fieldTypeEx = opportunityDef.get("field_type_ex").toString();
+			mapColumnFieldName = opportunityDef.get("map_column_field_name").toString();
+			columnValue = opportunity.get(columnFieldName);
+
+			// 商机的列值要映射致合同中
+			entity.put(mapColumnFieldName, columnValue);
+		}
+
+	}
+
+	/**
+	 * 日期转换
+	 * 
+	 * @param fieldTypeEx 列字段类型扩张
+	 * @param columnValue 列值
+	 * @return 转换后的列值
+	 */
+	/** private Object dateConvert(String fieldTypeEx, Object columnValue) {
+		// 检测是否是日期的格式
+		if ("fdt".equalsIgnoreCase(fieldTypeEx)) {
+			String columnValueString = columnValue == null ? "" : columnValue.toString();
+			if (StringUtils.isNotBlank(columnValueString)) {
+				return ToolDate.toDateOfYYYYMMDD(Long.parseLong(columnValueString));
+			}
+		}
+		return columnValue;
+	}
+	*/
+
+	/**
+	 * 商机产品转换合同产品
+	 * @param opportunity
+	 * @param entity 
+	 */
+	private void convertProduct(RequestDTO requestDTO, Opportunity opportunity, Contract entity) {
+
+		// 上下文
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+
+		// 构建商机下的产品查询DTO
+		RequestDTO productOfOpportunityDTO = new RequestDTO();
+		BeanUtils.copyProperties(requestDTO, productOfOpportunityDTO);
+		productOfOpportunityDTO.getFitler().add(new FilterDTO("b.opport_id", opportunity.get("id"), "="));
+
+		// 查询商机下的产品SQL参数
+		Map<String, Object> map = new HashMap<>();
+		map.put("filters", productOfOpportunityDTO.getFitler());
+		map.put("contextDTO", contextDTO);
+
+		/************** 封装product信息 *****************/
+		// sql
+		String sql = ToolSqlXml.getSql("winbons.product.getProductDetailListById", map);
+
+		List<Record> productDetailList = Db.find(contextDTO, sql);
+
+		List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(productDetailList == null ? new ArrayList<Record>() : productDetailList);
+
+		// 保存产品信息
+		entity.put("product", recordListConvert);
+		// 保存折扣率
+		Object product_discount = opportunity.get("product_discount");
+		// 折扣率
+		entity.put("discount", product_discount);
+
+		Double totalPrice = 0.0;
+		for (Map<String, Object> map2 : recordListConvert) {
+			Double salePrice = Double.parseDouble(map2.get("salePrice").toString());
+			Double number = Double.parseDouble(map2.get("number").toString());
+			totalPrice = totalPrice + (salePrice * number);
+		}
+
+		// 保存总价
+		entity.put("discountTotal", totalPrice * (product_discount == null ? 0.0 : Double.parseDouble(product_discount.toString())) / 100);
+
+		/************** 封装productid信息 *****************/
+		// sql
+		sql = ToolSqlXml.getSql("winbons.product.getProductIds", map);
+
+		List<Record> productIds = Db.find(contextDTO, sql);
+
+		String productIdsStr = "";
+		for (Record record : productIds) {
+			productIdsStr += record.get("id").toString() + ",";
+		}
+		productIdsStr = productIdsStr.length() > 0 ? productIdsStr.substring(0, productIdsStr.length() - 1) : productIdsStr;
+
+		// 保存productid
+		entity.put("productid", productIdsStr);
+
+	}
+
+	private void convertSharedUser(RequestDTO requestDTO, Opportunity opportunity, Contract entity) {
+
+		// 上下文
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+
+		// 查询商机下的团队成员SQL参数
+		Map<String, Object> map = new HashMap<>();
+		map.put("dbid", contextDTO.getDbId());
+		map.put("opport_id", opportunity.get("id"));
+
+		// sql
+		String sql = ToolSqlXml.getSql("winbons.opportunity.getSharedUsersById", map);
+
+		List<Record> sharedUsersList = Db.find(contextDTO, sql);
+
+		List<Map<String, Object>> sharedUsersListConvert = ToolModel.recordListConvert(sharedUsersList == null ? new ArrayList<Record>() : sharedUsersList);
+
+		// 保存团队成员信息
+		entity.put("sharedUsers", sharedUsersListConvert);
+	}
+
+	private void propertyConvert(Map<String, Object> entityMap) {
+
+		// 合同属性转换
+		EnumFormatTool.dealFormat2(ContractConvertor.class, entityMap);
+	}
+
+	private void convertOther(ContextDTO contextDTO, Opportunity opportunity, Contract entity) {
+
+		entity.put("opportunityid", opportunity.get("id"));
+		entity.put("opportunityName", opportunity.get("name"));
+		entity.put("owner_id", opportunity.get("owner_id"));
+
+		Object opportunityCustomerId = opportunity.get("cust_id");
+		// 解析客户名字
+		if (null != opportunityCustomerId) {
+			Customer customer = Customer.dao.findById(contextDTO, contextDTO.getDbId(), opportunityCustomerId);
+			entity.put("customerid", opportunityCustomerId);
+			entity.put("customerName", customer.get("name"));
+		}
+
+	}
+
+}

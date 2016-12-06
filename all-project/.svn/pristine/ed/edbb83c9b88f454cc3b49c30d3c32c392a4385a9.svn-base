@@ -1,0 +1,32 @@
+package saas.framework.cache.redis;
+
+public interface RedisCmdConstant {
+
+	public static final String PUSH_CMD = "PUSH_CMD";
+
+	public static final String POP_CMD = "POP_CMD";
+
+	public static final String SET_CMD = "SET_CMD";
+
+	public static final String GET_CMD = "GET_CMD";
+
+	public static final String DEL_CMD = "DEL_CMD";
+
+	public static final String SIZE_CMD = "SIZE_CMD";
+	
+	public static final String CLEAR_CMD = "CLEAR_CMD";
+	
+	public static final String SET_ENTRY = "SET_ENTRY";
+	
+	public static final String SADD_CMD = "SADD_CMD";
+	
+	public static final String LEN_CMD = "LEN_CMD";
+	
+	public static final String CONTAIN_CMD = "CONTAIN_CMD";
+	
+	public static final String SPOP_CMD = "SPOP_CMD";
+	
+	public static final String INCR_CMD = "INCR_CMD";
+	
+	public static final String GETSET_CMD = "GETSET_CMD";
+}

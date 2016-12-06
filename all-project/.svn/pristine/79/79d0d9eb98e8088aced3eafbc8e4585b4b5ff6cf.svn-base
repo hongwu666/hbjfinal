@@ -1,0 +1,373 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: StreamDynamic.java 
+ * @Package saas.crm.dynamic.model 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年7月17日 上午10:48:28 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.model;
+
+import java.util.Collection;
+
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import saas.crm.dynamic.IComments;
+
+import com.alibaba.fastjson.annotation.JSONField;
+
+/**
+ * @ClassName: StreamDynamic
+ * @Description: 需要关注的内容
+ * @author star.ye
+ * @date 2014年7月17日 上午10:48:28
+ */
+
+@Document(collection = "streamDynamic")
+public class StreamDynamic extends AbstractGroupDynamic implements IComments {
+	
+	private static final long serialVersionUID = -2793520978264365620L;
+
+	public StreamDynamic() {
+		super();
+	}
+
+	public StreamDynamic(String id) {
+		this.id = id;
+	}
+
+	private Stream stream;
+
+	private Comment[] commentList = new Comment[0];
+
+	private Long commentCount = 0L; // 评论数
+
+	private Approvers[] approvers = new Approvers[0];
+
+	private Long approveCount = 0L;// 张扬数
+
+	@DBRef
+	private StreamDynamic relDy;
+
+	//thumbsUp
+	@Transient
+	private Integer approvered;//点赞数
+
+	@Transient
+	private Integer favorited;//收藏数
+
+	private String itemTypeText;
+
+	private Collection<DynamicTopicEn> topics;// 话题集合
+
+	private Collection<Long> atUsers; // @users
+
+	private Integer isPrivate;// 是否是私有的
+
+	private Long forwardCount;// 转发数
+
+	private Location location;
+	
+	private String from;	//标识 线索转换 而来 	eg:from=Leads表示来自于 线索转换
+	
+	private Long dbid;	//租户id
+	
+	private String custName;	//客户名称
+	
+
+
+
+	@Transient
+	private String depName;
+	
+
+
+	/**
+	 * @return the depName
+	 */
+
+	public String getDepName() {
+
+		return depName;
+	}
+
+	/**
+	 * @param depName
+	 *            the depName to set
+	 */
+
+	public void setDepName(String depName) {
+
+		this.depName = depName;
+	}
+
+	/**
+	 * @return the location
+	 */
+
+	public Location getLocation() {
+		return location;
+	}
+
+	/**
+	 * @param location
+	 *            the location to set
+	 */
+
+	public void setLocation(Location location) {
+
+		this.location = location;
+	}
+
+	/**
+	 * @return the forwardCount
+	 */
+
+	public Long getForwardCount() {
+		return forwardCount;
+	}
+
+	/**
+	 * @param forwardCount
+	 *            the forwardCount to set
+	 */
+
+	public void setForwardCount(Long forwardCount) {
+
+		this.forwardCount = forwardCount;
+	}
+
+	/**
+	 * @return the isPrivate
+	 */
+	@JSONField(serialize = false)
+	public Integer isPrivate() {
+		return isPrivate;
+	}
+
+	/**
+	 * @param isPrivate
+	 *            the isPrivate to set
+	 */
+	public void setPrivate(Integer isPrivate) {
+		this.isPrivate = isPrivate;
+	}
+
+	/**
+	 * @return the atUsers
+	 */
+	@JSONField(serialize = false)
+	public Collection<Long> getAtUsers() {
+		return atUsers;
+	}
+
+	/**
+	 * @param atUsers
+	 *            the atUsers to set
+	 */
+	public void setAtUsers(Collection<Long> atUsers) {
+		this.atUsers = atUsers;
+	}
+
+	/**
+	 * @return the topics
+	 */
+	@JSONField(serialize = false)
+	public Collection<DynamicTopicEn> getTopics() {
+		return topics;
+	}
+
+	/**
+	 * @param topics
+	 *            the topics to set
+	 */
+	public void setTopics(Collection<DynamicTopicEn> topics) {
+		this.topics = topics;
+	}
+
+	/**
+	 * @return the itemTypeText
+	 */
+
+	public String getItemTypeText() {
+
+		return itemTypeText;
+	}
+
+	/**
+	 * @param itemTypeText
+	 *            the itemTypeText to set
+	 */
+
+	public void setItemTypeText(String itemTypeText) {
+
+		this.itemTypeText = itemTypeText;
+	}
+
+	/**
+	 * @return the favorited
+	 */
+
+	public Integer getFavorited() {
+
+		return favorited;
+	}
+
+	/**
+	 * @param favorited
+	 *            the favorited to set
+	 */
+
+	public void setFavorited(Integer favorited) {
+
+		this.favorited = favorited;
+	}
+
+	/**
+	 * @return the approvered
+	 */
+
+	public Integer getApprovered() {
+		return approvered;
+	}
+
+	/**
+	 * @param approvered
+	 *            the approvered to set
+	 */
+
+	public void setApprovered(Integer approvered) {
+
+		this.approvered = approvered;
+	}
+
+	/**
+	 * @return the relDy
+	 */
+
+	public StreamDynamic getRelDy() {
+
+		return relDy;
+	}
+
+	/**
+	 * @param relDy
+	 *            the relDy to set
+	 */
+
+	public void setRelDy(StreamDynamic relDy) {
+
+		this.relDy = relDy;
+	}
+
+	/**
+	 * @return the approvers
+	 */
+
+	public Approvers[] getApprovers() {
+
+		return approvers;
+	}
+
+	/**
+	 * @param approvers
+	 *            the approvers to set
+	 */
+
+	public void setApprovers(Approvers[] approvers) {
+
+		this.approvers = approvers;
+	}
+
+	/**
+	 * @return the approveCount
+	 */
+
+	public Long getApproveCount() {
+		if (approveCount == null) {
+			approveCount = 0L;
+		}
+		return approveCount;
+	}
+
+	/**
+	 * @param approveCount
+	 *            the approveCount to set
+	 */
+
+	public void setApproveCount(Long approveCount) {
+
+		this.approveCount = approveCount;
+	}
+
+	/**
+	 * @return the commentList
+	 */
+
+	public Comment[] getCommentList() {
+		return commentList;
+	}
+
+	/**
+	 * @param commentList
+	 *            the commentList to set
+	 */
+
+	public void setCommentList(Comment[] commentList) {
+
+		this.commentList = commentList;
+	}
+
+	public Stream getStream() {
+		return stream;
+	}
+
+	public void setStream(Stream stream) {
+		this.stream = stream;
+	}
+
+	public Long getCommentCount() {
+		if (commentCount == null) {
+			return 0L;
+		}
+		return commentCount;
+	}
+
+	public void setCommentCount(Long commentCount) {
+		this.commentCount = commentCount;
+	}
+
+	public String getFrom() {
+		return from;
+	}
+
+	public void setFrom(String from) {
+		this.from = from;
+	}
+
+	public Long getDbid() {
+		return dbid;
+	}
+
+	public void setDbid(Long dbid) {
+		this.dbid = dbid;
+	}
+
+	public String getCustName() {
+		return custName;
+	}
+
+	public void setCustName(String custName) {
+		this.custName = custName;
+	}
+
+}

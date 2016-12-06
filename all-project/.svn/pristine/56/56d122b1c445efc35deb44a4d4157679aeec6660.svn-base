@@ -1,0 +1,245 @@
+package saas.crm.base.utils;
+
+import java.text.Format;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/***
+ * 获取本月，本日，本周等最大和最小时间 如果在大并发的情况下，会出现问题，需要使用threadlocal 处理SimpleDateFormat,
+ * SimpleDateFormat 是非线程安全的
+ * [已经改成使用threadLocal]
+ * @author win-7
+ *
+ */
+public class CrmDateUtils {
+	
+	private static Logger logger = LoggerFactory.getLogger(CrmDateUtils.class); 
+
+	private static final String defaultPattern = "yyyy-MM-dd";
+	private static final String minPattern = defaultPattern+" 00:00:00";
+	private static final String maxPattern = defaultPattern+" 23:59:59";
+	private static final String standPattern = "yyyy-MM-dd HH:mm:ss";
+
+	/** 锁对象 */
+	private static final Object lockObj = new Object();
+	private static Map<String, ThreadLocal<SimpleDateFormat>> sdfMap = new HashMap<String, ThreadLocal<SimpleDateFormat>>();
+
+	private static SimpleDateFormat getSdf(final String pattern) {
+		ThreadLocal<SimpleDateFormat> tl = sdfMap.get(pattern);
+		// 此处的双重判断和同步是为了防止sdfMap这个单例被多次put重复的sdf
+		if (tl == null) {
+			synchronized (lockObj) {
+				tl = sdfMap.get(pattern);
+				if (tl == null) {
+					// 只有Map中还没有这个pattern的sdf才会生成新的sdf并放入map
+					logger.info("put new sdf of pattern " + pattern + " to map");
+
+					// 这里是关键,使用ThreadLocal<SimpleDateFormat>替代原来直接new
+					// SimpleDateFormat
+					tl = new ThreadLocal<SimpleDateFormat>() {
+
+						@Override
+						protected SimpleDateFormat initialValue() {
+							logger.info("thread: " + Thread.currentThread() + " init pattern: " + pattern);
+							return new SimpleDateFormat(pattern);
+						}
+					};
+					sdfMap.put(pattern, tl);
+				}
+			}
+		}
+
+		return tl.get();
+	}
+
+	public static Date getSpecifyDayMinDate(Date d) throws ParseException {
+		String fd = getSdf(minPattern).format(d);
+		return getSdf(standPattern).parse(fd);
+	}
+
+	public static Date getSpecifyDayMaxDate(Date d) throws ParseException {
+		String fd = getSdf(maxPattern).format(d);
+		return getSdf(standPattern).parse(fd);
+	}
+
+	public static Date getCurDayMinDate() throws ParseException {
+		Date d = new Date();
+		String fd =getSdf(minPattern).format(d);
+		return getSdf(standPattern).parse(fd);
+	}
+
+	public static Date getCurDayMaxDate() throws ParseException {
+		Date d = new Date();
+		String fd = getSdf(maxPattern).format(d);
+		return getSdf(standPattern).parse(fd);
+	}
+
+	public static Date getLastDayMinDate() throws ParseException {
+		Calendar cal = Calendar.getInstance();
+		cal.add(Calendar.DATE, -1);
+		String yesterday = getSdf(minPattern).format(cal.getTime());
+		return getSdf(standPattern).parse(yesterday);
+	}
+
+	public static Date getLastDayMaxDate() throws ParseException {
+		Calendar cal = Calendar.getInstance();
+		cal.add(Calendar.DATE, -1);
+		String yesterday = getSdf(maxPattern).format(cal.getTime());
+		return getSdf(standPattern).parse(yesterday);
+	}
+
+	/***
+	 * 获取本周的开始时间
+	 * 
+	 * @return
+	 * @throws ParseException
+	 */
+	public static Date getCurWeekMinDate() throws ParseException {
+		Calendar calendar = Calendar.getInstance();
+		calendar.setFirstDayOfWeek(Calendar.MONDAY);
+		calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+		
+		String sd = getSdf(minPattern).format(calendar.getTime());
+		return getSdf(standPattern).parse(sd);
+	}
+
+	public static Date getCurWeekMaxDate() throws ParseException {
+		Calendar calendar = Calendar.getInstance();
+		calendar.setFirstDayOfWeek(Calendar.MONDAY);
+		calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+		
+		String sd = getSdf(maxPattern).format(calendar.getTime());
+		return getSdf(standPattern).parse(sd);
+	}
+
+	public static Date getLastWeekMinDate() throws ParseException {
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+		cal.add(Calendar.WEEK_OF_YEAR, -1);
+		String sd = getSdf(minPattern).format(cal.getTime());
+		return getSdf(standPattern).parse(sd);
+	}
+
+	public static Date getLastWeekMaxDate() throws ParseException {
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+		String sd = getSdf(maxPattern).format(cal.getTime());
+		return getSdf(standPattern).parse(sd);
+	}
+
+	public static Date getCurMonthMinDate() throws ParseException {
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.DATE, cal.getActualMinimum(Calendar.DATE));
+		;
+		String sd = getSdf(minPattern).format(cal.getTime());
+		return getSdf(standPattern).parse(sd);
+	}
+
+	public static Date getCurMonthMaxDate() throws ParseException {
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.DATE, cal.getActualMaximum(Calendar.DATE));
+		;
+		String sd = getSdf(maxPattern).format(cal.getTime());
+		return getSdf(standPattern).parse(sd);
+	}
+
+	public static Date getLastMonthMinDate() throws ParseException {
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.DATE, cal.getActualMinimum(Calendar.DATE));
+		cal.add(Calendar.MONTH, -1);
+		cal.set(Calendar.DAY_OF_MONTH, 1);
+		String sd = getSdf(minPattern).format(cal.getTime());
+		return getSdf(standPattern).parse(sd);
+	}
+
+	public static Date getLastMonthMaxDate() throws ParseException {
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.DATE, cal.getActualMaximum(Calendar.DATE));
+		cal.add(Calendar.MONTH, -1);
+		cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
+		String sd = getSdf(maxPattern).format(cal.getTime());
+		return getSdf(standPattern).parse(sd);
+	}
+
+	public static Date getMinDateByType(int dateType) throws ParseException {
+		return getDateByType(dateType, false);
+	}
+
+	public static Date getMaxDateByType(int dateType) throws ParseException {
+		return getDateByType(dateType, true);
+	}
+
+	// 0.今日、1.昨天（默认项）、2.本周、3.上周、4.本月、5.上月、6.自定义时间
+	private static Date getDateByType(int dateType, boolean isMax) throws ParseException {
+		Date date = null;
+		if (0 == dateType) {
+			date = isMax ? getCurDayMaxDate() : getCurDayMinDate();
+		} else if (1 == dateType) {
+			date = isMax ? getLastDayMaxDate() : getLastDayMinDate();
+		} else if (2 == dateType) {
+			date = isMax ? getCurWeekMaxDate() : getCurWeekMinDate();
+		} else if (3 == dateType) {
+			date = isMax ? getLastWeekMaxDate() : getLastWeekMinDate();
+		} else if (4 == dateType) {
+			date = isMax ? getCurMonthMaxDate() : getCurMonthMinDate();
+		} else if (5 == dateType) {
+			date = isMax ? getLastMonthMaxDate() : getLastMonthMinDate();
+		}
+
+		return date;
+
+	}
+	
+	public static Date getNDate(int day) throws ParseException{
+		String ft = "yyyy-MM-dd hh:mm:ss";
+		Calendar c = Calendar.getInstance();
+		c = getDaysBefore(c,day);
+		String fd =getSdf(ft).format(c.getTime());
+		Date retDate = getSdf(standPattern).parse(fd);
+		return retDate;
+	}
+	
+	private static Calendar getDaysBefore(Calendar c, int day) {
+	    c.add(Calendar.DATE, day);
+	    c.add(Calendar.HOUR, -8); //针对mongoDb存时间时比当前时间晚8小时，故此处查询时减去8小时。
+	    return c;
+	}
+
+	 /** 
+     * 获取当年的第一天 
+     * @param year 
+     * @return 
+     */  
+    public static Date getCurrYearFirst(){  
+        Calendar currCal=Calendar.getInstance();    
+        int currentYear = currCal.get(Calendar.YEAR);  
+        return getYearFirst(currentYear);  
+    }  
+    
+    /** 
+     * 获取某年第一天日期 
+     * @param year 年份 
+     * @return Date 
+     */  
+    public static Date getYearFirst(int year){  
+        Calendar calendar = Calendar.getInstance();  
+        calendar.clear();  
+        calendar.set(Calendar.YEAR, year);  
+        Date currYearFirst = calendar.getTime();  
+        return currYearFirst;  
+    }  
+    
+	public static void main(String[] args) throws ParseException {
+		System.out.println(getLastMonthMinDate());
+		System.out.println(getLastMonthMaxDate());
+		Date retDate = getNDate(-7);
+		System.out.println(retDate);
+	}
+}

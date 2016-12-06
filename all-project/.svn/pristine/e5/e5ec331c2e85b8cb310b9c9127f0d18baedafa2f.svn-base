@@ -1,0 +1,49 @@
+package saas.winbons.customer.job;
+
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.ICallback;
+import com.jfinal.plugin.activerecord.Record;
+
+public class CustomerRightUpgrade {
+	
+	public void rightUpgrade(){
+		String notDbid = "1006623,1007912,1009265,1008398,1002430,1000141";
+		String sql = "select dbid from t_bs_identity where dbid not in(" + notDbid + ") and dbid > 10000";
+		
+		
+		List<Record> find = Db.find(null, sql);
+		int count = find.size();
+		int i = 0;
+		for(Record r : find){
+			Long dbId = r.getLong("dbid");
+			try{
+				i++;
+				final int ii = i;
+				Object execute = Db.execute(new ICallback() {
+				@Override
+				public Object call(Connection conn) throws SQLException {
+					CallableStatement callableStatement = conn.prepareCall("{call p_bs_updateRight(?)}");
+					callableStatement.setLong(1, dbId);
+					callableStatement.execute();
+					System.out.println(ii + "//" + count + ",dbid:" + dbId);
+					//resultSet.next();
+					//long long1 = resultSet.getLong(1);
+					return null;
+				}
+			});
+				
+			}catch(Exception e){
+				//e.printStackTrace();
+				Db.update(null, "insert into temp_error(dbid,error) values (?,?)",dbId,e.getMessage());
+				
+			}
+			
+		}
+	}
+}

@@ -1,0 +1,31 @@
+package saas.winbons.beetl.func;
+
+import org.beetl.core.Context;
+import org.beetl.core.Function;
+
+import com.jfinal.ext.kit.Reflect;
+
+public class ReflectFn implements Function {
+
+	@Override
+	public Object call(Object[] paras, Context ctx) {
+		
+		String className = (String) paras[0];
+		String method = (String) paras[1];
+		
+		// 
+		Reflect call = Reflect.on(className);
+		if(paras.length == 2){
+			call = call.call(method);
+		}else if(paras.length > 2){
+			Object[] params = new Object[paras.length - 2];
+			int i = 0;
+			for(int j = 2;j <  paras.length;j++){
+				params[i++] = paras[j];
+			}
+			call = call.call(method,params);
+		}
+		return call.get();
+	}
+
+}

@@ -1,0 +1,46 @@
+package saas.crm.data.constant;
+
+import saas.winbons.enumtype.BaseEnum;
+import saas.winbons.enumtype.JmesaMapEnum;
+
+/**
+ * @ClassName: entityClass
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author wwj
+ * @date 2015-8-26 下午02:55:50
+ */
+
+public enum Tag implements BaseEnum<String>, JmesaMapEnum {
+	notturn(Tag.TAG_NOT_TURNED, "tag.notturned"), turn(Tag.TAG_TURNED,
+			"tag.turned");
+
+	private String dbValue;
+	private String msgKey;
+
+	private static final String TAG_NOT_TURNED = "0";
+	private static final String TAG_TURNED = "1";
+
+	private Tag(String dbValue, String msgKey) {
+		this.dbValue = dbValue;
+		this.msgKey = msgKey;
+	}
+
+	@Override
+	public String getDbValue() {
+		return dbValue;
+	}
+
+	@Override
+	public String getMessageKey() {
+		return msgKey;
+	}
+
+	public static Tag getType(String value) {
+		for (Tag tag : values()) {
+			if (tag.dbValue.equals(value)) {
+				return tag;
+			}
+		}
+		return Tag.notturn;
+	}
+}

@@ -1,0 +1,176 @@
+package saas.winbons.mq;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.context.ApplicationListener;
+import org.springframework.stereotype.Component;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.winbons.data.model.base.ImportLogDetailModel;
+import saas.winbons.data.model.base.ImportLogModel;
+import saas.winbons.data.model.customer.Customer;
+import saas.winbons.data.model.security.User;
+import saas.winbons.data.model.tag.BizRelTag;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolSqlXml;
+import saas.winbons.framework.tools.ToolString;
+
+@Component
+public class CustomerImportEventListener implements ApplicationListener<CustomerImportEvent> {
+
+	@Override
+	public void onApplicationEvent(CustomerImportEvent event) {
+		ContextDTO contextDTO = null;
+		ImportLogModel importLogModel = null;
+		try{
+			Map<String,Object> source = (Map<String,Object>)event.getSource();
+			Map<String,Object>[] data = (Map<String,Object>[]) source.get("data");
+			importLogModel = (ImportLogModel) source.get("importLogModel"); 
+			User owner = (User) source.get("owner"); 
+			Long[] beManagerUsersByPermission = (Long[]) source.get("beManagerUsersByPermission"); 
+			int rowIdx = (int)source.get("rowIdx");  
+			contextDTO = (ContextDTO) source.get("contextDTO");
+			if(null == data)return;
+			for(Map<String,Object> customerMap : data){
+				rowIdx = (int) customerMap.get("rowIndex");
+				customerMap.remove("rowIndex");
+				Customer customer = new Customer();
+				Customer findFirst = Customer.dao.findFirst(contextDTO, "select * from t_crm_customer where name = ?",customerMap.get("name"));
+				ImportLogDetailModel importLogDetailModel = new ImportLogDetailModel();
+				importLogDetailModel.set("rowId", rowIdx);
+				
+				Integer ftype = importLogModel.getInt("ftype");
+				switch (ftype) {
+				case 1:
+					if(null == findFirst){
+						customerMap.put("owner_id", importLogModel.getLong("ownerId"));
+						customerMap.put("dept_id", owner.get("department_id"));
+						customer.put(customerMap);
+						try{
+							Customer.dao.saveObj(contextDTO, customer, null);
+							importLogDetailModel.set("importLogId", importLogModel.get("id"));
+							importLogDetailModel.set("status", ImportErrorTypeEnum.newOne.getDbValue());
+							importLogDetailModel.set("result", String.format("第%s行，客户(%s)的名称新建成功", rowIdx,ToolString.sub(ToolString.toString(customerMap.get("name")), 150)));
+							importLogDetailModel.save(contextDTO);
+						}catch(Exception e){
+							e.printStackTrace();
+							ImportErrorDto importError = getImportError(e.getMessage());
+							importLogDetailModel.set("importLogId", importLogModel.get("id"));
+							importLogDetailModel.set("status", importError.getStatus());//status 0:系统错误,1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+							importLogDetailModel.set("result", String.format("第%s行" + importError.getResult(),rowIdx));
+							importLogDetailModel.save(contextDTO);
+						}
+					}else{
+						importLogDetailModel.set("importLogId", importLogModel.get("id"));
+						importLogDetailModel.set("status", ImportErrorTypeEnum.existNtCover.getDbValue());//status 1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+						User findById = User.dao.findById(contextDTO, contextDTO.getDbId(),findFirst.getLong("owner_id"));
+						String displayName = "";
+						if(null != findById)displayName = findById.getStr("display_name");
+						importLogDetailModel.set("result", String.format("第%s行，客户(%s)已存在不覆盖", rowIdx,ToolString.sub(ToolString.toString(customerMap.get("name")), 150)));
+						importLogDetailModel.save(contextDTO);
+					}
+					break;
+				case 0:
+					if(null == findFirst){
+						customerMap.put("owner_id", importLogModel.getLong("ownerId"));
+						customerMap.put("dept_id", owner.get("department_id"));
+						customer.putForUpdate(customerMap);
+						try{
+							Customer.dao.saveObj(contextDTO, customer, null);
+							importLogDetailModel.set("importLogId", importLogModel.get("id"));
+							importLogDetailModel.set("status", ImportErrorTypeEnum.newOne.getDbValue());
+							importLogDetailModel.set("result", String.format("第%s行，客户(%s)的名称新建成功", rowIdx,ToolString.sub(ToolString.toString(customerMap.get("name")), 150)));
+							importLogDetailModel.save(contextDTO);
+						}catch(Exception e){
+							e.printStackTrace();
+							ImportErrorDto importError = getImportError(e.getMessage());
+							importLogDetailModel.set("importLogId", importLogModel.get("id"));
+							importLogDetailModel.set("status", importError.getStatus());//status 0:系统错误,1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+							importLogDetailModel.set("result", String.format("第%s行" + importError.getResult(),rowIdx));
+							importLogDetailModel.save(contextDTO);
+						}
+						
+					}else{
+						Map<String,Object> map = new HashMap<String,Object>();
+						map.put("userIds", beManagerUsersByPermission);
+						map.put("custId", findFirst.getLong("id"));
+						map.put("contextDTO", contextDTO);
+						if(null == findFirst.get("owner_id")){
+							importLogDetailModel.set("importLogId", importLogModel.get("id"));
+							importLogDetailModel.set("status", ImportErrorTypeEnum.publicCustomer.getDbValue());//status 1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+							importLogDetailModel.set("result", String.format("第%s行,客户(%s)的名称已被公共客户使用", rowIdx,ToolString.sub(ToolString.toString(customerMap.get("name")), 150)));
+							importLogDetailModel.save(contextDTO);
+						}else if(ToolSqlXml.getSql("winbons.customer.checkCustomerHandler",map).equals("1")){
+							importLogDetailModel.set("importLogId", importLogModel.get("id"));
+							importLogDetailModel.set("status", ImportErrorTypeEnum.otherExist.getDbValue());//status 1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+							User findById = User.dao.findById(contextDTO, contextDTO.getDbId(),findFirst.getLong("owner_id"));
+							String displayName = "";
+							if(null != findById)displayName = findById.getStr("display_name");
+							importLogDetailModel.set("result", String.format("第%s行，客户(%s)的名称已被用户(%s)使用", rowIdx,ToolString.sub(ToolString.toString(customerMap.get("name")), 150),displayName));
+							importLogDetailModel.save(contextDTO);
+						}else{
+							findFirst.putForUpdate(customerMap);
+							try{
+								Customer.dao.saveObj(contextDTO, findFirst, null);
+								importLogDetailModel.set("importLogId", importLogModel.get("id"));
+								importLogDetailModel.set("status", ImportErrorTypeEnum.cover.getDbValue());
+								importLogDetailModel.set("result", String.format("第%s行，客户(%s)覆盖成功", rowIdx,ToolString.sub(ToolString.toString(customerMap.get("name")), 150)));
+								importLogDetailModel.save(contextDTO);
+							}catch(Exception e){
+								e.printStackTrace();
+								ImportErrorDto importError = getImportError(e.getMessage());
+								importLogDetailModel.set("importLogId", importLogModel.get("id"));
+								importLogDetailModel.set("status", importError.getStatus());//status 0:系统错误,1:新建档,2:已建档不覆盖,3:其他用户已建档 4:已是公海客户,5:输入错误
+								importLogDetailModel.set("result", String.format("第%s行" + importError.getResult(),rowIdx));
+								importLogDetailModel.save(contextDTO);
+							}
+		
+						}
+						
+					}
+					break;
+				default:
+					break;
+				}
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}finally{
+			if(null != importLogModel){
+				Record findFirst = Db.findFirst(contextDTO, "select count(1) as countT from t_crm_importlog_detail where importLogId = ? and status in (1,2,8)",importLogModel.getId());
+				Record findFirst2 = Db.findFirst(contextDTO, "select count(1) as countT from t_crm_importlog_detail where importLogId = ? and status not in (1,2,8)",importLogModel.getId());
+				int totalQty = importLogModel.getInt("totalQty");
+				if(totalQty <= (Integer.parseInt(findFirst.get("countT").toString()) + Integer.parseInt(findFirst2.get("countT").toString()))){
+					Db.update(contextDTO, "update t_crm_importlog_new set successQty = ?,failureQty = ?,complete_date = ?,status = ? where id = ?",findFirst.get("countT"),findFirst2.get("countT"),System.currentTimeMillis(),2,importLogModel.getId());
+				}else{
+					Db.update(contextDTO, "update t_crm_importlog_new set successQty = ?,failureQty = ? where id = ?",findFirst.get("countT"),findFirst2.get("countT"),importLogModel.getId());
+				}
+			}
+
+		}
+		
+	}
+	
+	private ImportErrorDto getImportError(String result){
+		ImportErrorDto importErrorDto = new ImportErrorDto();
+		importErrorDto.setResult(ToolString.sub(result,150));
+		try{
+			String[] split = result.split(",");
+			if(split.length > 1){
+				importErrorDto.setStatus(Integer.parseInt(split[0]));
+				importErrorDto.setResult(ToolString.sub(split[1],150));
+			}else{
+				importErrorDto.setStatus(0);
+			}
+		}catch(Exception e){
+			importErrorDto.setStatus(0);
+		}
+		return importErrorDto;
+	}
+	
+	
+}

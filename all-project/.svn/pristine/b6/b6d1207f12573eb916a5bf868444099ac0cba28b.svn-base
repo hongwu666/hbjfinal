@@ -1,0 +1,83 @@
+@charset "utf-8";
+
+/* 
+
+	@名称:global.css
+
+	@功能: 定义系统基本布局
+
+*/
+
+/*==============================系统引导页(System Guide Page)==================================*/
+
+
+.fn-hidden-iframe{
+  left: -20000px;
+  overflow: hidden;
+  top: -20000px;	
+}
+
+
+.modal-title{
+	color: black;	
+}
+
+/*顶层以及左侧样式控制*/
+/* 
+头部颜色
+.page-header.navbar .page-logo,.page-header.navbar .page-top{
+	background: #e17f35 !important;	
+}
+
+左侧点击颜色
+.click-item{
+	background-color:#09C !important;	
+}
+
+左侧鼠标移动颜色
+.page-sidebar .page-sidebar-menu>li.open>a, .page-sidebar .page-sidebar-menu>li:hover>a, .page-sidebar-closed.page-sidebar-fixed .page-sidebar:hover .page-sidebar-menu>li.open>a, .page-sidebar-closed.page-sidebar-fixed .page-sidebar:hover .page-sidebar-menu>li:hover>a{
+  background: #e17f35;	
+}
+左侧颜色
+.page-sidebar, .page-sidebar-closed.page-sidebar-fixed .page-sidebar:hover{
+  background-color:#575757;
+} */
+
+
+.page-content-wrapper .page-content{
+	margin-left:0px;
+	
+}
+.page-header-fixed .page-container{
+	margin-top:0px;
+}
+.page-content-wrapper .page-content{
+	padding-bottom: 0px!important;	
+}
+.portlet.light.portlet-datatable.portlet-fit>.portlet-body{
+	  padding-bottom: 0px;
+}
+.portlet{
+	  margin-bottom: 0px;
+}
+.portlet.light.portlet-fit>.portlet-body{
+	  margin-bottom: 0px;
+}
+.table{
+	margin-bottom:0px;
+}
+
+.page-content-wrapper .page-content{
+	  padding: 0px!important;
+}
+.portlet.light.portlet-fit>.portlet-body{
+	padding:0px!important;
+}
+html{
+	overflow: hidden;
+}
+
+.help-block{
+	border-color:red;
+	color:red;
+}

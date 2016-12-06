@@ -1,0 +1,90 @@
+package saas.framework.cache.redis;
+
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Ehcache;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import redis.clients.jedis.JedisPool;
+import saas.framework.cache.ICache;
+import saas.framework.cache.RedisCmdHelper;
+import saas.framework.cache.impl.EhcacheSecondCache;
+import saas.framework.cache.impl.RedisCache;
+
+/**
+ * 
+ * @author star 键值对只支持字符窜
+ */
+@SuppressWarnings("rawtypes")
+@Component("redisCache")
+public class RedisCacheFactory implements FactoryBean, InitializingBean, DisposableBean {
+	
+	private static final Logger logger = LoggerFactory.getLogger(RedisCacheFactory.class);
+
+	private ICache redisCache;
+
+	private JedisPool jedisPool;
+
+	@Autowired
+	private CacheManager cacheManager;
+
+
+	public void setJedisPool(JedisPool jedisPool) {
+		this.jedisPool = jedisPool;
+	}
+
+	@Override
+	public Object getObject() throws Exception {
+		return redisCache;
+	}
+
+	@Override
+	public Class getObjectType() {
+		return ICache.class;
+	}
+
+	public boolean isSingleton() {
+		return true;
+	}
+
+	private final static long LIVE_TIME_IN_SECONDS = 60 * 60 * 24;
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		RedisCmdHelper redisCmdHelper = new RedisCmdHelper();
+		redisCmdHelper.setDb(1);
+		redisCmdHelper.setJedisPool(jedisPool);
+
+		RedisCache tmpRedis = new RedisCache();
+		tmpRedis.setRedisCmdHelper(redisCmdHelper);
+
+		EhcacheSecondCache ehCache = new EhcacheSecondCache();
+		ehCache.setRedisCache(tmpRedis);
+		ehCache.setCacheListener(new RedisCacheListener(redisCmdHelper));
+		Ehcache trueCache = cacheManager.getEhcache("ALL_CACHE");
+		if (trueCache == null) {
+			int maxCacheSize = 1000;
+			trueCache = new Cache("ALL_CACHE", maxCacheSize, false, false, LIVE_TIME_IN_SECONDS, LIVE_TIME_IN_SECONDS);
+			cacheManager.addCache(trueCache);
+		}
+		ehCache.setEhcache(trueCache);
+
+		this.redisCache = ehCache;
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		logger.info("shutdown redis connection..");
+		if (jedisPool != null) {
+			jedisPool.destroy();
+		}
+	}
+}

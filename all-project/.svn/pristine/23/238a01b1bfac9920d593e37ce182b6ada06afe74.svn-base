@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 菜单sql -->
+<sql-statement namespace="winbons.contact">
+
+	
+	<!-- scan Add contact一 -->
+	<sql id="scanStep1">
+	<![CDATA[
+		<%
+		/*根据客户名称获取客户*/
+		var result = sqlFn(contextDTO,"one","select id,name,owner_id,cust_pool_id from t_crm_customer c where c.dbid=? and c.name = ?",contextDTO.dbId,custName);
+		if(isEmpty(result)){
+			/*验证其他属性是否冲突*/
+			var checkDefinedColumnResult = callTemplateFn("winbons.customer.checkDefinedColumn",contextDTO,{data:data},true);
+			if(checkDefinedColumnResult == "1,"){
+				
+			}
+		}
+		
+		return "";
+		%>
+	
+	]]>
+	</sql>
+	
+	
+	<!-- 新建联系人验证自定义属性 -->
+	<sql id="checkDefinedColumn">
+	<![CDATA[
+		<%
+		var value = "1";
+		var label = "";
+		var result = sqlFn(contextDTO,"list","select column_field_name,is_mandatory,checkRepeat,field_label from t_crm_definition_field where dbid = ? and is_delete = ? and isdisable = ? and table_name = ?",contextDTO.dbId,'N','N','t_crm_cust_contact');
+		if(!isEmpty(result)){ 
+			for(entry in result){
+				if(value == "1"){
+					if(entry.is_mandatory == 'Y' && !isEmpty(entry.column_field_name)){
+						if(isEmpty(data[entry.column_field_name])){
+							value = "-1";
+							label = entry.field_label;
+						}
+					}
+				}
+				if(value == "1"){
+					if(entry.checkRepeat == 'Y' && !isEmpty(entry.column_field_name)){
+						if(!isEmpty(data[entry.column_field_name])){
+							var result2;
+							if(isEmpty(id)){
+								result2 = sqlFn(contextDTO,"one","SELECT u.display_name  from t_crm_cust_contact c left JOIN t_crm_user u ON c.dbid=u.dbid and c.ownerId = u.user_id  where c.dbid = ? and c." + entry.column_field_name + "=?",contextDTO.dbId,data[entry.column_field_name]);
+							}else{
+								result2 = sqlFn(contextDTO,"one","select u.display_name  from t_crm_cust_contact c left JOIN t_crm_user u ON c.dbid=u.dbid and c.ownerId = u.user_id  where c.dbid = ? and c." + entry.column_field_name + "=? and c.id <> ?",contextDTO.dbId,data[entry.column_field_name],id);
+							}
+							if(!isEmpty(result2)){
+								value = "-2";				
+								label = entry.field_label + "," + result2.display_name;
+							}
+						}else{
+						}			
+					}
+				}
+			}
+		}
+		print(value + "," + label);
+		%>
+	
+	]]>
+	</sql>
+	
+	
+	
+	
+</sql-statement>

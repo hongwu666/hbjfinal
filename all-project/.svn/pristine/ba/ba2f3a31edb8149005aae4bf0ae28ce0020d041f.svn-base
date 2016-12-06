@@ -1,0 +1,34 @@
+package saas.winbons.dubbo.api;
+
+public class SortDTO implements java.io.Serializable {
+	
+	private static final long serialVersionUID = -1313717882887630404L;
+	
+	private java.lang.String order;
+
+	private java.lang.String property;
+
+	public SortDTO(){}
+	
+	public SortDTO(java.lang.String order, java.lang.String property) {
+		this.order = order;
+		this.property = property;
+	}
+
+	public java.lang.String getOrder() {
+		return order;
+	}
+
+	public void setOrder(java.lang.String order) {
+		this.order = order;
+	}
+
+	public java.lang.String getProperty() {
+		return property;
+	}
+
+	public void setProperty(java.lang.String property) {
+		this.property = property;
+	}
+
+}

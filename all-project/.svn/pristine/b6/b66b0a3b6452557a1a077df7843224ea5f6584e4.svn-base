@@ -1,0 +1,44 @@
+package saas.winbons.dubbo.web.dto;
+
+import java.io.Serializable;
+
+/**
+ * 过滤条件封装类的json对象类
+ * @author lihaifeng
+ */
+public class FilterValueDTO implements Serializable{
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -5006173008862802373L;
+	
+	private String filter; //字段名称 如：name
+	private String type;   //字段类型 如：text
+	private String values; //值 如"hua"
+
+	public String getFilter() {
+		return filter;
+	}
+
+	public void setFilter(String filter) {
+		this.filter = filter;
+	}
+
+	public String getValues() {
+		return values;
+	}
+
+	public void setValues(String values) {
+		this.values = values;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+	
+}

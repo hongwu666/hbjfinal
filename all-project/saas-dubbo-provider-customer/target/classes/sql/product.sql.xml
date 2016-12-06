@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 菜单sql -->
+<sql-statement namespace="winbons.product">
+
+	<sql id="getProduCataInfo">
+		<![CDATA[ 
+		 select b.id, b.name  FROM t_crm_product_catalog b   group by b.id 
+    	]]>
+	</sql>
+
+	
+	<sql id="getProductDetailListById">
+		<![CDATA[ 
+			SELECT
+				b.product_id AS productId,
+				p. NAME AS productName,
+				ifnull(b.product_count, 0) AS number,
+				ifnull(b.price, 0) AS salePrice,
+				p.price AS referPrice,
+			  ( ifnull(b.product_count, 0) * ifnull(b.price, 0) ) AS sumProduct,
+				p.unit,
+				p.fdescribe AS fdescribe
+			FROM
+				t_crm_sales_opportunity a
+			LEFT JOIN t_crm_sales_opportunity_product b ON a.dbid = b.dbid
+			AND a.id = b.opport_id
+			INNER JOIN t_crm_product p ON b.dbid = p.dbid
+			AND b.product_id = p.id
+			WHERE 1 = 1
+			<% 
+				commonSql("winbons.common.params",filters!,sorts!);
+			%>	 
+    	]]>
+	</sql>
+	
+	<sql id="getProductIds">
+		<![CDATA[ 
+			SELECT p.id FROM t_crm_product p LEFT JOIN t_crm_sales_opportunity_product b ON p.dbid = b.dbid AND p.id = b.product_id where 1 = 1
+			<% 
+				commonSql("winbons.common.params",filters!,sorts!);
+			%>	 
+    	]]>
+	</sql>
+
+
+</sql-statement>

@@ -1,0 +1,135 @@
+package saas.crm.customer.module;
+
+import java.io.Serializable;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import saas.crm.web.utils.CrmAMapSearchUtils;
+
+@Document(collection = "customerLocation")
+public class CustomerLocation implements Serializable{
+
+	private static final long serialVersionUID = 3627903737948903337L;
+	
+	@Id
+	private String		id;		// id = dbid_entityId
+	private Location	loc;
+	
+	private Long		cid;
+	private Long		dbid;
+	private String country;		// 国家
+	private String province;	// 省份
+	private String city;		// 城市
+	private String area;		// 区
+	private String street;		// 街道或乡镇
+	private String address;		// 详细地址
+	
+	public CustomerLocation(){
+		super();
+	}
+	
+	public CustomerLocation(Long cid, Long dbid, Location loc){
+		this.id = CrmAMapSearchUtils.buildCustomerLocationId(dbid, cid);
+		this.cid = cid;
+		this.dbid = dbid;
+		this.loc = loc;
+	}
+	
+	public CustomerLocation(Long cid, Long dbid, Location loc, String country,
+			String province, String city, String area, String street, 
+			String address) {
+		super();
+		this.id = CrmAMapSearchUtils.buildCustomerLocationId(dbid, cid);
+		this.cid = cid;
+		this.dbid = dbid;
+		this.loc = loc;
+		this.country = country;
+		this.province = province;
+		this.city = city;
+		this.area = area;
+		this.street = street;
+		this.address = address;
+	}
+
+	
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public Long getCid() {
+		return cid;
+	}
+
+	public void setCid(Long cid) {
+		this.cid = cid;
+	}
+
+	public Long getDbid() {
+		return dbid;
+	}
+
+	public void setDbid(Long dbid) {
+		this.dbid = dbid;
+	}
+
+	public Location getLoc() {
+		return loc;
+	}
+
+	public void setLoc(Location loc) {
+		this.loc = loc;
+	}
+
+	public String getCountry() {
+		return country;
+	}
+
+	public void setCountry(String country) {
+		this.country = country;
+	}
+
+	public String getProvince() {
+		return province;
+	}
+
+	public void setProvince(String province) {
+		this.province = province;
+	}
+
+	public String getCity() {
+		return city;
+	}
+
+	public void setCity(String city) {
+		this.city = city;
+	}
+
+	public String getArea() {
+		return area;
+	}
+
+	public void setArea(String area) {
+		this.area = area;
+	}
+
+	public String getStreet() {
+		return street;
+	}
+
+	public void setStreet(String street) {
+		this.street = street;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
+	}
+}

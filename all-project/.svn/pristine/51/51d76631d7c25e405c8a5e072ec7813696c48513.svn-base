@@ -1,0 +1,119 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: Approvers.java 
+ * @Package saas.crm.dynamic.model 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年7月17日 上午10:41:38 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.model;
+
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import com.alibaba.fastjson.annotation.JSONField;
+
+/**
+ * @ClassName: Approvers
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年7月17日 上午10:41:38
+ */
+@Document(collection = "approvers")
+@CompoundIndex(def = "{index:-1}", background = true)
+public class Approvers extends AbstractDynamic implements IDynamicRel {
+
+	private String itemId;
+
+	private String userName;
+
+	private Long approveId;
+
+	/**
+	 * @return the userName
+	 */
+	@JSONField(name = "userName")
+	public String getUserName() {
+
+		return userName;
+	}
+
+	/**
+	 * @param userName
+	 *            the userName to set
+	 */
+
+	public void setUserName(String userName) {
+
+		this.userName = userName;
+	}
+
+	/**
+	 * @return the itemId
+	 */
+	@JSONField(serialize = false)
+	public String getItemId() {
+
+		return itemId;
+	}
+
+	/**
+	 * @param itemId
+	 *            the itemId to set
+	 */
+
+	public void setItemId(String itemId) {
+
+		this.itemId = itemId;
+	}
+
+	public Approvers() {
+
+	}
+
+	public Approvers(String itemId, String userName, Long approveId) {
+		this.itemId = itemId;
+		this.userName = userName;
+		this.approveId = approveId;
+	}
+
+	/**
+	 * @return the approveId
+	 */
+	@JSONField(name = "userId")
+	public Long getApproveId() {
+
+		return approveId;
+	}
+
+	/**
+	 * @param approveId
+	 *            the approveId to set
+	 */
+
+	public void setApproveId(Long approveId) {
+
+		this.approveId = approveId;
+	}
+
+	public int compareTo(ISeq o) {
+		Long index1 = getIndex();
+		Long index2 = o.getIndex();
+		if (index1 != null && index2 != null) {
+			if (index1 < index2) {
+				return -1;
+			} else {
+				return 1;
+			}
+		}
+		return 0;
+	}
+
+}

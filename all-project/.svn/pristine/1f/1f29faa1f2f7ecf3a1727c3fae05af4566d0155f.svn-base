@@ -1,0 +1,212 @@
+package saas.winbons.framework.utils;
+
+import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import org.apache.http.Header;
+import org.apache.http.HeaderElement;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpException;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpResponseInterceptor;
+import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.entity.GzipDecompressingEntity;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.conn.ConnectionPoolTimeoutException;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.protocol.HTTP;
+import org.apache.http.protocol.HttpContext;
+import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class HttpClientUtils {
+	
+	
+	private final static Logger logger = LoggerFactory.getLogger(HttpClientUtils.class);
+
+	private final static int TIME_OUT = 120 * 1000;
+
+	@SuppressWarnings("deprecation")
+	public static String postHttpClientResponse(String edmURL, List<NameValuePair> nameValuePairs, Map<String, String> header) throws ClientProtocolException, IOException {
+		String responseText = "";
+		if (edmURL.substring(0, 5).toLowerCase().equals("https")) {
+
+			try {
+				DefaultHttpClient closeableHttpClient = new DefaultHttpClient();
+				CloseableHttpResponse closeableHttpResponse = null;
+				TrustManager easyTrustManager = new X509TrustManager() {
+
+					public void checkClientTrusted(java.security.cert.X509Certificate[] x509Certificates, String s) throws java.security.cert.CertificateException {
+					}
+
+					public void checkServerTrusted(java.security.cert.X509Certificate[] x509Certificates, String s) throws java.security.cert.CertificateException {
+					}
+
+					public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+						return new java.security.cert.X509Certificate[0];
+					}
+				};
+
+				SSLContext sslcontext = SSLContext.getInstance("TLS");
+				sslcontext.init(null, new TrustManager[] { easyTrustManager }, null);
+				SSLSocketFactory sf = new SSLSocketFactory(sslcontext);
+
+				Scheme sch = new Scheme("https", 443, sf);
+
+				ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
+					public String handleResponse(final HttpResponse response) throws ClientProtocolException, IOException {
+						int status = response.getStatusLine().getStatusCode();
+						if (status >= 200 && status < 300) {
+							HttpEntity entity = response.getEntity();
+							return entity != null ? EntityUtils.toString(entity, HTTP.UTF_8) : null;
+						} else {
+							throw new ClientProtocolException("Unexpected response status: " + status);
+						}
+					}
+
+				};
+				closeableHttpClient.getConnectionManager().getSchemeRegistry().register(sch);
+
+				closeableHttpClient.addResponseInterceptor(new HttpResponseInterceptor() {
+
+					public void process(HttpResponse response, HttpContext context) throws HttpException, IOException {
+
+						HttpEntity entity = response.getEntity();
+						Header ceheader = entity.getContentEncoding();
+						if (ceheader != null) {
+							for (HeaderElement element : ceheader.getElements()) {
+								if (element.getName().equalsIgnoreCase("gzip")) {
+									response.setEntity(new GzipDecompressingEntity(response.getEntity()));
+								}
+							}
+						}
+					}
+
+				});
+
+				try {
+					HttpPost httpPost = new HttpPost(edmURL);
+					RequestConfig requestConfig = RequestConfig.custom().setConnectionRequestTimeout(TIME_OUT).setConnectTimeout(TIME_OUT).setSocketTimeout(TIME_OUT).build();
+					httpPost.setConfig(requestConfig);
+					httpPost.setEntity(new UrlEncodedFormEntity(nameValuePairs, HTTP.UTF_8));
+					responseText = closeableHttpClient.execute(httpPost, responseHandler);
+				} catch (ConnectionPoolTimeoutException e) {
+					logger.error(edmURL + " http post throw ConnectionPoolTimeoutException", e);
+					e.printStackTrace();
+				} catch (ConnectTimeoutException e) {
+					logger.error(edmURL + " http post throw ConnectTimeoutException", e);
+					e.printStackTrace();
+				} catch (SocketTimeoutException e) {
+					logger.error(edmURL + " http post throw SocketTimeoutException", e);
+					e.printStackTrace();
+				} catch (ClientProtocolException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				} finally {
+					if (null != closeableHttpResponse) {
+						try {
+							closeableHttpResponse.close();
+							closeableHttpResponse = null;
+						} catch (IOException ex) {
+						}
+					}
+					if (null != closeableHttpClient) {
+						closeableHttpClient.close();
+						closeableHttpClient = null;
+					}
+				}
+
+			} catch (NoSuchAlgorithmException e) {
+				logger.error(edmURL + " http post throw NoSuchAlgorithmException", e);
+				e.printStackTrace();
+			} catch (KeyManagementException e) {
+				logger.error(edmURL + " http post throw KeyManagementException", e);
+				e.printStackTrace();
+			}
+
+		} else {
+			CloseableHttpClient closeableHttpClient = null;
+			CloseableHttpResponse closeableHttpResponse = null;
+			try {
+				closeableHttpClient = HttpClients.createDefault();
+				HttpPost httpPost = new HttpPost(edmURL);
+				Set set = header.entrySet();
+				Iterator i = set.iterator();
+				while (i.hasNext()) {
+					Map.Entry<String, String> entry1 = (Map.Entry<String, String>) i.next();
+					httpPost.setHeader(entry1.getKey(), entry1.getValue());
+				}
+				// set Timeout
+				RequestConfig requestConfig = RequestConfig.custom().setConnectionRequestTimeout(TIME_OUT).setConnectTimeout(TIME_OUT).setSocketTimeout(TIME_OUT).build();
+				httpPost.setConfig(requestConfig);
+				httpPost.setEntity(new UrlEncodedFormEntity(nameValuePairs, HTTP.UTF_8));
+				closeableHttpResponse = closeableHttpClient.execute(httpPost);
+				if (closeableHttpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+					if (closeableHttpResponse.getEntity() != null) {
+						responseText = EntityUtils.toString(closeableHttpResponse.getEntity(), HTTP.UTF_8);
+					}
+				}
+			} /*
+			 * catch (ConnectionPoolTimeoutException e) { logger.error(edmURL +
+			 * " http post throw ConnectionPoolTimeoutException", e);
+			 * e.printStackTrace(); } catch (ConnectTimeoutException e) {
+			 * logger.error(edmURL + " http post throw ConnectTimeoutException",
+			 * e); e.printStackTrace(); } catch (SocketTimeoutException e) {
+			 * logger.error(edmURL + " http post throw SocketTimeoutException",
+			 * e); e.printStackTrace(); } catch (ClientProtocolException e) {
+			 * e.printStackTrace(); } catch (IOException e) {
+			 * e.printStackTrace(); } catch (Exception ex) {
+			 * ex.printStackTrace(); }
+			 */finally {
+				if (null != closeableHttpResponse) {
+					try {
+						closeableHttpResponse.close();
+						closeableHttpResponse = null;
+					} catch (IOException ex) {
+					}
+				}
+				if (null != closeableHttpClient) {
+					try {
+						closeableHttpClient.close();
+						closeableHttpClient = null;
+					} catch (IOException ex) {
+					}
+				}
+			}
+
+		}
+
+		return responseText;
+	}
+	
+	
+	public static void main(String[] args){
+		
+	}
+
+}

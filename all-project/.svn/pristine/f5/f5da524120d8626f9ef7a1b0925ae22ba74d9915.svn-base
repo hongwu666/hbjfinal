@@ -1,0 +1,14 @@
+package saas.winbons.data.model.sales;
+
+import saas.winbons.data.model.BaseModel;
+
+
+
+public class OpportunityStage extends BaseModel<OpportunityStage> {
+
+	private static final long serialVersionUID = -4264714399887864565L;
+	
+	public static final OpportunityStage dao = new OpportunityStage();
+	
+
+}

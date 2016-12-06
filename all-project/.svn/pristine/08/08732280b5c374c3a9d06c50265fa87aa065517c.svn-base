@@ -1,0 +1,46 @@
+package saas.winbons.beetl.func;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
+import org.beetl.core.Context;
+import org.beetl.core.Function;
+
+import saas.winbons.framework.tools.ToolString;
+
+public class InParse implements Function {
+
+	@Override
+	public Object call(Object[] paras, Context ctx) {
+		Object o = paras[0];
+		boolean existReturn = false; 
+		if (o != null) {
+			try {
+				Object[] values = null;
+				if(o instanceof Object[]){
+					values = (Object[])o;
+				}else if(o instanceof ArrayList){
+					values = ((ArrayList)o).toArray(new Object[0]);
+				}
+				
+				String sql = "(";
+				for(Object value : values){
+					sql +=  "'" + ToolString.toString(value) + "',";
+				}
+				sql = sql.substring(0, sql.length() - 1) + ")";
+				if(paras.length > 1){
+					existReturn = (boolean)paras[1]; 
+				}
+				if(existReturn){
+					return sql;
+				}else{
+					ctx.byteWriter.writeString(sql);
+				}
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return "";
+	}
+
+}

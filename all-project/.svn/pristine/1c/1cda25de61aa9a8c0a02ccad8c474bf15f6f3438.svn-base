@@ -1,0 +1,61 @@
+package saas.winbons.base.manager;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+public interface IGenericManager<T,PK> {
+	
+	/**
+	 * 根据id获得实体 
+	 * @param pk
+	 */
+	public T get(PK pk);
+	
+	/**
+	 * 多条件查询
+	 * @param searchParams
+	 * @return
+	 */
+	public List<T> getListBySearcherFilter(Map<String, Object> searchParams);
+	
+	
+	/**
+	 * 多条件查询
+	 * @param searchParams
+	 * @return
+	 */
+	public <M> List<M> getListBySearcherFilter(Map<String, Object> searchParams, Class<M> classzz);
+
+	/**
+	 * 新增实体
+	 * @param entity
+	 */
+	public void add(T entity);
+	
+	/**
+	 * 修改实体
+	 * @param entity
+	 */
+	public void update(T entity);
+	
+	/**
+	 * 删除实体
+	 * @param pk
+	 */
+	public void delete(PK pk);
+	
+	/**
+	 * 批量删除
+	 * @param ids
+	 */
+	public void deleteList(Set<PK> ids);
+	
+	/**
+	 * 获得所有实体
+	 */
+	public List<T> getAll();
+	
+
+
+}

@@ -1,0 +1,25 @@
+package saas.winbons.market.enumtype;
+
+
+public enum LeadsConstant {
+	source(360, "销售线索来源"),gender(9999, "性别"),tag(9998, "转换状态"),status(9997, "跟进状态");
+
+	public final long dbValue;
+
+	public final String title;
+
+	private LeadsConstant(long dbValue, String title) {
+		this.dbValue = dbValue;
+		this.title = title;
+	}
+
+	public static LeadsConstant getConstant(String name) {
+		for (LeadsConstant constant : values()) {
+			if (name.equals(constant.name())) {
+				return constant;
+			}
+		}
+		return null;
+	}
+
+}

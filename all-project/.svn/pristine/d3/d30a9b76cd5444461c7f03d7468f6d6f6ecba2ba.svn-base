@@ -1,0 +1,347 @@
+package saas.winbons.provider;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import saas.crm.web.utils.CrmAMapSearchUtils;
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.data.model.SystemProfile;
+import saas.winbons.data.model.customer.Customer;
+import saas.winbons.data.model.security.User;
+import saas.winbons.data.model.tag.BizRelTag;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.api.SortDTO;
+import saas.winbons.dubbo.service.AbstractCommonService;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.dynamic.ItemTypeEnum;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.execption.ServiceException;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+import saas.winbons.framework.tools.ToolString;
+
+import com.jfinal.ext.plugin.monogodb.MongoKit;
+import com.jfinal.kit.StrKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Model;
+import com.jfinal.plugin.activerecord.Record;
+
+public class CustomerServiceImpl extends AbstractCommonService {
+
+	@Override
+	public Class<? extends Model<?>> getModelClass() {
+		return Customer.class;
+	}
+
+	@Override
+	public Class<? extends IEnumFormat> getFormatClass() {
+		return null;
+	}
+
+	@Override
+	public String getGridId() {
+		return "ID_GRID_CUSTOMER";
+	}
+
+	@Override
+	public String getTableName() {
+		return "t_crm_customer";
+	}
+
+	@Override
+	public AbstractCommonService getService() {
+		return this;
+	}
+
+	@Override
+	protected void entityFormat(ContextDTO contextDTO, Map<String, Object> map) {
+		super.entityFormat(contextDTO, map);
+	}
+
+	@Override
+	public FilterItemList buildFilterItem(ContextDTO contextDTO,
+			SimulationHttpServletRequest request) {
+		return null;
+	}
+
+	@Override
+	public String[] getNotDisplayFields(ContextDTO contextDTO,boolean isCreate) {
+		String[] commonHideFields = new String[]{"owner_id", "parent_id", "public_type", "picture_location", "valid",
+				"first_contact", "receive_date", "expire_date","lastcontact_date"};
+		if(!DataConstant.YES_OR_NO_YES.equals(SystemProfile.dao.getSystemProfile(contextDTO,"customerPool", "activated"))){
+			commonHideFields = (String[]) ArrayUtils.addAll(commonHideFields, new String[]{"cust_pool"});
+		}
+		if (isCreate){
+			commonHideFields = (String[]) ArrayUtils.addAll(commonHideFields, new String[]{"created_date", "created_by", "updated_date", "updated_by"});
+		}
+		return commonHideFields;
+	}
+
+	@Override
+	public String getGridHeadSql() {
+		return "winbons.customer.searchCustomerGridColumns";
+	}
+	
+	public ResultDTO newSave(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			resultDTO.setSuccess(true);
+			Map<Object, Object> data = requestDTO.getData();
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Map<String,Object> mapToModelMap = ToolModel.mapToModelMap(data, StrKit.firstCharToLowerCase(getModelClass().getSimpleName()));
+			Customer customer = new Customer();
+			customer.put(mapToModelMap);
+			Object object = data.get("bizRelTags");
+			List<BizRelTag> listBizRelTag = new ArrayList<BizRelTag>();
+			if(null != object){
+				Map<String,Object>[] bizRelTagMapArray = ToolGson.GsonToBean(object.toString(), Map[].class);
+				for(Map<String,Object> m : bizRelTagMapArray){
+					BizRelTag bizRelTag = new BizRelTag();
+					bizRelTag.put(m);
+					listBizRelTag.add(bizRelTag);
+				}
+			}
+			Customer.dao.saveObj(contextDTO, customer,listBizRelTag.toArray(new BizRelTag[0]));
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+		
+	}
+
+	@Override
+	public Map<String, Object> getModel(RequestDTO requestDTO) {
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Map<String, Object> data = super.getModel(requestDTO);
+		if(contextDTO.isMobileRequest()){
+			data.put("tags", null);
+		}else{
+			data.put("tags", BizRelTag.dao.getBizTagsByItemId(contextDTO, ItemTypeEnum.Customer.name(), Long.parseLong(requestDTO.get("id").toString()), contextDTO.getUserId()));
+		}
+		//客户地址
+		if(!ToolString.isEmptyString(data.get("address")) && ToolString.isEmptyString(data.get("lng")) && ToolString.isEmptyString(data.get("lat"))){
+			Map<String,Object> mongdoFilter = new HashMap<String,Object>();
+			String clid = CrmAMapSearchUtils.buildCustomerLocationId(contextDTO.getDbId(), Long.parseLong(data.get("id").toString()));
+			/*CustomerLocation location = BaseNosqlDaoImpl.getInstance().get(CustomerLocation.class, clid);
+			if(null != location){
+				data.put("lat", value);
+				private Double lat;			// 纬度
+				private Double	lng;	
+			}
+			*/
+			mongdoFilter.put("_id", clid);
+			Record findFirst = MongoKit.findFirst(contextDTO,"customerLocation",mongdoFilter);
+			if(null != findFirst){
+				data.putAll(findFirst.getColumns());
+			}
+		}
+		return data;
+	}
+
+	@Override
+	public String getGridSql() {
+		return "winbons.customer.searchCustomer";
+	}
+
+	@Override
+	public void reBuildPageResult(ContextDTO contextDTO,Map<String,Object> result) {
+		List<Map<String, Object>> recordListConvert = (List<Map<String, Object>>)result.get("items");
+		Set<Long> userids = new HashSet<Long>();
+		Set<Long> customerIds = new HashSet<Long>();
+		for(Map<String, Object> map : recordListConvert){
+			//map.put("tags", BizRelTag.dao.getBizTagsByItemId(contextDTO, ItemTypeEnum.Customer.name(), (Long)map.get("id"), contextDTO.getUserId()));
+			if(null != map.get("owner_id")){
+				Long userId = (Long)map.get("owner_id");
+				userids.add(userId);
+			}
+			customerIds.add((Long)map.get("id"));
+		}
+		//
+		
+		if(customerIds.size() > 0){
+			Map<String,Object> params = new HashMap<String,Object>();
+			String buildSelectSql = " ";
+			buildSelectSql += ToolJfinalSql.buildSelectSql(BizRelTag.class, "a",null,null);
+			buildSelectSql += ",b.tagname ,b.tagcolor  ,b.fsort as sort";
+			params.put("columns", buildSelectSql);
+			List<FilterDTO> listFilterDTOs = new ArrayList<FilterDTO>();
+			FilterDTO filterDTO1 = new FilterDTO();
+			filterDTO1.setProperty("a.itemid");
+			filterDTO1.setOperation("in");
+			filterDTO1.setValues(customerIds.toArray(new Long[0]));
+			listFilterDTOs.add(filterDTO1);
+			listFilterDTOs.add(new FilterDTO("a.userid", contextDTO.getUserId(), "="));
+			listFilterDTOs.add(new FilterDTO("a.module", ItemTypeEnum.Customer.name(), "="));
+			params.put("filters", listFilterDTOs);
+			params.put("sorts", new SortDTO[]{new SortDTO("asc","b.fsort")});
+			String sql = ToolSqlXml.getSql("winbins.tag.getBizTagsByItemIds",params);
+			List<Record> find = Db.find(contextDTO, sql);
+			List<Map<String, Object>> recordListConvert2 = ToolModel.recordListConvert(find);
+			
+			
+			for(Map<String, Object> map : recordListConvert){
+				List<Map<String, Object>> temp = new ArrayList<Map<String, Object>>();
+				for(Map<String, Object> tag : recordListConvert2){
+					if(((Long)map.get("id")).equals((Long)tag.get("itemid"))){
+						temp.add(tag);
+					}
+				}
+				map.put("tags", temp);
+			}
+		}
+		
+		if(userids.size() > 0){
+			List<Map<String, Object>> simpleUserInfoByUserIds = User.dao.getSimpleUserInfoByUserIds(contextDTO, userids.toArray(new Long[0]));
+			result.put("users",simpleUserInfoByUserIds);
+		}
+	}
+	
+	
+
+	@Override
+	public String reListBeetl(ContextDTO contextDTO,String gridSql, Map<String, Object> param) {
+		Map<Object, Object> data = (Map<Object, Object>) param.get("data");
+		List<FilterDTO> listFilter = (List<FilterDTO>)param.get("filters");
+		if(!ToolString.isEmptyString(data.get("notContact"))){
+			/*Long moduleValue[] = new Long[]{ItemTypeEnum.Customer.dbValue}; 
+			List<Long> sendDynamicIdList = dynamicManager.getSendDynamicIdList(contextDTO,moduleValue, -Integer.parseInt(data.get("notContact").toString()));
+			if(sendDynamicIdList.size() > 0){
+				data.put("dynamicCustomerIds", StringUtils.join(sendDynamicIdList,","));
+			}*/
+			long lastcontact_date = System.currentTimeMillis() - Long.parseLong(data.get("notContact").toString()) * 1000 * 60 * 60 * 24;
+			listFilter.add(new FilterDTO("lastcontact_date", lastcontact_date, "<="));
+			
+		}
+		data.remove("notContact");
+		List<FilterDTO> contactFilterDTO = new ArrayList<FilterDTO>();
+		for(int i=0;i<listFilter.size();i++){  
+			FilterDTO filterDTO = listFilter.get(i);
+			if(filterDTO.getProperty().startsWith("contact.")){
+				contactFilterDTO.add(filterDTO);
+				listFilter.remove(i);
+				i--;
+			}
+		}
+		param.put("filters", listFilter);
+		if(contactFilterDTO.size() > 0){
+			data.put("contactFilterDTO", contactFilterDTO);
+		}
+		return super.reListBeetl(contextDTO,gridSql, param);
+	}
+
+	@Override
+	public void rebuildCreateSearchView(RequestDTO requestDTO) {
+		FilterDTO filterDTO = new FilterDTO("mapping_field_name", "", "not in");
+		filterDTO.setValues(new String[]{"id","owner_id","continent","public_type","expireDate","receive_date"});
+		requestDTO.putFitler(filterDTO);
+		
+		FilterDTO filterDTO2 = new FilterDTO("field_type_ex", "", "not in");
+		filterDTO2.setValues(new String[]{"splitline"});
+		requestDTO.putFitler(filterDTO2);
+	}
+
+	
+	public ResultDTO newCombine(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		resultDTO.setSuccess(true);
+		try{
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Map<String,Object> params = new HashMap<String,Object>();
+			params.put("contextDTO", contextDTO);
+			Object bid = requestDTO.get("bid");
+			Object aid = requestDTO.get("aid");;
+			params.put("id", bid);
+			String checkCustomerExits1 = ToolSqlXml.getSql("winbons.customer.checkCustomerExits",params);
+			params.put("id", aid);
+			String checkCustomerExits2 = ToolSqlXml.getSql("winbons.customer.checkCustomerExits",params);
+			if(Integer.parseInt(checkCustomerExits1) == 0 || Integer.parseInt(checkCustomerExits2) == 0){
+				throw new ServiceException("无法合并已被删除的数据，请刷新后重试");
+			}
+			
+		}catch(Exception e){
+			resultDTO.setSuccess(false);
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+		}
+		return resultDTO;
+	}
+	
+
+	@Override
+	public ResultDTO newDelete(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			String idStr = requestDTO.get("id").toString();
+			String[] split = StringUtils.split(idStr,",");
+			Long[] ids = new Long[split.length];
+			for(int i = 0;i < split.length;i++){
+				ids[i] =  Long.parseLong(split[i]);
+			}
+			Customer.dao.deleteObjs(contextDTO, ids);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	public ResultDTO newMove(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			String idStr = requestDTO.get("id").toString();
+			Long ownerId = Long.parseLong(requestDTO.get("ownerId").toString());
+			String[] split = StringUtils.split(idStr,",");
+			Long[] ids = new Long[split.length];
+			for(int i = 0;i < split.length;i++){
+				ids[i] =  Long.parseLong(split[i]);
+			}
+			Customer.dao.moveObjs(contextDTO, ids,ownerId);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	@Override
+	public void reUpdateCreateSearchView(List<Map<String, Object>> list) {
+		int i = 0;
+		for(Map<String, Object> map : list){
+			i++;
+			if(ToolString.isEmptyString(map.get("column_field_name")))continue;
+			if(map.get("column_field_name").equals("website")){//1、联系人姓名 该菜单增加在公司网址后面，联系人手机之前
+				Map<String,Object> addMap = new HashMap<String,Object>();
+				addMap.put("column_field_name", "contact.name");
+				addMap.put("comboxid", -1);
+				addMap.put("mapping_field_name", "contact.name");
+				addMap.put("field_type_ex", "text");
+				addMap.put("field_type", "text");
+				addMap.put("field_label", "联系人名称");
+				list.add(i,addMap);
+				break;
+			}
+		}
+	}
+	
+	
+
+}

@@ -1,0 +1,44 @@
+package com.jfinal.plugin.sql;
+
+import java.util.List;
+
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.SetOperation;
+import net.sf.jsqlparser.statement.select.SetOperationList;
+
+public class UnionSetOperationList extends SetOperationList {
+
+	private SetOperationList setOperationList;
+
+	public UnionSetOperationList(SetOperationList setOperationList) {
+		this.setOperationList = setOperationList;
+	}
+
+	public List<PlainSelect> getPlainSelects() {
+		return setOperationList.getPlainSelects();
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder buffer = new StringBuilder();
+		List<PlainSelect> plainSelects = setOperationList.getPlainSelects();
+		List<SetOperation> operations = setOperationList.getOperations();
+		for (int i = 0; i < plainSelects.size(); i++) {
+			if (i != 0) {
+				buffer.append(" ").append(operations.get(i - 1).toString())
+						.append(" ");
+			}
+			buffer.append(" ").append(plainSelects.get(i).toString())
+					.append(" ");
+		}
+
+		if (setOperationList.getOrderByElements() != null) {
+			buffer.append(PlainSelect.orderByToString(setOperationList
+					.getOrderByElements()));
+		}
+		if (setOperationList.getLimit() != null) {
+			buffer.append(setOperationList.getLimit().toString());
+		}
+		return buffer.toString();
+	}
+}

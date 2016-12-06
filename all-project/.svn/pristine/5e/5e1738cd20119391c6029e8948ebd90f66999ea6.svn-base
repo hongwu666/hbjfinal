@@ -1,0 +1,21 @@
+package saas.winbons.beetl.func;
+
+import java.util.HashMap;
+
+import org.beetl.core.Context;
+import org.beetl.core.Function;
+
+public class SetFn implements Function {
+
+	@Override
+	public Object call(Object[] paras, Context ctx) {
+		Object o = paras[0];
+		Object value = paras[1];
+		Object key = paras[2];
+		if(o instanceof HashMap){
+			((HashMap) o).put(key, value);
+		}
+		return o;
+	}
+
+}

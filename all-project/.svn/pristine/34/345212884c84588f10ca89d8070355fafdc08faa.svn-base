@@ -1,0 +1,153 @@
+package saas.winbons.data.model.defined;
+
+import saas.winbons.data.model.BaseModel;
+
+public class ColumnDefinedGridColumn<M extends BaseModel<M>> extends BaseModel<M>{
+
+	private static final long serialVersionUID = 6174931995329793959L;
+	
+	public void setOwnerId(java.lang.Long ownerId) {
+		set("ownerId", ownerId);
+	}
+
+	public java.lang.Long getOwnerId() {
+		return get("ownerId");
+	}
+
+	public void setGridId(java.lang.String gridId) {
+		set("grid_id", gridId);
+	}
+
+	public java.lang.String getGridId() {
+		return get("grid_id");
+	}
+
+	public void setName(java.lang.String name) {
+		set("name", name);
+	}
+
+	public java.lang.String getName() {
+		return get("name");
+	}
+
+	public void setWidth(java.lang.Integer width) {
+		set("width", width);
+	}
+
+	public java.lang.Integer getWidth() {
+		return get("width");
+	}
+
+	public void setIsAutoWidth(java.lang.String isAutoWidth) {
+		set("is_auto_width", isAutoWidth);
+	}
+
+	public java.lang.String getIsAutoWidth() {
+		return get("is_auto_width");
+	}
+
+	public void setIndexNum(java.lang.Integer indexNum) {
+		set("index_num", indexNum);
+	}
+
+	public java.lang.Integer getIndexNum() {
+		return get("index_num");
+	}
+
+	public void setRenderer(java.lang.String renderer) {
+		set("renderer", renderer);
+	}
+
+	public java.lang.String getRenderer() {
+		return get("renderer");
+	}
+
+	public void setAlign(java.lang.String align) {
+		set("align", align);
+	}
+
+	public java.lang.String getAlign() {
+		return get("align");
+	}
+
+	public void setLabel(java.lang.String label) {
+		set("label", label);
+	}
+
+	public java.lang.String getLabel() {
+		return get("label");
+	}
+
+	public void setTitle(java.lang.String title) {
+		set("title", title);
+	}
+
+	public java.lang.String getTitle() {
+		return get("title");
+	}
+
+	public void setTitleCategory(java.lang.String titleCategory) {
+		set("title_category", titleCategory);
+	}
+
+	public java.lang.String getTitleCategory() {
+		return get("title_category");
+	}
+
+	public void setSortable(java.lang.String sortable) {
+		set("sortable", sortable);
+	}
+
+	public java.lang.String getSortable() {
+		return get("sortable");
+	}
+
+	public void setDisplay(java.lang.String display) {
+		set("display", display);
+	}
+
+	public java.lang.String getDisplay() {
+		return get("display");
+	}
+
+	public void setMappingFieldName(java.lang.String mappingFieldName) {
+		set("mapping_field_name", mappingFieldName);
+	}
+
+	public java.lang.String getMappingFieldName() {
+		return get("mapping_field_name");
+	}
+
+	public void setCreatedDate(java.lang.Long createdDate) {
+		set("created_date", createdDate);
+	}
+
+	public java.lang.Long getCreatedDate() {
+		return get("created_date");
+	}
+
+	public void setCreatedBy(java.lang.Long createdBy) {
+		set("created_by", createdBy);
+	}
+
+	public java.lang.Long getCreatedBy() {
+		return get("created_by");
+	}
+
+	public void setUpdatedDate(java.lang.Long updatedDate) {
+		set("updated_date", updatedDate);
+	}
+
+	public java.lang.Long getUpdatedDate() {
+		return get("updated_date");
+	}
+
+	public void setUpdatedBy(java.lang.Long updatedBy) {
+		set("updated_by", updatedBy);
+	}
+
+	public java.lang.Long getUpdatedBy() {
+		return get("updated_by");
+	}
+
+}

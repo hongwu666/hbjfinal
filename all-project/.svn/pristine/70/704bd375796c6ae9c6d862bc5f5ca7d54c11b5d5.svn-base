@@ -1,0 +1,11 @@
+package saas.winbons.data.model.workorder;
+
+import saas.winbons.data.model.BaseModel;
+
+public class WorkOrderModel extends BaseModel<WorkOrderModel> {
+
+	private static final long serialVersionUID = 4884882622724267613L;
+	
+	public static final WorkOrderModel dao = new WorkOrderModel();
+
+}

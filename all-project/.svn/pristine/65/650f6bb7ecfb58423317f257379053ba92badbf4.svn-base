@@ -1,0 +1,54 @@
+package saas.crm.data.dto.email;
+
+import java.io.Serializable;
+
+public class EmailAccountReceivedJmsDTO implements Serializable {
+
+	private static final long serialVersionUID = 8935406006518163759L;
+	
+	private Long dbId;
+	private Long userId;
+	private Long emailAccountId;
+	private String source;
+	private boolean persistence = false;
+	
+	
+	public Long getDbId() {
+		return dbId;
+	}
+	public void setDbId(Long dbId) {
+		this.dbId = dbId;
+	}
+	public Long getUserId() {
+		return userId;
+	}
+	public void setUserId(Long userId) {
+		this.userId = userId;
+	}
+	public Long getEmailAccountId() {
+		return emailAccountId;
+	}
+	public void setEmailAccountId(Long emailAccountId) {
+		this.emailAccountId = emailAccountId;
+	}
+	public String getSource() {
+		return source;
+	}
+	public void setSource(String source) {
+		this.source = source;
+	}
+	public boolean isPersistence() {
+		return persistence;
+	}
+	public void setPersistence(boolean persistence) {
+		this.persistence = persistence;
+	}
+	
+	@Override
+	public String toString() {
+		return "EmailReceivedJmsDTO [dbId=" + dbId + ", userId=" + userId + ", source=" + source + ",emailAccountId=" + emailAccountId +", persistence=" + persistence + "]";
+	}
+	
+	
+
+}

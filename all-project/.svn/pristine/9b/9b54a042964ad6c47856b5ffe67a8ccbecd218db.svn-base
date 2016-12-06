@@ -1,0 +1,878 @@
+package saas.winbons.provider;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.data.model.analysis.AnalysisSetting;
+import saas.winbons.data.model.analysis.AnalysisSettingConvertor;
+import saas.winbons.data.model.customer.Customer;
+import saas.winbons.data.model.customer.CustomerConvertor;
+import saas.winbons.data.model.defined.DefinedFeildModel;
+import saas.winbons.data.model.security.User;
+import saas.winbons.data.model.tag.BizRelTag;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.PageDto;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.api.SortDTO;
+import saas.winbons.dubbo.service.AbstractCommonService;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.dubbo.web.dto.UiGridColumnVO;
+import saas.winbons.dynamic.ItemTypeEnum;
+import saas.winbons.format.BooleanFormtCallback;
+import saas.winbons.format.EnumFormatTool;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.sql.FilterType;
+import saas.winbons.framework.tools.ToolGson;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolString;
+
+import com.jfinal.ext.kit.ModelKit;
+import com.jfinal.ext2.kit.DateTimeKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Model;
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.Record;
+
+public class AnalysisServiceImpl extends AbstractCommonService {
+
+	@Override
+	public Class<? extends Model<?>> getModelClass() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Class<? extends IEnumFormat> getFormatClass() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getGridId() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getTableName() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public AbstractCommonService getService() {
+		return this;
+	}
+
+	@Override
+	public FilterItemList buildFilterItem(ContextDTO contextDTO, SimulationHttpServletRequest request) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	
+	public ResultDTO listAnalysis(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		Map<String,Object> resultMap = new HashMap<String,Object>();
+		try{
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Object args1 = requestDTO.get("statistics");
+			Object analysisBy = requestDTO.get("analysisBy");
+			Object[] statistics = ToolGson.GsonToBean(args1.toString(), String[].class);
+			//Object[] statistics = args1.toString().substring(1, args1.toString().length() - 1).split(",");
+			List<FilterDTO> fitler = requestDTO.getFitler();
+			String namespace = "winbins.analysis.customer.list";
+			Map<String,Object> param = new HashMap<String,Object>();
+			if(!ToolString.isEmptyString(analysisBy) && analysisBy.toString().equals("1")){
+				fitler.add(getManageUserIds(requestDTO));
+			}else{
+				rebuildChildDept(requestDTO);
+				fitler.add(getManageDepartIds(requestDTO));
+			}
+			param.put("filters", fitler);
+			param.put("contextDTO", contextDTO);
+			param.put("statistic", fitler);
+			resultDTO.setSuccess(true);
+			for(Object  statistic: statistics){
+				param.put("statistic", statistic);
+				String sqlByBeetl = getSqlByBeetl(namespace,param);
+				List<Record> find = Db.find(contextDTO, sqlByBeetl);
+				resultMap.put(statistic.toString(), ToolModel.recordListConvert(find));
+			}
+			resultDTO.setData(resultMap);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+
+		return resultDTO;
+	}
+	
+	
+	public ResultDTO departAnalysis(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			List<FilterDTO> fitler = requestDTO.getFitler();
+			String namespace = "winbins.analysis.customer.departmentCount";
+			Map<String,Object> param = new HashMap<String,Object>();
+			rebuildChildDept(requestDTO);
+			FilterDTO manageDepartIds = getManageDepartIds(requestDTO);
+			
+			List<FilterDTO> departFitler = new ArrayList<FilterDTO>();
+			FilterDTO departQuary = new FilterDTO();
+			departQuary.setOperation("in");
+			departQuary.setProperty("id");
+			departQuary.setValues(manageDepartIds.getValues());
+			departFitler.add(departQuary);
+			param.put("filters", departFitler);
+			String sqlByBeetl2 = getSqlByBeetl("winbons.department.getDeparts",param);
+			List<Record> find2 = Db.find(contextDTO, sqlByBeetl2);
+			List<Map<String, Object>> recordListConvert2 = ToolModel.recordListConvert(find2);
+			param.clear();
+			
+			
+			
+			fitler.add(manageDepartIds);
+			param.put("filters", fitler);
+			param.put("contextDTO", contextDTO);
+			resultDTO.setSuccess(true);
+			String sqlByBeetl = getSqlByBeetl(namespace,param);
+			List<Record> find = Db.find(contextDTO, sqlByBeetl);
+			List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find);
+			
+			
+			//
+			boolean exitDp = false;
+			for(Map<String, Object> map : recordListConvert2){
+				exitDp = false;
+				for(Map<String, Object> result : recordListConvert){
+					if(map.get("id").toString().equals(result.get("item_id").toString())){
+						result.put("pId", map.get("parent_id"));
+						result.put("item_label", map.get("name"));
+						exitDp = true;
+						break;
+					}
+				}
+				if(!exitDp){
+					Map<String, Object> noExistMap = new HashMap<String,Object>();
+					noExistMap.put("item_id", map.get("id"));
+					noExistMap.put("pId", map.get("parent_id"));
+					noExistMap.put("item_label", map.get("name"));
+					noExistMap.put("counts", 0);
+					recordListConvert.add(noExistMap);
+				}
+			}
+			
+			resultDTO.setData(recordListConvert);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+
+		return resultDTO;
+	}
+	
+	public ResultDTO departChangeTrendAnalysis(RequestDTO requestDTO) {
+		
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			List<FilterDTO> fitler = requestDTO.getFitler();
+			
+			Calendar from = Calendar.getInstance();
+			boolean existForm = false;
+			Calendar to = Calendar.getInstance();
+			boolean existTo = false;
+			for(FilterDTO f : fitler){
+				if(f.getProperty().equals("created_date") && (f.getOperation().equals(">=") || f.getOperation().equals(">"))){
+					from.setTimeInMillis(Long.parseLong(f.getValue().toString()));
+					existForm = true;
+				}else if(f.getProperty().equals("created_date") && (f.getOperation().equals("<=") || f.getOperation().equals("<"))){
+					to.setTimeInMillis(Long.parseLong(f.getValue().toString()));
+					existTo = true;
+				}
+			}
+			if(!existForm || !existTo){
+				throw new Exception("请输入时间范围");
+			}
+			
+			long timeInMillis = from.getTimeInMillis();
+			long timeInMillis2 = to.getTimeInMillis();
+			
+			String byWith = "%Y-%m-%d";
+			if(timeInMillis2 - timeInMillis > 31536000000L){//1000 * 60 * 60 * 24 * 365
+				byWith = "%Y";
+			}else if(timeInMillis2 - timeInMillis > 2678400000L){//1000 * 60 * 60 * 24 * 31
+				byWith = "%Y-%m";
+			}
+			String namespace = "winbins.analysis.customer.departmentChangeTrend";
+			Map<String,Object> param = new HashMap<String,Object>();
+			rebuildChildDept(requestDTO);
+			FilterDTO manageDepartIds = getManageDepartIds(requestDTO);
+			
+			List<FilterDTO> departFitler = new ArrayList<FilterDTO>();
+			FilterDTO departQuary = new FilterDTO();
+			departQuary.setOperation("in");
+			departQuary.setProperty("id");
+			departQuary.setValues(manageDepartIds.getValues());
+			departFitler.add(departQuary);
+			param.put("filters", departFitler);
+			String sqlByBeetl2 = getSqlByBeetl("winbons.department.getDeparts",param);
+			List<Record> find2 = Db.find(contextDTO, sqlByBeetl2);
+			List<Map<String, Object>> recordListConvert2 = ToolModel.recordListConvert(find2);
+			param.clear();
+			
+			
+			fitler.add(manageDepartIds);
+			param.put("filters", fitler);
+			param.put("contextDTO", contextDTO);
+			param.put("byWith", byWith);
+			resultDTO.setSuccess(true);
+			String sqlByBeetl = getSqlByBeetl(namespace,param);
+			List<Record> find = Db.find(contextDTO, sqlByBeetl);
+			List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find);
+			Long t = to.getTimeInMillis();
+			Long f = from.getTimeInMillis();
+			Long ff = f;
+			while(true){
+				boolean breakNow = false; 
+				if(f >= t){
+					breakNow = true;
+					break;
+				}
+				if(byWith.equals("%Y-%m-%d")){
+					String formatDateToStyle = DateTimeKit.formatDateToStyle(DateTimeKit.DATE_STYLE, from.getTime());
+					changeTrendRebuild(formatDateToStyle,recordListConvert,manageDepartIds.getValues());
+					from.add(Calendar.DAY_OF_YEAR, 1);
+				}else if(byWith.equals("%Y-%m")){
+					String formatDateToStyle = DateTimeKit.formatDateToStyle("yyyy-MM", from.getTime());
+					changeTrendRebuild(formatDateToStyle,recordListConvert,manageDepartIds.getValues());
+					from.add(Calendar.MONTH, 1);
+				}else{
+					String formatDateToStyle = DateTimeKit.formatDateToStyle("yyyy", from.getTime());
+					changeTrendRebuild(formatDateToStyle,recordListConvert,manageDepartIds.getValues());
+					from.add(Calendar.YEAR, 1);
+				}
+				f = from.getTimeInMillis();
+				if(breakNow)break;
+			}
+			
+			//
+			boolean exitDp = false;
+			for(Map<String, Object> map : recordListConvert2){
+				f = ff;
+				from.setTimeInMillis(f);
+				while(true){
+					boolean breakNow = false; 
+					if(f >= t){
+						
+						breakNow = true;
+						break;
+					}
+					
+					
+					exitDp = false;
+					String formatDateToStyle = "";
+					if(byWith.equals("%Y-%m-%d")){
+						formatDateToStyle = DateTimeKit.formatDateToStyle(DateTimeKit.DATE_STYLE, from.getTime());
+						from.add(Calendar.DAY_OF_YEAR, 1);
+					}else if(byWith.equals("%Y-%m")){
+						formatDateToStyle = DateTimeKit.formatDateToStyle("yyyy-MM", from.getTime());
+						from.add(Calendar.MONTH, 1);
+					}else{
+						formatDateToStyle = DateTimeKit.formatDateToStyle("yyyy", from.getTime());
+						from.add(Calendar.YEAR, 1);
+					}
+					f = from.getTimeInMillis();
+					
+					
+					for(Map<String, Object> result : recordListConvert){
+						if(map.get("id").toString().equals(result.get("item_id").toString()) && result.get("dateFormat").toString().equals(formatDateToStyle)){
+							result.put("pId", map.get("parent_id"));
+							result.put("item_label", map.get("name"));
+							exitDp = true;
+							break;
+						}
+					}
+					if(!exitDp){
+						Map<String, Object> noExistMap = new HashMap<String,Object>();
+						noExistMap.put("item_id", map.get("id"));
+						noExistMap.put("pId", map.get("parent_id"));
+						noExistMap.put("item_label", map.get("name"));
+						noExistMap.put("counts", 0);
+						noExistMap.put("dateFormat", formatDateToStyle);
+						recordListConvert.add(noExistMap);
+					}
+					
+					if(breakNow)break;
+				}
+			}
+			
+			Map<String,Object> result = new HashMap<String,Object>();
+			result.put("data", recordListConvert);
+			result.put("byWith", byWith);
+			resultDTO.setData(result);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+
+		return resultDTO;
+	}
+	
+	private void changeTrendRebuild(String dateStr,List<Map<String, Object>> recordListConvert,Object[] itemIds){
+		boolean exist = false;
+		String dateFormat = "";
+		for(Object o : itemIds){
+			exist = false;
+			
+			for(Map<String, Object> m : recordListConvert){
+				dateFormat = ToolString.toString(m.get("dateFormat"));
+				if(dateFormat.equals(dateStr) && ToolString.toString(m.get("item_id")).equals(o.toString())){
+					exist = true;
+					break;
+				}
+			}
+			if(!exist){
+				Map<String, Object> map = new HashMap<String,Object>();
+				map.put("item_id", o.toString());
+				map.put("dateFormat", dateStr);
+				map.put("counts", 0);
+				recordListConvert.add(map);
+			}
+		}
+	}
+	
+	
+	
+	public ResultDTO userAnalysis(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			List<FilterDTO> fitler = requestDTO.getFitler();
+			String namespace = "winbins.analysis.customer.userCount";
+			Map<String,Object> param = new HashMap<String,Object>();
+			fitler.add(getManageUserIds(requestDTO));
+			param.put("filters", fitler);
+			param.put("contextDTO", contextDTO);
+			resultDTO.setSuccess(true);
+			String sqlByBeetl = getSqlByBeetl(namespace,param);
+			List<Record> find = Db.find(contextDTO, sqlByBeetl);
+			resultDTO.setData(ToolModel.recordListConvert(find));
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	public ResultDTO userChangeTrendAnalysis(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			List<FilterDTO> fitler = requestDTO.getFitler();
+			
+			Calendar from = Calendar.getInstance();
+			boolean existForm = false;
+			Calendar to = Calendar.getInstance();
+			boolean existTo = false;
+			
+			boolean existUser = false;
+			Object[] userIds = null;
+			for(FilterDTO f : fitler){
+				if(f.getProperty().equals("created_date") && (f.getOperation().equals(">=") || f.getOperation().equals(">"))){
+					from.setTimeInMillis(Long.parseLong(f.getValue().toString()));
+					existForm = true;
+				}else if(f.getProperty().equals("created_date") && (f.getOperation().equals("<=") || f.getOperation().equals("<"))){
+					to.setTimeInMillis(Long.parseLong(f.getValue().toString()));
+					existTo = true;
+				}else if(f.getProperty().equals("owner_id") && f.getOperation().equals("in")){
+					existUser = true;
+					userIds = f.getValues();
+				}
+			}
+			if(!existForm || !existTo){
+				throw new Exception("请输入时间范围");
+			}
+			/*if(!existUser){
+				throw new Exception("请输入需要统计的人员");
+			}*/
+			
+			long timeInMillis = from.getTimeInMillis();
+			long timeInMillis2 = to.getTimeInMillis();
+			
+			
+			String byWith = "%Y-%m-%d";
+			if(timeInMillis2 - timeInMillis > 31536000000L){//1000 * 60 * 60 * 24 * 365
+				byWith = "%Y";
+			}else if(timeInMillis2 - timeInMillis > 2678400000L){//1000 * 60 * 60 * 24 * 31
+				byWith = "%Y-%m";
+			}
+			String namespace = "winbins.analysis.customer.userChangeTrend";
+			Map<String,Object> param = new HashMap<String,Object>();
+			FilterDTO manageUserIds = getManageUserIds(requestDTO);
+			fitler.add(manageUserIds);
+			if(null == userIds){
+				userIds = manageUserIds.getValues();
+			}
+			param.put("filters", fitler);
+			param.put("contextDTO", contextDTO);
+			param.put("byWith", byWith);
+			resultDTO.setSuccess(true);
+			String sqlByBeetl = getSqlByBeetl(namespace,param);
+			List<Record> find = Db.find(contextDTO, sqlByBeetl);
+			
+			List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find);
+			Long t = to.getTimeInMillis();
+			Long f = from.getTimeInMillis();
+			Long ff = f;
+			while(true){
+				
+				boolean breakNow = false; 
+				if(f >= t){
+					breakNow = true;
+					break;
+				}
+				
+				if(byWith.equals("%Y-%m-%d")){
+					String formatDateToStyle = DateTimeKit.formatDateToStyle(DateTimeKit.DATE_STYLE, from.getTime());
+					changeTrendRebuild(formatDateToStyle,recordListConvert,userIds);
+					from.add(Calendar.DAY_OF_YEAR, 1);
+				}else if(byWith.equals("%Y-%m")){
+					String formatDateToStyle = DateTimeKit.formatDateToStyle("yyyy-MM", from.getTime());
+					changeTrendRebuild(formatDateToStyle,recordListConvert,userIds);
+					from.add(Calendar.MONTH, 1);
+				}else{
+					String formatDateToStyle = DateTimeKit.formatDateToStyle("yyyy", from.getTime());
+					changeTrendRebuild(formatDateToStyle,recordListConvert,userIds);
+					from.add(Calendar.YEAR, 1);
+				}
+				f = from.getTimeInMillis();
+				
+				if(breakNow)break;
+			}
+			boolean exitDp = false;
+			for(Object userId : userIds){
+				f = ff;
+				from.setTimeInMillis(f);
+				while(true){
+					boolean breakNow = false; 
+					if(f >= t){
+						breakNow = true;
+						break;
+					}
+					exitDp = false;
+					String formatDateToStyle = "";
+					if(byWith.equals("%Y-%m-%d")){
+						formatDateToStyle = DateTimeKit.formatDateToStyle(DateTimeKit.DATE_STYLE, from.getTime());
+						from.add(Calendar.DAY_OF_YEAR, 1);
+					}else if(byWith.equals("%Y-%m")){
+						formatDateToStyle = DateTimeKit.formatDateToStyle("yyyy-MM", from.getTime());
+						from.add(Calendar.MONTH, 1);
+					}else{
+						formatDateToStyle = DateTimeKit.formatDateToStyle("yyyy", from.getTime());
+						from.add(Calendar.YEAR, 1);
+					}
+					f = from.getTimeInMillis();
+					
+					for(Map<String, Object> result : recordListConvert){
+						if(userId.toString().equals(result.get("item_id").toString()) && result.get("dateFormat").toString().equals(formatDateToStyle)){
+							exitDp = true;
+							break;
+						}
+					}
+					if(!exitDp){
+						Map<String, Object> noExistMap = new HashMap<String,Object>();
+						noExistMap.put("item_id", userId);
+						noExistMap.put("counts", 0);
+						noExistMap.put("dateFormat", formatDateToStyle);
+						recordListConvert.add(noExistMap);
+					}
+					if(breakNow)break;
+				}
+			}
+			
+			
+			
+			Map<String,Object> result = new HashMap<String,Object>();
+			result.put("data", recordListConvert);
+			result.put("byWith", byWith);
+			resultDTO.setData(result);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+
+		return resultDTO;
+	}
+	
+	public ResultDTO getAnalysisSetting(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			String namespace = "winbins.analysis.setting.findModuleSetting";
+			Map<String,Object> param = new HashMap<String, Object>();
+			param.put("filters", requestDTO.getFitler());
+			param.put("sorts", requestDTO.getSort());
+			param.put("columns", ToolJfinalSql.buildSelectSql(AnalysisSetting.class, "",""));
+			param.put("contextDTO", contextDTO);
+			String sqlByBeetl = getSqlByBeetl(namespace,param);
+			List<Record> find = Db.find(contextDTO, sqlByBeetl);
+			List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find);
+			
+			Map<String,Boolean> defaultMap = new HashMap<String,Boolean>();
+			List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+			for(Map<String, Object> map : recordListConvert){
+				new BooleanFormtCallback().callback(map, "available", "available");
+					map.put("idField", map.get("fieldName"));
+					if(ToolString.toString(map.get("fieldName")).equals("resource_distribution")){
+						map.put("label", "各部门客户资源分布情况");
+					}
+					if(ToolString.toString(map.get("fieldName")).equals("resource_trend")){
+						map.put("label", "各部门客户资源变化情况");
+					}
+					defaultMap.put(ToolString.toString(map.get("fieldName")),true);
+					result.add(map);
+			}
+			if(!defaultMap.containsKey("resource_distribution")){
+				Map<String, Object> map = new HashMap<String,Object>();
+				map.put("userId", contextDTO.getUserId());
+				map.put("dbid", contextDTO.getDbId());
+				map.put("module", "customer");
+				map.put("fieldType", "departAnalysis");
+				map.put("available", true);
+				map.put("label", "各部门客户资源分布情况");
+				map.put("idField", "resource_distribution");
+				map.put("fieldName", "resource_distribution");
+				defaultMap.put("resource_distribution",true);
+				result.add(map);
+			}
+			if(!defaultMap.containsKey("resource_trend")){
+				Map<String, Object> map2 = new HashMap<String,Object>();
+				map2.put("userId", contextDTO.getUserId());
+				map2.put("dbid", contextDTO.getDbId());
+				map2.put("module", "customer");
+				map2.put("fieldType", "departChangeTrendAnalysis");
+				map2.put("available", true);
+				map2.put("label", "各部门客户资源变化情况");
+				map2.put("fieldName", "resource_trend");
+				map2.put("idField", "resource_trend");
+				defaultMap.put("resource_distribution",true);
+				result.add(map2);
+			}
+			if(!defaultMap.containsKey("industry")){
+				Map<String, Object> map2 = new HashMap<String,Object>();
+				map2.put("userId", contextDTO.getUserId());
+				map2.put("dbid", contextDTO.getDbId());
+				map2.put("module", "customer");
+				map2.put("fieldType", "listAnalysis");
+				map2.put("available", true);
+				map2.put("label", "客户行业");
+				map2.put("fieldName", "industry");
+				map2.put("idField", "industry");
+				defaultMap.put("industry",true);
+				result.add(map2);
+			}
+			if(!defaultMap.containsKey("source")){
+				Map<String, Object> map2 = new HashMap<String,Object>();
+				map2.put("userId", contextDTO.getUserId());
+				map2.put("dbid", contextDTO.getDbId());
+				map2.put("module", "customer");
+				map2.put("fieldType", "listAnalysis");
+				map2.put("available", true);
+				map2.put("label", "客户来源");
+				map2.put("fieldName", "source");
+				map2.put("idField", "source");
+				defaultMap.put("source",true);
+				result.add(map2);
+			}
+			param.put("columns", ToolJfinalSql.buildSelectSql(DefinedFeildModel.class, "",""));
+			sqlByBeetl = getSqlByBeetl("winbins.analysis.setting.getCustomerAnalysisDefine",param);
+			find = Db.find(contextDTO, sqlByBeetl);
+			List<Map<String, Object>> findListConvert = ToolModel.recordListConvert(find);
+			for(Map<String, Object> map3 : findListConvert){
+				if(!defaultMap.containsKey(ToolString.toString(map3.get("columnName")))){
+					Map<String, Object> tempMap = new HashMap<String,Object>();
+					tempMap.put("userId", contextDTO.getUserId());
+					tempMap.put("dbid", contextDTO.getDbId());
+					tempMap.put("module", "customer");
+					tempMap.put("fieldType", "listAnalysis");
+					tempMap.put("available", false);
+					tempMap.put("label", map3.get("field_label"));
+					tempMap.put("idField", map3.get("columnName"));
+					tempMap.put("fieldName", map3.get("columnName"));
+					result.add(tempMap);
+				}else{
+					for(Map<String, Object> map : result){
+						if(ToolString.toString(map.get("fieldName")).equals(ToolString.toString(map3.get("columnName")))){
+							map.put("label", map3.get("field_label"));
+							break;
+						}
+					}
+					if(ToolString.toString(map3.get("isdisable")).equals(DataConstant.YES_OR_NO_YES)){
+						for(Map<String, Object> map : result){
+							if(ToolString.toString(map.get("fieldName")).equals(ToolString.toString(map3.get("columnName")))){
+								map.put("available", false);
+								break;
+							}
+						}
+					}
+				}
+			
+			}
+			//删除不需要的
+			for(int i = 0; i < result.size(); i++){
+				Map<String, Object> map = result.get(i);
+				String fieldName = ToolString.toString(map.get("fieldName"));
+				if(fieldName.equals("resource_distribution"))continue;
+				if(fieldName.equals("resource_trend"))continue;
+				if(fieldName.equals("industry"))continue;
+				if(fieldName.equals("source"))continue;
+				boolean exit = false;
+				for(Map<String, Object> map3 : findListConvert){
+					String columnName = ToolString.toString(map3.get("columnName"));
+					if(fieldName.equals(columnName)){
+						exit = true;
+						break;
+					}
+				}
+				if(!exit){
+					result.remove(i); 
+					i--;  
+				}
+			}
+				
+
+			resultDTO.setData(result);
+			resultDTO.setSuccess(true);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	public ResultDTO updateAnalysisSetting(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			Map<Object, Object> data = requestDTO.getData();
+			String namespace = "winbins.analysis.setting.getModuleSetting";
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Map<String,Object> mapToModelMap = ToolModel.mapToModelMap(data, "analysisSetting");
+			String module = ToolString.toString(mapToModelMap.get("module"));
+			String fieldName = ToolString.toString(mapToModelMap.get("fieldName"));
+			String userId = ToolString.toString(mapToModelMap.get("userId"));
+			Map<String,Object> param = new HashMap<String, Object>();
+			param.put("columns", ToolJfinalSql.buildSelectSql(AnalysisSetting.class, "",""));
+			param.put("module", module);
+			param.put("fieldName", fieldName);
+			param.put("contextDTO", contextDTO);
+			param.put("userId", userId);
+			String sqlByBeetl = getSqlByBeetl(namespace,param);
+			Record find = Db.findFirst(contextDTO, sqlByBeetl);
+			Map<String, Object> map;
+			if(null == find){
+				AnalysisSetting analysisSetting = new AnalysisSetting();
+				EnumFormatTool.buildModel(AnalysisSettingConvertor.class, analysisSetting, mapToModelMap);
+				analysisSetting.save(contextDTO);
+				map = ModelKit.toMap(analysisSetting);
+			}else{
+				Model<?> recordToModel = ToolModel.recordToModel(AnalysisSetting.class, find);
+				EnumFormatTool.buildModel(AnalysisSettingConvertor.class, recordToModel, mapToModelMap);
+				recordToModel.update(contextDTO);
+				map = ModelKit.toMap(recordToModel);
+			}
+			EnumFormatTool.dealFormat(AnalysisSettingConvertor.class, map);
+			resultDTO.setData( map);
+			resultDTO.setSuccess(true);
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	public ResultDTO updateAnalysisSort(RequestDTO requestDTO) {
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			resultDTO.setSuccess(true);
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Map<Object, Object> data = requestDTO.getData();
+			Map<String,Object> param = new HashMap<String, Object>();
+			param.put("columns", ToolJfinalSql.buildSelectSql(AnalysisSetting.class, "",""));
+			Object args1 = requestDTO.get("items");
+			Map<String,Object>[] items = ToolGson.GsonToBean(args1.toString(), Map[].class);
+			String namespace = "winbins.analysis.setting.getModuleSetting";
+			for(Map<String,Object> mapToModelMap : items){
+				String module = ToolString.toString(mapToModelMap.get("module"));
+				String fieldName = ToolString.toString(mapToModelMap.get("fieldName"));
+				String userId = ToolString.toString(mapToModelMap.get("userId"));
+				param.put("module", module);
+				param.put("fieldName", fieldName);
+				param.put("contextDTO", contextDTO);
+				param.put("userId", userId);
+				String sqlByBeetl = getSqlByBeetl(namespace,param);
+				Record find = Db.findFirst(contextDTO, sqlByBeetl);
+				Map<String, Object> map;
+/*				mapToModelMap.remove("chartType");
+				mapToModelMap.remove("idField");
+				mapToModelMap.remove("name");
+				mapToModelMap.remove("shortLabel");
+				mapToModelMap.remove("method");
+				mapToModelMap.remove("fieldComponentType");
+				mapToModelMap.remove("dataMethod");
+				mapToModelMap.remove("state");*/
+				if(null == find){
+					AnalysisSetting analysisSetting = new AnalysisSetting();
+					EnumFormatTool.buildModel(AnalysisSettingConvertor.class, analysisSetting, mapToModelMap);
+					analysisSetting.save(contextDTO);
+					map = ModelKit.toMap(analysisSetting);
+				}else{
+					Model<?> recordToModel = ToolModel.recordToModel(AnalysisSetting.class, find);
+					EnumFormatTool.buildModel(AnalysisSettingConvertor.class, recordToModel, mapToModelMap);
+					recordToModel.update(contextDTO);
+					map = ModelKit.toMap(recordToModel);
+				}
+			}
+			
+			
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+	
+	
+	public ResultDTO analysisListView(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		try{
+			Map<String,Object> result = new HashMap<String,Object>();
+			resultDTO.setSuccess(true);
+			Map<Object, Object> data = requestDTO.getData();
+			Object analysisBy = requestDTO.get("analysisBy");
+			ContextDTO contextDTO = requestDTO.getContextDTO();
+			Map<String,Object> param = new HashMap<String, Object>();
+			List<FilterDTO> fitler = requestDTO.getFitler();
+			if(!ToolString.isEmptyString(analysisBy) && analysisBy.toString().equals("1")){
+				fitler.add(getManageUserIds(requestDTO));
+			}else{
+				rebuildChildDept(requestDTO);
+				fitler.add(getManageDepartIds(requestDTO));
+			}
+			List<SortDTO> sort = requestDTO.getSort();
+			param.put("contextDTO", contextDTO);
+			param.put("filters", fitler);
+			param.put("sorts", sort);
+			param.put("columns", ToolJfinalSql.buildSelectSql(Customer.class, "a",""));
+			Object object = data.get("page");
+			PageDto page = new PageDto();
+			RequestDTO newRequestDTO = new RequestDTO(contextDTO, "getDefineColumns");
+			FilterDTO filterDTO = new FilterDTO("b.is_define",DataConstant.YES_OR_NO_YES,FilterType.EQ.value);
+			newRequestDTO.putFitler(filterDTO);
+			FilterDTO filterDTO2 = new FilterDTO("b.field_type","combobox",FilterType.EQ.value);
+			newRequestDTO.putFitler(filterDTO2);
+			newRequestDTO.putFitler(new FilterDTO("b.table_name","t_crm_customer",FilterType.EQ.value));
+			newRequestDTO.putFitler(new FilterDTO("a.grid_id","ID_GRID_CUSTOMER",FilterType.EQ.value));
+			List<Map<String, Object>> listDefined = UiSettingServiceImpl.service.getDefineGridColumns(newRequestDTO);
+			param.put("listDefineColumn", listDefined);
+			
+			
+			if(null != object){
+				page = ToolGson.GsonToBean(object.toString(), PageDto.class);
+			}
+			if (page.getRowStart() == 1 && !contextDTO.isMobileRequest()) {
+				RequestDTO getUserGridColumns = new RequestDTO(contextDTO, "getUserGridColumns");
+				getUserGridColumns.put("gridId", "ID_GRID_CUSTOMER");
+				UiGridColumnVO[] changColumnToVO = UiSettingServiceImpl.service.getUserGridColumns(getUserGridColumns);
+				result.put("columnModel", changColumnToVO);	
+				
+			}
+			String buildSelectSql = "select ";
+			buildSelectSql += ToolJfinalSql.buildSelectSql(Customer.class, "a","");
+			buildSelectSql += ",c.name as poolName,b.name as deptName";
+			buildSelectSql += ",d.item_label as sourceName,e.item_label as customerTypeName,f.item_label as industryName";
+			buildSelectSql += ",g.item_label as ratingName,h.item_label as businessTypeName,i.item_label as statusName,j.id as cstName";
+			for(Map<String, Object> definedColumn : listDefined){
+				buildSelectSql += ",list_" + definedColumn.get("id") + ".item_label as " + definedColumn.get("name");
+			}
+			
+			
+			Page<Record> paginate = Db.paginate(contextDTO,page.getRowStart() , page.getLimit(), buildSelectSql,getSqlByBeetl("winbons.customer.searchCustomerByAnalysis",param));
+			List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(paginate.getList());
+			for(Map<String, Object> map : recordListConvert){
+				EnumFormatTool.dealFormat(CustomerConvertor.class, map);
+				map.put("tags", BizRelTag.dao.getBizTagsByItemId(contextDTO, ItemTypeEnum.Customer.name(), (Long)map.get("id"), contextDTO.getUserId()));
+			}
+			result.put("items", recordListConvert);
+			result.put("currentPage", paginate.getPageNumber());
+			result.put("limit", paginate.getPageSize());
+			result.put("totalPages", paginate.getTotalPage());
+			result.put("totalCount", paginate.getTotalRow());
+			Set<Long> userids = new HashSet<Long>();
+			for(int i=0 ; i < recordListConvert.size();i++){
+				Map<String,Object>  itemMap = (Map<String,Object>) recordListConvert.get(i);
+				Long userId = (Long)itemMap.get("owner_id");
+				userids.add(userId);
+			}
+			if(userids.size() > 0){
+				List<Map<String, Object>> simpleUserInfoByUserIds = User.dao.getSimpleUserInfoByUserIds(contextDTO, userids.toArray(new Long[0]));
+				result.put("users",simpleUserInfoByUserIds);
+			}
+			resultDTO.setData(result);
+			
+		}catch(Exception e){
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+			resultDTO.setSuccess(false);
+		}
+		return resultDTO;
+	}
+
+	@Override
+	public String getGridHeadSql() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getGridSql() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void rebuildCreateSearchView(RequestDTO requestDTO) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void reUpdateCreateSearchView(List<Map<String, Object>> list) {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	
+
+
+}

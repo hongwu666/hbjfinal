@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- - Copyright 1999-2011 Alibaba Group. - - Licensed under the Apache License, 
+	Version 2.0 (the "License"); - you may not use this file except in compliance 
+	with the License. - You may obtain a copy of the License at - - http://www.apache.org/licenses/LICENSE-2.0 
+	- - Unless required by applicable law or agreed to in writing, software - 
+	distributed under the License is distributed on an "AS IS" BASIS, - WITHOUT 
+	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the 
+	License for the specific language governing permissions and - limitations 
+	under the License. -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+	http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>classpath:dubbo.properties</value>
+			</list>
+		</property>
+	</bean>
+
+	<dubbo:application name="workorder-provider" owner="programmer" organization="dubbox" />
+
+	<dubbo:registry address="${registryAddr}" />
+
+	<dubbo:protocol id="dubbo1" name="dubbo" port="${dubbo1Port}" serialization="kryo" optimizer="saas.winbons.dubbo.serialize.SerializationOptimizerImpl" />
+	<dubbo:protocol id="dubbo2" name="dubbo" port="${dubbo2Port}" serialization="compactedjava" />
+
+	<bean id="workorderService" class="saas.winbons.provider.WorkorderServiceImpl" />
+	<bean id="workorderMinaService" class="saas.winbons.provider.mina.WorkorderMinaServiceImpl">
+		<property name="workorderService" ref="workorderService" />
+	</bean>
+
+	<dubbo:service interface="saas.winbons.dubbo.api.workorder.IWorkorderService" ref="workorderMinaService" group="workorderMinaService" protocol="dubbo2" />
+	
+</beans>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+	xsi:schemaLocation="http://www.springframework.org/schema/context
+						http://www.springframework.org/schema/context/spring-context.xsd
+						http://www.springframework.org/schema/data/mongo
+						http://www.springframework.org/schema/data/mongo/spring-mongo.xsd
+						http://www.springframework.org/schema/beans
+						http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<!-- Default bean name is 'mongo' -->
+	<mongo:mongo-client id="mongo-client-prod-comet-trans" 
+		host="${mongodb.ip}" port="${mongodb.port}"
+		>
+		
+	<mongo:client-options connections-per-host="${mongodb.connectionsPerHost}"
+			threads-allowed-to-block-for-connection-multiplier="10"
+			connect-timeout="20000"
+			socket-timeout="20000" />
+	</mongo:mongo-client>
+
+	<mongo:db-factory id="mongoDbFactory" dbname="${mongodb.name}"
+		mongo-ref="mongo-client-prod-comet-trans" />
+
+	<mongo:mapping-converter>
+		<mongo:custom-converters base-package="saas.**.module" />
+	</mongo:mapping-converter>
+
+
+	<!-- set the mapping converter to be used by the MongoTemplate -->
+	<bean id="mongoTemplate" class="saas.winbons.framework.nosql.CustomMongoTemplate">
+		<constructor-arg name="mongoDbFactory" ref="mongoDbFactory" />
+		<constructor-arg name="mongoConverter" ref="mappingConverter" />
+	</bean>
+	 
+	<bean id="baseNosqlDao" class="saas.winbons.framework.nosql.BaseNosqlDaoImpl" >
+	<property name="mongoTemplate" ref="mongoTemplate"></property>
+	</bean>
+	
+	<bean class="saas.winbons.framework.nosql.DefaultBeforeSaveEvent" />
+	
+	<bean id="dynamicManager" class="saas.crm.dynamic.manager.DynamicManager" />
+	
+	
+	
+	
+	
+</beans>

@@ -1,0 +1,100 @@
+package saas.framework.nosql;
+
+import java.io.InputStream;
+import java.util.List;
+
+import saas.framework.nosql.domain.FileStoreArticle;
+
+/**
+ * 
+ * @ClassName: FileSystemEngine
+ * @Description: 文件存储操作类
+ * @author star.ye
+ * @date 2014年7月10日 下午3:19:59
+ */
+public interface FileSystemEngine {
+
+	/**
+	 * 
+	 * @param article
+	 */
+	void store(FileStoreArticle article);
+
+	/**
+	 * 
+	 * @param id
+	 * @return
+	 */
+	<T extends FileStoreArticle> T getFileById(Class<T> entityType, Object id);
+
+	/**
+	 * 使用getFileById，后面会按照Id为键值进行分片
+	 * @param fileName
+	 * @return
+	 */
+	@Deprecated
+	<T extends FileStoreArticle> List<T> getFilesByFileName(Class<T> entityType, String fileName);
+
+	/**
+	 * 
+	 * @param entityType
+	 * @return
+	 */
+	<T extends FileStoreArticle> long getFileCount(Class<T> entityType);
+
+	/**
+	 * 
+	 * @param entityType
+	 */
+	<T extends FileStoreArticle> void delete(Class<T> entityType);
+
+	/**
+	 * Delete file identified by the id passed
+	 * 
+	 * @param id
+	 */
+	<T extends FileStoreArticle> void delete(Class<T> entityType, Object id);
+
+	/**
+	 * 
+	 * @Title: saveFile
+	 * @Description: 保存文件流，
+	 * 
+	 * @param dbId
+	 * @param in
+	 * @param name 文件名字
+	 * @param 设定文件
+	 * @return String 返回mongodb 生成的ID
+	 * @throws
+	 * @date 2014年7月9日 下午3:12:59
+	 */
+	String saveFile(Long dbId, InputStream in, String name);
+
+	/**
+	 * 
+	 * @Title: saveFile
+	 * @param dbId
+	 * @param data
+	 * @param 设定文件
+	 * @return String 返回类型
+	 * @throws
+	 * @date 2014年7月10日 下午3:21:01
+	 */
+	String saveFile(Long dbId, byte[] data);
+
+	/**
+	 * 保存关联实体附件
+	 * 
+	 * @Title: saveFile
+	 * @param dbId
+	 * @param in
+	 * @param name
+	 * @param objId
+	 * @param 设定文件
+	 * @return String 返回类型
+	 * @throws
+	 * @date 2014年8月7日 上午10:52:47
+	 */
+	String saveFile(Long dbId, InputStream in, String name, String objId);
+
+}

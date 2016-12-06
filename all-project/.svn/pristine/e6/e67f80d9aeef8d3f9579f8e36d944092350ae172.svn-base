@@ -1,0 +1,21 @@
+package saas.winbons.framework.tools;
+
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.event.ApplicationEventMulticaster;
+import org.springframework.stereotype.Component;
+
+import saas.winbons.framework.service.ServiceLocator;
+
+@Component
+public abstract class ToolEvent {
+	
+    private static ApplicationEventMulticaster applicationEventMulticaster;  
+	
+	public static void multicastEvent(ApplicationEvent event){
+		if(null == applicationEventMulticaster){
+			applicationEventMulticaster = (ApplicationEventMulticaster) ServiceLocator.getService("applicationEventMulticaster");
+		}
+		applicationEventMulticaster.multicastEvent(event);
+	}
+
+}

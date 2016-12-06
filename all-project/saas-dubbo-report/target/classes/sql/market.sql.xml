@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 菜单sql -->
+<sql-statement namespace="winbins.market">
+
+	<!-- 查询根菜单 -->
+	<sql id="createSearchView">
+		<![CDATA[ 
+			<%
+				var _new = "1" == isnew! ? true : false;
+				if(isEmpty(isMobileRequest) || isMobileRequest == false){
+					print("SELECT " + columns! + " FROM t_crm_definition_field where mapping_field_name not in ('id','ownerId','tag','textarea','time')");
+				}else{
+				if(_new){
+				    print("SELECT " + columns! + " FROM t_crm_definition_field where mapping_field_name not in ('id','ownerId','tag','textarea','time')");
+				}else{
+				    print("SELECT " + columns! + " FROM t_crm_definition_field where mapping_field_name not in ('id','ownerId','tag','textarea','time')");
+				}
+				}
+			%>
+			 <%
+			 commonSql("winbons.common.params",filters!,sorts!);
+			%>
+    	]]>
+	</sql>
+
+
+
+</sql-statement>

@@ -1,0 +1,247 @@
+package saas.winbons.provider;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import saas.winbons.data.constant.DataConstant;
+import saas.winbons.data.model.ListItem;
+import saas.winbons.data.model.SystemProfile;
+import saas.winbons.data.model.customer.CustomerPool;
+import saas.winbons.data.model.defined.DefinedFeildModel;
+import saas.winbons.data.model.defined.DefinedFeildModelConvert;
+import saas.winbons.data.model.organization.Department;
+import saas.winbons.data.model.product.ProductCatalog;
+import saas.winbons.data.model.sales.OpportunityStage;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.api.SortDTO;
+import saas.winbons.dubbo.service.AbstractCommonService;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.dubbo.web.dto.UiGridColumnVO;
+import saas.winbons.enumtype.BaseEnum;
+import saas.winbons.enumtype.FieldType;
+import saas.winbons.enumtype.JmesaMapEnum;
+import saas.winbons.format.EnumFormatTool;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+import saas.winbons.framework.tools.ToolString;
+import saas.winbons.uisetting.contant.DefinedFeildColumnConvertor;
+
+import com.jfinal.aop.Enhancer;
+import com.jfinal.kit.StrKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+public class UiSettingServiceImpl extends AbstractCommonService {
+
+	public static final UiSettingServiceImpl service = Enhancer.enhance(UiSettingServiceImpl.class);
+	
+	@Override
+	public Class getModelClass() {
+		return UiSettingServiceImpl.class;
+	}
+	
+	
+	public UiGridColumnVO[] getUserGridColumns(RequestDTO requestDTO){
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Map<Object, Object> data = requestDTO.getData();
+		String gridId = (String) data.get("gridId");
+		Map<String,Object> map = new HashMap<String, Object>();
+		map.put("gridId", gridId);
+		map.put("contextDTO", contextDTO);
+		String sqlByBeetl = getSqlByBeetl("winbins.defined.getUserGridColumns",map);
+		List<Record> find = Db.find(contextDTO, sqlByBeetl);
+		List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find);
+		ResultDTO resultDTO = new ResultDTO();
+		resultDTO.setData(recordListConvert);
+		resultDTO.setSuccess(true);
+		return changColumnToVO(recordListConvert,contextDTO);
+	}
+	
+	public List<Map<String,Object>> getAllListItems(RequestDTO requestDTO){
+		return ListItem.dao.getAllItemsByGridHead(requestDTO.getContextDTO());
+	}
+	
+	public List<Map<String, Object>> getDefineGridColumns(RequestDTO requestDTO){
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		Map<String,Object> params = new HashMap<String, Object>();
+		List<FilterDTO> filters = new ArrayList<FilterDTO>();
+		filters.add(new FilterDTO("b.is_delete", "N"));
+		filters.add(new FilterDTO("b.isdisable", "N"));
+		if(null != requestDTO.getFitler()){
+			filters.addAll(requestDTO.getFitler());
+		}
+		params.put("filters", requestDTO.getFitler());
+		params.put("sorts", requestDTO.getSort());
+		params.put("contextDTO", contextDTO);
+		params.put("columns", ToolJfinalSql.buildSelectSql(DefinedFeildModel.class, "", ""));
+		String sqlByBeetl = getSqlByBeetl("winbins.defined.getGridColumnByParam",params);
+		List<Record> find = Db.find(contextDTO, sqlByBeetl);
+		List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find);
+		for(Map<String, Object> map : recordListConvert){
+			if(map.get("is_define").toString().equals(DataConstant.YES_OR_NO_YES)){
+				String string = map.get("mapping_field_name").toString();
+				map.put("columnsName", string.replace("textField", "text_field").replace("numField", "num_field"));
+			}
+		}
+		
+		return recordListConvert;
+	}
+	
+	public List<Map<String,Object>> getDefinitionField(RequestDTO requestDTO){
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		List<FilterDTO> filters = new ArrayList<FilterDTO>();
+		filters.add(new FilterDTO("is_delete", "N"));
+		filters.add(new FilterDTO("isdisable", "N"));
+		if(null != requestDTO.getFitler()){
+			filters.addAll(requestDTO.getFitler());
+		}
+		List<SortDTO> sorts =  new ArrayList<SortDTO>();
+		if(null != requestDTO.getFitler()){
+			sorts.addAll(requestDTO.getSort());
+		}
+		sorts.add(new SortDTO(DataConstant.ASC, "display_order"));
+		String buildSelectSql = ToolJfinalSql.buildSelectSql(DefinedFeildModel.class, "", "");
+		Map<String,Object> params = new HashMap<String, Object>();
+		params.put("filters", filters);
+		params.put("sorts", sorts);
+		params.put("columns", buildSelectSql);
+		String sql = ToolSqlXml.getSql("winbins.defined.getModelDefineField", params);
+		List<Record> find = Db.find(contextDTO, sql);
+		List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find);
+		Map<String,Object> param = new HashMap<String,Object>();
+		param.put("contextDTO", contextDTO);
+		for(Map<String, Object> resultData : recordListConvert){
+			EnumFormatTool.dealFormat2(DefinedFeildModelConvert.class, resultData);
+			String fieldTypeEx = resultData.get("field_type_ex").toString();
+			if(fieldTypeEx.equals("combobox")){
+				
+				String comboxid = ToolString.toString(resultData.get("comboxid"));
+				if(!ToolString.isEmptyString(comboxid)){
+					List<Map<String, Object>> findByListId = ListItem.dao.findByListId(contextDTO, Long.parseLong(comboxid));
+					resultData.put("values", findByListId.toArray(new Map[0]));
+				}
+			}else if(fieldTypeEx.equals("special")){
+				String fieldTypeValue = ToolString.toString(resultData.get("field_type_value"));
+				if(!ToolString.isEmptyString(fieldTypeValue)){
+					String sqlByBeetl = getSqlByBeetl("winbins.special." + fieldTypeValue,param);
+					resultData.put("values", ToolModel.recordListConvert(Db.find(contextDTO, sqlByBeetl)).toArray(new Map[0]));
+				}
+			}
+		}
+		
+		return recordListConvert;
+	}
+	
+	private List<Map<String, Object>> getFromEnumClass(String className) {
+		if(StrKit.isBlank(className)){
+			return null;
+		}
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		try {
+			Class enumClass = Class.forName(className, true, contextClassLoader);
+			Object[] enumConstants = enumClass.getEnumConstants();
+			List<Map<String, Object>> listMap = new ArrayList<Map<String, Object>>();
+			for (int i = 0; i < enumConstants.length; i++) {
+				Object enumEntity = enumConstants[i];
+				Object value = "";
+				String lable = "";
+				if (enumEntity instanceof JmesaMapEnum) {
+					String key = ((JmesaMapEnum) enumEntity).getMessageKey();
+					lable = getIl8nMessage(key);
+				}
+				if (enumEntity instanceof BaseEnum) {
+					value = ((BaseEnum) enumEntity).getDbValue();
+				}
+				Map<String, Object> map = new HashMap<String,Object>();
+				map.put("id", value);
+				map.put("lable", lable);
+				listMap.add(map);
+			}
+			return listMap;
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	
+	private List<Map<String, Object>> buildVOfromMap(List<Map<String, Object>> list){
+		if(list != null && !list.isEmpty()){
+			Map<String, Object>[] itemsVO = new HashMap[list.size()];
+			for(int i = 0; i < itemsVO.length; i++){
+				Map<String, Object> map = list.get(i);
+				map.put("lable", map.get("name"));
+			}
+			return list;
+		}
+		return new ArrayList<Map<String, Object>>();
+	}
+
+	@Override
+	public AbstractCommonService getService() {
+		return this;
+	}
+
+
+	@Override
+	public String getGridId() {
+		return null;
+	}
+
+
+	@Override
+	public FilterItemList buildFilterItem(ContextDTO contextDTO,SimulationHttpServletRequest request) {
+		return null;
+		
+	}
+
+
+	@Override
+	public String getTableName() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	@Override
+	public Class<? extends IEnumFormat> getFormatClass() {
+		return null;
+	}
+
+
+	@Override
+	public String getGridHeadSql() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	@Override
+	public String getGridSql() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	@Override
+	public void rebuildCreateSearchView(RequestDTO requestDTO) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void reUpdateCreateSearchView(List<Map<String, Object>> list) {
+		// TODO Auto-generated method stub
+		
+	}
+
+}

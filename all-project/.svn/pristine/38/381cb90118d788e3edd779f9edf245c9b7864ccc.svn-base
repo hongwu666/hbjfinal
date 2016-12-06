@@ -1,0 +1,44 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: OrExpression.java 
+ * @Package saas.framework.mutitenant.sql 
+ * @Description: TODO(用一句话描述该文件做什么) 
+ * @author star.ye 
+ * @date 2014年11月10日 下午2:47:00 
+ * @version 1.0 
+ */
+
+package com.jfinal.plugin.sql;
+
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
+
+/**
+ * @ClassName: OrExpression
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年11月10日 下午2:47:00
+ */
+
+public class MyOrExpression extends OrExpression {
+
+	public MyOrExpression(OrExpression orExpression) {
+		this(orExpression.getLeftExpression(), orExpression.getRightExpression());
+		if (orExpression.isNot()) {
+			setNot();
+		}
+	}
+
+	public MyOrExpression(Expression leftExpression, Expression rightExpression) {
+		super(leftExpression, rightExpression);
+	}
+
+	public String toString() {
+		return " (" + super.toString() + ") ";
+	}
+}

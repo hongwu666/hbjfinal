@@ -1,0 +1,183 @@
+ <h3 class="page-title"> 华邦云收信服务监控平台
+                        <small>摘要</small>
+                    </h3>
+                    
+ <div class="row">
+ 					<div class="col-md-6 col-sm-12">
+					<div class="portlet grey-cascade box">
+                                                            <div class="portlet-title">
+                                                                <div class="caption">
+                                                                    <i class="fa fa-cogs"></i>统计信息 </div>
+                                                                <div class="actions">
+                                                                </div>
+                                                            </div>
+                                                            <div class="portlet-body">
+                                                                <div class="row static-info">
+                                                                    <div class="col-md-5 name"> 当前租户数: </div>
+                                                                    <div class="col-md-7 value" id="zfCount"> 12313232
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row static-info">
+                                                                    <div class="col-md-5 name"> 用户总数: </div>
+                                                                    <div class="col-md-7 value" id="userCount">  12</div>
+                                                                </div>
+                                                                <div class="row static-info">
+                                                                    <div class="col-md-5 name"> 邮箱总数: </div>
+                                                                    <div class="col-md-7 value" id="emailCount">
+                                                                        20
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+					</div>
+					
+					
+															<div class="col-md-6 col-sm-12">
+					<div class="portlet grey-cascade box">
+                                                            <div class="portlet-title">
+                                                                <div class="caption">
+                                                                    <i class="fa fa-cogs"></i>今天预警信息 </div>
+                                                                <div class="actions">
+                                                                </div>
+                                                            </div>
+                                                            <div class="portlet-body">
+                                                                <div class="row static-info">
+                                                                    <div class="col-md-5 name"> 收信失败次数: </div>
+                                                                    <div class="col-md-7 value" id="receiptFailCount">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row static-info">
+                                                                    <div class="col-md-5 name"> 失败邮箱数: </div>
+                                                                    <div class="col-md-7 value" id="emailFailCount"></div>
+                                                                </div>
+                                                                <div class="row static-info">
+                                                                    <div class="col-md-5 name"> 解析失败数: </div>
+                                                                    <div class="col-md-7 value" id="jxFailCount"></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+					</div>
+					
+					
+					
+				<div class="col-md-12">
+					<div class="portlet light ">
+                                <div class="portlet-title">
+                                    <div class="caption">
+                                        <i class="icon-social-dribbble font-green"></i>
+                                        <span class="caption-subject font-green bold uppercase">收信预警</span>
+                                    </div>
+                                    <div class="actions">
+                                        <a class="btn btn-circle btn-icon-only btn-default" href="javascript:;">
+                                            <i class="icon-cloud-upload"></i>
+                                        </a>
+                                        <a class="btn btn-circle btn-icon-only btn-default" href="javascript:;">
+                                            <i class="icon-wrench"></i>
+                                        </a>
+                                        <a class="btn btn-circle btn-icon-only btn-default" href="javascript:;">
+                                            <i class="icon-trash"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="portlet-body">
+                                    <div class="table-scrollable">
+                                        <table class="table table-hover" id="crm_mail_producer">
+                                            <thead>
+                                                <tr>
+                                                    <th> 预警水平 </th>
+                                                    <th> 租户 </th>
+                                                    <th> 用户 </th>
+                                                    <th> 邮箱数 </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+					
+					
+					</div>
+ 
+ 
+ 
+ 
+ </div>  
+ 
+ 
+ <script>
+ jQuery(document).ready(function() {
+	 if(initData.emailAccount){
+		 $("#emailCount").html(initData.emailAccount.length);
+		 $("#zfCount").html(_.keys(_.groupBy(initData.emailAccount,function(o){ return o.dbid; })).length);
+		 $("#userCount").html(_.keys(_.groupBy(initData.emailAccount,function(o){ return o.userId; })).length);
+		 $("#receiptFailCount").html(initData.errorCount);
+		 $("#emailFailCount").html(initData.errorAccountCount);
+		 
+		 
+		 //收信预警
+		 var _d = new Date();
+		 var _time = _d.getTime();
+		 var _item = [];
+		 
+		 _item = _.filter(initData.emailAccount,function(o){
+				return o.lastUpdateDate + 1000 * 60 * 60 * 24 <= _time;
+			});
+		 
+		 $("#crm_mail_producer tbody").append(String.format("<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>","大于1天未执行的收信任务",_.keys(_.groupBy(_item,function(o){ return o.dbid; })).length,
+				 _.keys(_.groupBy(_item,function(o){ return o.userId; })).length,_item.length));
+		 
+		 _item = _.filter(initData.emailAccount,function(o){
+				return o.lastUpdateDate + 1000 * 60 * 60 * 12 <= _time && o.lastUpdateDate + 1000 * 60 * 60 * 24 > _time;
+			});
+		 
+		 $("#crm_mail_producer tbody").append(String.format("<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>","大于12小时未执行的收信任务",_.keys(_.groupBy(_item,function(o){ return o.dbid; })).length,
+				 _.keys(_.groupBy(_item,function(o){ return o.userId; })).length,_item.length));
+		 
+		 _item = _.filter(initData.emailAccount,function(o){
+				return o.lastUpdateDate + 1000 * 60 * 60 * 6 <= _time && o.lastUpdateDate + 1000 * 60 * 60 * 12 > _time;
+			});
+		 
+		 $("#crm_mail_producer tbody").append(String.format("<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>","大于6小时未执行的收信任务",_.keys(_.groupBy(_item,function(o){ return o.dbid; })).length,
+				 _.keys(_.groupBy(_item,function(o){ return o.userId; })).length,_item.length));
+		 
+		 _item = _.filter(initData.emailAccount,function(o){
+				return o.lastUpdateDate + 1000 * 60 * 60 * 1 <= _time && o.lastUpdateDate + 1000 * 60 * 60 * 6 > _time;
+			});
+		 
+		 $("#crm_mail_producer tbody").append(String.format("<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>","大于1小时未执行的收信任务",_.keys(_.groupBy(_item,function(o){ return o.dbid; })).length,
+				 _.keys(_.groupBy(_item,function(o){ return o.userId; })).length,_item.length));
+		 
+		 _item = _.filter(initData.emailAccount,function(o){
+				return o.lastUpdateDate + 1000 * 60 * 60 * 0.5 <= _time && o.lastUpdateDate + 1000 * 60 * 60 * 1 > _time;
+			});
+		 
+		 
+		 $("#crm_mail_producer tbody").append(String.format("<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>","大于0.5小时未执行的解析任务",_.keys(_.groupBy(_item,function(o){ return o.dbid; })).length,
+				 _.keys(_.groupBy(_item,function(o){ return o.userId; })).length,_item.length));
+		 
+		 _item = _.filter(initData.emailAccount,function(o){
+				return o.lastUpdateDate + 1000 * 60 * 60 * 0.25 <= _time && o.lastUpdateDate + 1000 * 60 * 60 * 0.5 > _time;
+			});
+
+		 
+		 
+		 $("#crm_mail_producer tbody").append(String.format("<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>","大于15分钟未执行的收信任务",_.keys(_.groupBy(_item,function(o){ return o.dbid; })).length,
+				 _.keys(_.groupBy(_item,function(o){ return o.userId; })).length,_item.length));
+		 
+		 _item = _.filter(initData.emailAccount,function(o){
+				return o.lastUpdateDate + 1000 * 60 * 60 * 0.10 <= _time && o.lastUpdateDate + 1000 * 60 * 60 * 0.25 > _time;
+			});
+		 
+		 
+		 $("#crm_mail_producer tbody").append(String.format("<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>","大于6分钟未执行的收信任务",_.keys(_.groupBy(_item,function(o){ return o.dbid; })).length,
+				 _.keys(_.groupBy(_item,function(o){ return o.userId; })).length,_item.length));
+
+		 
+	 }
+		
+	 
+ });
+ 
+ </script>

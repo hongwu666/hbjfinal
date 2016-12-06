@@ -1,0 +1,36 @@
+package saas.winbons.format;
+
+import java.text.DecimalFormat;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.jfinal.plugin.activerecord.Model;
+
+public class DoubleFormtCallback implements ICallbackFormat {
+
+	private static final DecimalFormat decimalFormat = new DecimalFormat("##.##");
+
+	@Override
+	public Object callback(Map<String, Object> map, String name, String dbName) {
+		Object object = map.get(dbName);
+		String value = "";
+		if (object != null && StringUtils.isNotBlank(object.toString())) {
+			value = decimalFormat.format(object);
+		}
+		map.put(name, value);
+		return value;
+	}
+
+	@Override
+	public Object build(Model model, String attr, Object value) {
+		model.set(attr, value);
+		return value;
+	}
+
+	@Override
+	public String getType() {
+		return "double";
+	}
+
+}

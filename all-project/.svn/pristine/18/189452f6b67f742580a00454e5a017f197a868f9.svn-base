@@ -1,0 +1,95 @@
+package saas.framework.dao;
+
+public class PageVO {
+
+	private long totalCount;
+
+	private int currentPage = 0;
+
+	private int limit;
+
+	private boolean isPageInfo;
+
+	private boolean needPage = false;
+
+	/**
+	 * @return the needPage //是否需要分页
+	 */
+	public boolean isNeedPage() {
+
+		return needPage;
+	}
+
+	/**
+	 * @param needPage
+	 *            the needPage to set
+	 */
+
+	public void setNeedPage(boolean needPage) {
+
+		this.needPage = needPage;
+	}
+
+	public boolean isPageInfo() {
+		return isPageInfo && currentPage > 0;
+	}
+
+	public void setPageInfo(boolean isPageInfo) {
+		this.isPageInfo = isPageInfo;
+	}
+
+	public long getTotalCount() {
+		return totalCount;
+	}
+
+	public void setTotalCount(long totalCount) {
+		if (currentPage == 0) {
+			currentPage = 1;
+		}
+		this.totalCount = totalCount;
+	}
+
+	public int getCurrentPage() {
+		return currentPage;
+	}
+
+	public void setCurrentPage(int currentPage) {
+		this.currentPage = currentPage;
+	}
+
+	public int getLimit() {
+		return limit;
+	}
+
+	public void setLimit(int limit) {
+		this.isPageInfo = true;
+		this.limit = limit;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("PageVO [totalCount=");
+		builder.append(totalCount);
+		builder.append(", currentPage=");
+		builder.append(currentPage);
+		builder.append(", limit=");
+		builder.append(limit);
+		builder.append(", isPageInfo=");
+		builder.append(isPageInfo);
+		builder.append("]");
+		return builder.toString();
+	}
+
+	public int getFirstResult() {
+		if (currentPage == 0) {
+			return 0;
+		}
+		return (currentPage - 1) * limit;
+	}
+
+	public Boolean hasMore() {
+		int pages = (int) ((totalCount - 1) / limit + 1);
+		return currentPage < pages;
+	}
+}

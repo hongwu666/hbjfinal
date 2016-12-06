@@ -1,0 +1,107 @@
+package saas.winbons.dubbo.web.dto;
+
+import java.io.Serializable;
+
+public class Column implements Serializable {
+
+	private static final long serialVersionUID = 4696682847795741629L;
+	
+
+	private String columnName;
+
+	private String alias;
+
+	public String tableAlias;
+
+	public String getTableAlias() {
+		return tableAlias;
+	}
+
+	public void setTableAlias(String tableAlias) {
+
+		this.tableAlias = tableAlias;
+	}
+
+	public Column(String alias) {
+		this.alias = alias;
+	}
+
+	public Column(String columnName, String alias, String tableAlias) {
+		this.columnName = columnName;
+		this.alias = alias;
+		this.tableAlias = tableAlias;
+	}
+
+	public Column(String columnName, String alias) {
+		this.columnName = columnName;
+		this.alias = alias;
+	}
+
+	public String getColumnName() {
+
+		return columnName;
+	}
+
+	public void setColumnName(String columnName) {
+
+		this.columnName = columnName;
+	}
+
+	public String getAlias() {
+
+		return alias;
+	}
+
+	public void setAlias(String alias) {
+
+		this.alias = alias;
+	}
+
+	  
+	    
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((columnName == null) ? 0 : columnName.hashCode());
+		result = prime * result + ((tableAlias == null) ? 0 : tableAlias.hashCode());
+		return result;
+	}
+
+	  
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Column other = (Column) obj;
+		if (columnName == null) {
+			if (other.columnName != null)
+				return false;
+		} else if (!columnName.equals(other.columnName))
+			return false;
+		if (tableAlias == null) {
+			if (other.tableAlias != null)
+				return false;
+		} else if (!tableAlias.equals(other.tableAlias))
+			return false;
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("Column [columnName=");
+		builder.append(columnName);
+		builder.append(", alias=");
+		builder.append(alias);
+		builder.append(", tableAlias=");
+		builder.append(tableAlias);
+		builder.append("]");
+		return builder.toString();
+	}
+
+}

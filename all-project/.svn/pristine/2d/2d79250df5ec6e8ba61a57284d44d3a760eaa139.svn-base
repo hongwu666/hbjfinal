@@ -1,0 +1,52 @@
+package saas.winbons.data.model.organization;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+import saas.winbons.data.model.BaseModel;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolSqlXml;
+
+public class Department extends BaseModel<Department> {
+
+	private static final long serialVersionUID = 1L;
+	
+	public static final Department dao = new Department();
+	
+	
+	public List<Map<String, Object>> getAllSimpleInfo(ContextDTO contextDTO){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contextDTO", contextDTO);
+		String sql = ToolSqlXml.getSql("winbons.department.getAllSimpleInfo",map);
+		List<Record> find = Db.find(contextDTO, sql);
+		List<Map<String, Object>> recordListConvert = ToolModel.recordListConvert(find);
+		return recordListConvert;
+	}
+	
+	public List<String> getManagerUnitRight(ContextDTO contextDTO,Long userId){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("contextDTO", contextDTO);
+		map.put("userId", userId);
+		String sql = ToolSqlXml.getSql("winbons.department.getManagerUnitRight",map);
+		List<String> result = new ArrayList<String>();
+		List<Record> find = Db.find(contextDTO, sql);
+		for(Record record : find){
+			result.add(record.getStr("aclName"));
+		}
+		return result;
+	}
+	
+	public List<Long> getManagerUserIdByAcl(ContextDTO contextDTO,Long userId,String acl){
+		//getManagerUnitRight(contextDTO,userId);
+		
+		
+		return null;
+	}
+
+}

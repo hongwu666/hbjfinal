@@ -1,0 +1,174 @@
+/** 
+ * Copyright (C) 2014 Winbons Technology Software Co.,Ltd
+ * All Rights Reserved.
+ * Development of this softwareWinbons Technology Software Co.,Ltd.
+ * Without the formal written consent of the Company, 
+ * any other individuals, groups may not use, 
+ * copy, modify, or distribute this software
+ * @Title: IAttentionManager.java 
+ * @Package saas.crm.dynamic.manager 
+ * @author star.ye 
+ * @date 2014年8月11日 下午4:12:36 
+ * @version 1.0 
+ */
+
+package saas.crm.dynamic.manager;
+
+import java.util.Collection;
+import java.util.List;
+
+import saas.crm.data.vo.dynamic.AttentionNumVO;
+import saas.crm.data.vo.security.UserPhotoVO;
+import saas.crm.dynamic.AttentionType;
+import saas.crm.dynamic.model.AttentionRel;
+import saas.winbons.dubbo.api.ContextDTO;
+
+/**
+ * @ClassName: IAttentionManager
+ * @Description: TODO(这里用一句话描述这个类的作用)
+ * @author star.ye
+ * @date 2014年8月11日 下午4:12:36
+ */
+
+public interface IAttentionManager {
+
+	/**
+	 * 
+	 * @Title: findByTo
+	 * @Description: TODO(这里用一句话描述这个方法的作用)
+	 * @param @param toId
+	 * @param @return 设定文件
+	 * @return AttentionUser 返回类型
+	 * @throws
+	 * @date 2014年8月11日 下午4:17:07
+	 */
+	public List<AttentionRel> findByTo(ContextDTO contextDTO,Long toId);
+
+	/**
+	 * 
+	 * @Title: attentionObj关注对象
+	 * @param @param toId
+	 * @param @param userId 设定文件
+	 * @return void 返回类型
+	 * @throws
+	 * @date 2014年8月11日 下午2:39:35
+	 */
+	public void attentionObj(ContextDTO contextDTO,Long toId, Long userId, int type, long index);
+
+	/**
+	 * @Title: attentionObj关注对象
+	 * @param @param toId
+	 * @param @param userId 设定文件
+	 * @return void 返回类型
+	 * @throws
+	 * @date 2014年8月11日 下午2:39:35
+	 */
+	public void unAttentionObj(ContextDTO contextDTO,Long[] toId, Long userId, int type);
+
+	/**
+	 * 
+	 * @Title: findByUserId
+	 * @Description: 取最新的200条
+	 * @param @param userId
+	 * @param @return 设定文件
+	 * @return Long[] 返回类型
+	 * @throws
+	 * @date 2014年8月11日 下午4:58:12
+	 */
+	public Collection<Long> findByUserId(ContextDTO contextDTO,Long userId);
+	
+	/**
+	 * 根据用户与关注的类型获取关注的ID
+	 * @param userId				用户ID
+	 * @param attentionType			关注类型：1、dept | 2、group | 3、business | 4、user | 5、all
+	 * @return
+	 */
+	public Collection<Long> findByUserIdAndAttentionType(ContextDTO contextDTO,Long userId, String attentionType);
+
+	/**
+	 * 
+	 * @Title: findAttentionIdsByUserId
+	 * @Description: 查询关注的群组
+	 * @param @param userId
+	 * @param @param type
+	 * @param @return 设定文件
+	 * @return Collection<Long> 返回类型
+	 * @throws
+	 * @date 2014年11月19日 上午9:16:53
+	 */
+	public Collection<Long> findAttentionIdsByUserId(ContextDTO contextDTO,Long userId, int type);
+
+	/**
+	 * 
+	 * @Title: updateLatestIndex
+	 * @Description: TODO(这里用一句话描述这个方法的作用)
+	 * @param @param attentsId
+	 * @param @param index 设定文件
+	 * @return void 返回类型
+	 * @throws
+	 * @date 2014年8月11日 下午5:14:25
+	 */
+	public void updateLatestIndex(ContextDTO contextDTO,Long attentsId, Long index);
+
+	/**
+	 * 是否关注
+	 * 
+	 * @Title: isAttention
+	 * @Description: TODO(这里用一句话描述这个方法的作用)
+	 * @param @param groupId
+	 * @param @param userId
+	 * @param @return 设定文件
+	 * @return boolean 返回类型
+	 * @throws
+	 * @date 2014年8月11日 下午6:24:12
+	 */
+	public boolean isAttention(ContextDTO contextDTO,Long groupId, Long userId, AttentionType attentionType);
+
+	/**
+	 * 
+	 * @Title: 查找关注的
+	 * @param @param userId
+	 * @param @return 设定文件
+	 * @return List<AttentionRel> 返回类型
+	 * @throws
+	 * @date 2014年10月23日 下午4:38:38
+	 */
+	public List<UserPhotoVO> findAttentionsByUserId(ContextDTO contextDTO,Long userId, Long index);
+
+	/**
+	 * 
+	 * @Title: 查找关注我的
+	 * @param @return 设定文件
+	 * @return List<AttentionRel> 返回类型
+	 * @throws
+	 * @date 2014年10月23日 下午4:38:38
+	 */
+	public List<UserPhotoVO> findAttentionsBy(ContextDTO contextDTO,Long userId, Long index);
+	
+	/**
+	 * 查找我关注的和关注我的人的数量
+	 * @param userId
+	 * @return
+	 */
+	public AttentionNumVO findAttentionsNum(ContextDTO contextDTO,Long userId);
+	
+	/**
+	 * 关注某部门中的所有人
+	 * @param deptId
+	 */
+	public void attentionDeptPeople(ContextDTO contextDTO,Long deptId);
+	
+	/**
+	 * 取消关注某部门中的所有人
+	 * @param deptId
+	 */
+	public void unAttentionDeptPeople(ContextDTO contextDTO,Long deptId);
+	
+	/**
+	 * 取消某对象的关注人
+	 * @param toId
+	 * @param type
+	 */
+	public void unAttentionObjUsers(ContextDTO contextDTO,Long[] toId, int type);
+	
+}

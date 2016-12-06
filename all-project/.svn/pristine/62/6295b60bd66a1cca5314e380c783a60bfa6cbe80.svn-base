@@ -1,0 +1,209 @@
+package saas.winbons.provider;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.ApplicationEventMulticaster;
+
+import saas.data.api.IPlatFormService;
+import saas.data.model.UserServiceDTO;
+import saas.framework.nosql.FileSystemEngine;
+import saas.framework.nosql.domain.AttachmentObject;
+import saas.winbons.data.model.base.ImportLogModel;
+import saas.winbons.data.model.base.UserImportEvent;
+import saas.winbons.data.model.security.User;
+import saas.winbons.dubbo.api.ContextDTO;
+import saas.winbons.dubbo.api.FilterDTO;
+import saas.winbons.dubbo.api.RequestDTO;
+import saas.winbons.dubbo.api.ResultDTO;
+import saas.winbons.dubbo.service.AbstractCommonService;
+import saas.winbons.dubbo.web.dto.SimulationHttpServletRequest;
+import saas.winbons.format.IEnumFormat;
+import saas.winbons.framework.sql.FilterItemList;
+import saas.winbons.framework.tools.ToolDate;
+import saas.winbons.framework.tools.ToolJfinalSql;
+import saas.winbons.framework.tools.ToolModel;
+import saas.winbons.framework.tools.ToolRequestDTO;
+import saas.winbons.framework.tools.ToolSqlXml;
+
+import com.jfinal.ext.kit.ModelKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Model;
+import com.jfinal.plugin.activerecord.Record;
+
+public class BackendServiceImpl extends AbstractCommonService {
+
+	@Override
+	public Class<? extends Model<?>> getModelClass() {
+		return User.class;
+	}
+	
+	@Autowired
+	private FileSystemEngine fileSystemEngine;
+
+	@Override
+	public Class<? extends IEnumFormat> getFormatClass() {
+		return null;
+	}
+	
+	@Autowired
+	ApplicationEventMulticaster applicationEventMulticaster;  
+	
+	@Override
+	public String getGridId() {
+		return null;
+	}
+
+	@Override
+	public String getTableName() {
+		return null;
+	}
+
+	@Override
+	public AbstractCommonService getService() {
+		return this;
+	}
+
+	@Override
+	public FilterItemList buildFilterItem(ContextDTO contextDTO, SimulationHttpServletRequest request) {
+		return null;
+	}
+
+	@Override
+	public String getGridHeadSql() {
+		return null;
+	}
+
+	@Override
+	public String getGridSql() {
+		return null;
+	}
+
+	@Override
+	public void rebuildCreateSearchView(RequestDTO requestDTO) {
+		
+	}
+	
+	public ResultDTO newImportUser(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		resultDTO.setSuccess(true);
+		try{
+			Map<String, Object> source = new HashMap<String,Object>();
+			String buildSelectSql = ToolJfinalSql.buildSelectSql(ImportLogModel.class, "", "");
+			Map<String, Object> params = new HashMap<String,Object>();
+			requestDTO.putFitler(new FilterDTO("importfile", requestDTO.get("importLogModel.importfile")));
+			requestDTO.putFitler(new FilterDTO("importtype", requestDTO.get("importLogModel.importtype")));
+			params.put("filters", requestDTO.getFitler());
+			params.put("contextDTO", contextDTO);
+			params.put("columns", buildSelectSql);
+			String sql = ToolSqlXml.getSql("winbins.import.search",params);
+			List<Record> find = Db.find(contextDTO, sql);
+			Long id = null;
+			if(find.size() == 0){
+				ImportLogModel importLogModel = new ImportLogModel();
+				Map<String, Object> mapToModelMap = ToolModel.mapToModelMap(requestDTO.getData(), "importLogModel");
+				ImportLogModel put = importLogModel.put(mapToModelMap);
+				put.set("status", 1);
+				put.set("createdate", Calendar.getInstance().getTime());
+				put.set("createid", contextDTO.getUserId());
+				put.set("createby", contextDTO.getUserName());
+				importLogModel.put(put);
+				importLogModel.save(contextDTO);
+				id = importLogModel.getId();
+			}else{
+				Record record = find.get(find.size() - 1);
+				ImportLogModel importLogModel = new ImportLogModel();
+				importLogModel.put(record);
+				Map<String, Object> mapToModelMap = ToolModel.mapToModelMap(requestDTO.getData(), "importLogModel");
+				ImportLogModel put = importLogModel.put(mapToModelMap);
+				importLogModel.put(put);
+				importLogModel.set("status", 1);
+				importLogModel.set("createdate", Calendar.getInstance().getTime());
+				importLogModel.set("createid", contextDTO.getUserId());
+				importLogModel.set("createby", contextDTO.getUserName());
+				importLogModel.update(contextDTO);
+				id = importLogModel.getId();
+			}
+			source.put("data", id);
+			source.put("contextDTO", contextDTO);
+			UserImportEvent userImportEvent = new UserImportEvent(source);
+			applicationEventMulticaster.multicastEvent(userImportEvent);
+		}catch(Exception e){
+			resultDTO.setSuccess(false);
+			e.printStackTrace();
+			resultDTO.setError(e.getMessage());
+		}
+		
+
+		
+		
+		
+		return resultDTO;
+	}
+	
+	/*public ResultDTO newGetImportStatus(RequestDTO requestDTO){
+		ResultDTO resultDTO = new ResultDTO();
+		ContextDTO contextDTO = requestDTO.getContextDTO();
+		resultDTO.setSuccess(true);
+		
+		try{
+			String buildSelectSql = ToolJfinalSql.buildSelectSql(ImportLogModel.class, "", "");
+			Map<String, Object> params = new HashMap<String,Object>();
+			params.put("filters", requestDTO.getFitler());
+			params.put("contextDTO", contextDTO);
+			params.put("columns", buildSelectSql);
+			String sql = ToolSqlXml.getSql("winbins.import.search",params);
+			List<Record> find = Db.find(contextDTO, sql);
+			List<Map<String, Object>> modelListConvert = ToolModel.recordListConvert(find);
+			if(modelListConvert.size() > 0){
+				Map<String, Object> map = modelListConvert.get(modelListConvert.size() - 1);
+				map.put("createdate",((Date)map.get("createdate")).getTime());
+				resultDTO.setData(map);
+			}else{
+				ImportLogModel importLogModel = new ImportLogModel();
+				importLogModel.set("importtype", ToolRequestDTO.getFilterValue("importtype", requestDTO.getFitler()));
+				importLogModel.set("importfile", ToolRequestDTO.getFilterValue("importfile", requestDTO.getFitler()));
+				importLogModel.set("ftype", 1);
+				importLogModel.set("status", 0);
+				importLogModel.set("createdate", Calendar.getInstance().getTime());
+				importLogModel.set("createid", contextDTO.getUserId());
+				importLogModel.set("createby", contextDTO.getUserName());
+				UserServiceDTO userServiceDTO = platFormService.getUserService(contextDTO.getDbId(), contextDTO.getUserId());
+				int currentUserCount = platFormService.getCurrentUserCount(contextDTO.getDbId());
+				int remainUserQty = userServiceDTO.getSiTotalUserNum() - currentUserCount;
+				AttachmentObject fileById = fileSystemEngine.getFileById(AttachmentObject.class, importLogModel.get("importfile"));
+				Workbook workbook=null;
+				workbook = WorkbookFactory.create(fileById.getData());
+				Sheet sheetAt = workbook.getSheetAt(0);				
+				int lastRowNum = sheetAt.getLastRowNum();
+				importLogModel.set("totalQty", lastRowNum);
+				ImportLogModel.dao.saveObj(contextDTO, importLogModel);
+				importLogModel.set("createdate",importLogModel.getDate("createdate").getTime());
+				Map<String, Object> map = ModelKit.toMap(importLogModel);
+				map.put("remainUserQty", remainUserQty);				
+				resultDTO.setData(map);
+				
+				
+			}
+		}catch(Exception e){
+			resultDTO.setSuccess(false);
+			e.printStackTrace();
+		}
+		return resultDTO;
+	}*/
+
+	@Override
+	public void reUpdateCreateSearchView(List<Map<String, Object>> list) {
+		// TODO Auto-generated method stub
+		
+	}
+
+}

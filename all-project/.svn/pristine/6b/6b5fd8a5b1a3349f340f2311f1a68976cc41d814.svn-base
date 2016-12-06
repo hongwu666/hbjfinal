@@ -1,0 +1,66 @@
+package saas.monitor.criteria;
+
+import java.io.Serializable;
+
+public class FilterVO implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+	
+	private java.lang.String property;
+	
+	private java.lang.String operation;
+
+	private java.lang.Object value;
+
+	private java.lang.String[] values;
+	
+	public FilterVO(String property, Object value) {
+		this.property = property;
+		this.value = value;
+		this.operation = "=";
+	}
+	
+	public FilterVO(String property, Object value,String operation) {
+		this.property = property;
+		this.value = value;
+		this.operation = operation;
+	}
+	
+	public FilterVO(String property, String[] values,String operation) {
+		this.property = property;
+		this.values = values;
+		this.operation = operation;
+	}
+
+	public java.lang.String getProperty() {
+		return property;
+	}
+
+	public void setProperty(java.lang.String property) {
+		this.property = property;
+	}
+
+	public java.lang.Object getValue() {
+		return value;
+	}
+
+	public void setValue(java.lang.Object value) {
+		this.value = value;
+	}
+
+	public java.lang.String[] getValues() {
+		return values;
+	}
+
+	public void setValues(java.lang.String[] values) {
+		this.values = values;
+	}
+
+	public java.lang.String getOperation() {
+		return operation;
+	}
+
+	public void setOperation(java.lang.String operation) {
+		this.operation = operation;
+	}
+}

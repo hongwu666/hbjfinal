@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--  
+	菜单sql
+-->
+<sql-statement namespace="winbins.analysis.customer">
+	
+	<sql id="departmentCount">
+	<![CDATA[ 
+		select IFNULL(a.dept_id,-1) as item_id,IFNULL(b.name,'未设置') as item_label,a.counts from  
+		(SELECT dept_id,count(1) as counts  FROM 
+			t_crm_customer where dbid = ${contextDTO.dbId} and owner_id is not null 
+			<%
+				commonSql("winbons.common.params",filters!,sorts!);
+			%> 
+			GROUP BY dept_id 
+		) a left JOIN 
+		(select id,name from t_crm_department where dbid  = ${contextDTO.dbId} ) b on a.dept_id = b.id 
+	]]>
+	</sql>
+	
+	
+	<sql id="departmentChangeTrend">
+	<![CDATA[ 
+		select IFNULL(a.dept_id,-1) as item_id,IFNULL(b.name,'未设置') as item_label,a.counts,a.dateFormat from  
+		(SELECT dept_id,count(1) as counts,DATE_FORMAT(FROM_UNIXTIME(created_date/1000),"${byWith}") as dateFormat  FROM 
+			t_crm_customer where dbid = ${contextDTO.dbId} and owner_id is not null 
+			<%
+				commonSql("winbons.common.params",filters!,sorts!);
+			%> 
+			GROUP BY DATE_FORMAT(FROM_UNIXTIME(created_date/1000),"${byWith}"),dept_id 
+		) a left JOIN 
+		(select id,name from t_crm_department where dbid  = ${contextDTO.dbId} ) b on a.dept_id = b.id 
+	]]>
+	</sql>
+	
+	<sql id="userCount">
+	<![CDATA[ 
+		select IFNULL(a.owner_id,-1) as item_id,IFNULL(b.display_name,'未设置') as item_label,a.counts from 
+		(select owner_id,count(1) as counts from 
+			t_crm_customer where dbid = ${contextDTO.dbId} and owner_id is not null 
+			<%
+				commonSql("winbons.common.params",filters!,sorts!);
+			%> 
+			GROUP BY owner_id
+		) a left JOIN 
+		(select user_id,display_name from t_crm_user where dbid  = ${contextDTO.dbId} ) b on a.owner_id = b.user_id
+	]]>
+	</sql>
+	
+	
+	<sql id="userChangeTrend">
+	<![CDATA[ 
+		select IFNULL(a.owner_id,-1) as item_id,IFNULL(b.display_name,'未设置') as item_label,a.counts,a.dateFormat from 
+		(select owner_id,count(1) as counts,DATE_FORMAT(FROM_UNIXTIME(created_date/1000),"${byWith}") as dateFormat from 
+					t_crm_customer where dbid = ${contextDTO.dbId} and owner_id is not null 
+			<%
+				commonSql("winbons.common.params",filters!,sorts!);
+			%> 
+			GROUP BY DATE_FORMAT(FROM_UNIXTIME(created_date/1000),"${byWith}"),owner_id
+		) a left JOIN 
+		(select user_id,display_name from t_crm_user where dbid  = ${contextDTO.dbId} ) b on a.owner_id = b.user_id
+	]]>
+	</sql>
+	
+	<sql id="list">
+	<![CDATA[ 
+		select IFNULL(a.${statistic},-1) as item_id,IFNULL(b.item_label,'未设置') as item_label,a.counts from 
+		(select ${statistic},count(1) as counts from 
+					t_crm_customer where dbid = ${contextDTO.dbId} and owner_id is not null 
+			<%
+				commonSql("winbons.common.params",filters!,sorts!);
+			%> 
+			GROUP BY ${statistic} 
+		) a left JOIN 
+		(select id,item_label from t_crm_list_item where dbid  = ${contextDTO.dbId} ) b on a.${statistic} = b.id 
+	]]>
+	</sql>
+
+
+	
+
+</sql-statement>

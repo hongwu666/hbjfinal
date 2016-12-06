@@ -1,0 +1,49 @@
+package saas.monitor.tools;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.jfinal.plugin.ehcache.CacheKit;
+
+public class ToolCache {
+	
+
+	/**
+	 * 缓存类型
+	 */
+	private static String cacheType = "ehcache_system";
+	
+	
+	private static Map<String,String> sqlMap = new HashMap<String,String>();
+	
+	/**
+	 * 获取缓存
+	 * @param key
+	 * @return
+	 */
+	public static String get(Object key) {
+		return sqlMap.get(key.toString());
+		//return CacheKit.get(cacheType, key);
+	}
+	
+	/**
+	 * 设置缓存
+	 * @param key
+	 * @param value
+	 */
+	public static void set(Object key, Object value) {
+		sqlMap.put(key.toString(), value.toString());
+		//CacheKit.put(cacheType, key, value);
+	}
+	
+	/**
+	 * 删除缓存
+	 * @param key
+	 */
+	public static void remove(Object key){
+		sqlMap.remove(key.toString());
+		//CacheKit.remove(cacheType, key);
+	}
+
+
+}
